@@ -1,4 +1,6 @@
 
+# Original FindJulia.cmake from https://github.com/QuantStack/xtensor-julia-cookiecutter/blob/master/%7B%7Bcookiecutter.github_project_name%7D%7D/cmake/FindJulia.cmake
+
 if(Julia_FOUND)
     return()
 endif()

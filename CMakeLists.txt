@@ -44,6 +44,7 @@ endif()
 set(CMAKE_INSTALL_LIBDIR "lib")
 
 set(JLCXX_BUILD_EXAMPLES ON CACHE BOOL "Build the JlCxx examples")
+set(JLCXX_BUILD_TESTS ON CACHE BOOL "Build the JlCxx tests")
 
 # Source files
 # ============
@@ -160,4 +161,9 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
 
 if(JLCXX_BUILD_EXAMPLES)
   add_subdirectory(examples)
+endif()
+
+if(JLCXX_BUILD_TESTS)
+  enable_testing()
+  add_subdirectory(test)
 endif()

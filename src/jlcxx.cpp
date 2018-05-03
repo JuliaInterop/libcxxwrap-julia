@@ -48,14 +48,13 @@ Module::Module(const std::string& name, jl_module_t* jmod) : m_name(name), m_jl_
 
 Module& ModuleRegistry::create_module(const std::string &name)
 {
-  static const JuliaFunction create_julia_module("create_module", "CxxWrap");
-
   if(m_modules.count(name))
     throw std::runtime_error("Error registering module: " + name + " was already registered");
 
   jl_module_t* jmod = m_jl_mod;
   if(jmod == nullptr)
   {
+    static const JuliaFunction create_julia_module("create_module", "CxxWrap");
     jmod = (jl_module_t*)create_julia_module(name, (jl_value_t*)m_parent_mod);
   }
   else
