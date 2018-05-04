@@ -32,7 +32,7 @@ install:
   - mkdir build
   - cd build
   - cmake -DJulia_EXECUTABLE=$HOME/julia/bin/julia ..
-  - cmake --build . --config Debug --target all
+  - VERBOSE=ON cmake --build . --config Debug --target all
 
 script:
   ctest -V

@@ -29,7 +29,7 @@ build_script:
   - cmake --build . --config Release --target install
 
 test_script:
-  - ctest -V
+  - ctest -V -C Release
 
 after_test:
   - cd ..
