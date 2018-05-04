@@ -17,6 +17,7 @@ include(CheckCXXCompilerFlag)
 include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(GNUInstallDirs)
+include(InstallRequiredSystemLibraries)
 
 
 # Compilation flags

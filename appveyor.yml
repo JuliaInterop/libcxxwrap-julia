@@ -23,14 +23,17 @@ install:
   - C:\projects\julia-binary.exe /S /D=C:\projects\julia
 
 build_script:
-# Need to convert from shallow to complete for Pkg.clone to work
-  - IF EXIST .git\shallow (git fetch --unshallow)
-  - IF DEFINED MSYSTEM C:\msys64\usr\bin\bash.exe -l -c "HOME=C:/Users/appveyor C:/projects/julia/bin/julia -e \"cd(ENV[\\\"OLDPWD\\\"]); versioninfo(); Pkg.clone(pwd(), \\\"CxxWrap\\\"); Pkg.build(\\\"CxxWrap\\\")\""
-  - IF NOT DEFINED MSYSTEM C:\projects\julia\bin\julia -e "versioninfo(); Pkg.clone(pwd(), \"CxxWrap\"); Pkg.build(\"CxxWrap\")"
   - mkdir build
   - cd build
-  - cmake -DJulia_EXECUTABLE=C:\projects\julia\bin\julia ..
-  - cmake --build . --config Debug --target all
+  - cmake -DJulia_EXECUTABLE=C:\projects\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\usr ..
+  - cmake --build . --config Release --target install
 
 test_script:
   - ctest -V
+
+after_test:
+  - cd ..
+  - 7z a jlcxx.zip usr
+
+artifacts:
+  - path: 'jlcxx.zip'
