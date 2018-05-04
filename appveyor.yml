@@ -25,7 +25,7 @@ install:
 build_script:
   - mkdir build
   - cd build
-  - cmake -DJulia_EXECUTABLE=C:\projects\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\usr ..
+  - cmake -G "Visual Studio 14 2015 Win64" -DJulia_EXECUTABLE=C:\projects\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\usr ..
   - cmake --build . --config Release --target install
 
 test_script:

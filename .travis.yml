@@ -15,13 +15,18 @@ matrix:
       env:
         - CC=gcc-4.9
         - CXX=g++-4.9
+      before_install:
+        - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
+        - mkdir -p ~/julia
+        - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://julialang-s3.julialang.org/bin/linux/x64/0.6/julia-0.6-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
     - os: osx
       compiler: "clang"
-
-before_install:
-  - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
-  - mkdir -p ~/julia
-  - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://julialang-s3.julialang.org/bin/linux/x64/0.6/julia-0.6-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
+      before_install:
+        - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
+        - curl -A "$CURL_USER_AGENT" -s -L --retry 7 -o julia.dmg 'https://julialang-s3.julialang.org/bin/mac/x64/0.6/julia-0.6-latest-mac64.dmg'
+        - mkdir juliamnt
+        - hdiutil mount -readonly -mountpoint juliamnt julia.dmg
+        - cp -a juliamnt/*.app/Contents/Resources/julia ~/
 
 install:
   - mkdir build
