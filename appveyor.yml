@@ -39,7 +39,7 @@ after_test:
   - cd ..\install
 
 artifacts:
-  - path: 'jlcxx*.zip'
+  - path: 'install\jlcxx*.zip'
 
 deploy:
   provider: GitHub
