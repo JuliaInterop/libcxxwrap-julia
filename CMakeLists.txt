@@ -87,7 +87,7 @@ message(STATUS "${PROJECT_NAME} version: v${${PROJECT_NAME}_VERSION}")
 # Output
 # ======
 
-set(JLCXX_TARGET cxxwrap-julia)
+set(JLCXX_TARGET cxxwrap_julia)
 add_library(${JLCXX_TARGET} SHARED ${JLCXX_SOURCES} ${JLCXX_HEADERS})
 
 target_include_directories(${JLCXX_TARGET} PUBLIC
