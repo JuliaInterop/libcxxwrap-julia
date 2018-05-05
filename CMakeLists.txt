@@ -87,7 +87,7 @@ message(STATUS "${PROJECT_NAME} version: v${${PROJECT_NAME}_VERSION}")
 # Output
 # ======
 
-set(JLCXX_TARGET jlcxx)
+set(JLCXX_TARGET cxxwrap-julia)
 add_library(${JLCXX_TARGET} SHARED ${JLCXX_SOURCES} ${JLCXX_HEADERS})
 
 target_include_directories(${JLCXX_TARGET} PUBLIC
@@ -167,4 +167,13 @@ endif()
 if(JLCXX_BUILD_TESTS)
   enable_testing()
   add_subdirectory(test)
+endif()
+
+if(WIN32)
+    string(SUBSTRING ${Julia_VERSION_STRING} 0 3 Julia_VERSION_SHORT)
+    add_custom_target(create_zip
+        COMMAND ${CMAKE_COMMAND} -E tar "cfv" "jlcxx-julia${Julia_VERSION_SHORT}-${Julia_WORD_SIZE}-v${${PROJECT_NAME}_VERSION}.zip" --format=zip "usr"
+        DEPENDS install
+        WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/..
+        )
 endif()

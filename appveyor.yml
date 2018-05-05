@@ -1,6 +1,9 @@
 environment:
   matrix:
   - JULIA_URL: "https://julialang-s3.julialang.org/bin/winnt/x64/0.6/julia-0.6-latest-win64.exe"
+    CMAKE_GEN: "Visual Studio 14 2015 Win64"
+  - JULIA_URL: "https://julialang-s3.julialang.org/bin/winnt/x86/0.6/julia-0.6-latest-win32.exe"
+    CMAKE_GEN: "Visual Studio 14 2015"
 
 branches:
   only:
@@ -25,15 +28,23 @@ install:
 build_script:
   - mkdir build
   - cd build
-  - cmake -G "Visual Studio 14 2015 Win64" -DJulia_EXECUTABLE=C:\projects\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\usr ..
+  - cmake -G "%CMAKE_GEN%" -DJulia_EXECUTABLE=C:\projects\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\install\usr ..
   - cmake --build . --config Release --target install
 
 test_script:
   - ctest -V -C Release
 
 after_test:
-  - cd ..
-  - 7z a jlcxx.zip usr
+  - cmake --build . --config Release --target create_zip
+  - cd ..\install
 
 artifacts:
-  - path: 'jlcxx.zip'
+  - path: 'jlcxx*.zip'
+
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: gT/6HUmJMkLU89J2qu3FZ/OR2Velz//TSA/GJr65M1iNRjTimZLnAk73oRPGtA7d # your encrypted token from GitHub
+  on:
+    branch: master                 # release from master branch only
+    appveyor_repo_tag: true        # deploy on tag push only

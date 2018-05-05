@@ -6,8 +6,15 @@ add_executable(test_module test_module.cpp)
 target_link_libraries(test_module ${JLCXX_TARGET} ${Julia_LIBRARY})
 
 add_test(NAME test_module COMMAND test_module)
-set_property(TEST test_module PROPERTY
-  ENVIRONMENT
-    "PATH=${JULIA_HOME}"
-    "JULIA_HOME=${JULIA_HOME}"
-)
+if(WIN32)
+  set_property(TEST test_module PROPERTY
+    ENVIRONMENT
+      "PATH=${JULIA_HOME}\;${CMAKE_BINARY_DIR}/$<CONFIGURATION>"
+      "JULIA_HOME=${JULIA_HOME}"
+  )
+else()
+  set_property(TEST test_module PROPERTY
+    ENVIRONMENT
+      "JULIA_HOME=${JULIA_HOME}"
+  )
+endif()

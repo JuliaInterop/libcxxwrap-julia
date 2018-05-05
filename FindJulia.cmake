@@ -123,6 +123,17 @@ find_path(Julia_MAIN_HEADER julia.h HINTS ${Julia_INCLUDE_DIRS})
 
 MESSAGE(STATUS "Julia_LLVM_VERSION:   ${Julia_LLVM_VERSION}")
 
+#######################################
+# Determine if we are on 32 or 64 bit #
+#######################################
+
+execute_process(
+    COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "Sys.WORD_SIZE"
+    OUTPUT_VARIABLE Julia_WORD_SIZE
+)
+string(REGEX REPLACE "\n" "" Julia_WORD_SIZE "${Julia_WORD_SIZE}")
+MESSAGE(STATUS "Julia_WORD_SIZE:      ${Julia_WORD_SIZE}")
+
 ###########################
 # FindPackage Boilerplate #
 ###########################

@@ -12,7 +12,7 @@
 #endif
 
 #define JLCXX_VERSION_MAJOR 0
-#define JLCXX_VERSION_MINOR 1
-#define JLCXX_VERSION_PATCH 1
+#define JLCXX_VERSION_MINOR 2
+#define JLCXX_VERSION_PATCH 0
 
 #endif
