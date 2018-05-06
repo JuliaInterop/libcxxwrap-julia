@@ -36,10 +36,12 @@ test_script:
 
 after_test:
   - cmake --build . --config Release --target create_zip
-  - cd ..\install
+  - cd ..
+  - copy install\jlcxx*.zip .
+  - echo %APPVEYOR_JOB_NAME%
 
 artifacts:
-  - path: 'install\jlcxx*.zip'
+  - path: 'jlcxx*.zip'
 
 deploy:
   provider: GitHub
