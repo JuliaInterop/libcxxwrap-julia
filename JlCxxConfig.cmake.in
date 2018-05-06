@@ -3,9 +3,9 @@ find_package(Julia)
 
 include(JlCxxConfigExports)
 
-get_target_property(CXX_OLD_INCLUDES JlCxx::jlcxx INTERFACE_INCLUDE_DIRECTORIES)
+get_target_property(CXX_OLD_INCLUDES JlCxx::cxxwrap_julia INTERFACE_INCLUDE_DIRECTORIES)
 
-set_target_properties(JlCxx::jlcxx PROPERTIES
+set_target_properties(JlCxx::cxxwrap_julia PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES "${CXX_OLD_INCLUDES};${Julia_INCLUDE_DIRS}"
   INTERFACE_LINK_LIBRARIES "${Julia_LIBRARY}"
 )
