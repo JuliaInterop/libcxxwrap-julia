@@ -171,13 +171,23 @@ struct WrapFoo2
 template<typename T>
 struct CppVector
 {
+  typedef T value_type;
+  CppVector(T* vec, int size) : m_vec(vec), m_size(size) {}
+
+  const T& get(int i) const { return m_vec[i]; } 
+
+  T* m_vec;
+  int m_size;
 };
 
 struct WrapCppVector
 {
   template<typename TypeWrapperT>
-  void operator()(TypeWrapperT&&)
+  void operator()(TypeWrapperT&& wrapped)
   {
+    typedef typename TypeWrapperT::type WrappedT;
+    wrapped.template constructor<typename WrappedT::value_type*, int>();
+    wrapped.method("get", &WrappedT::get);
   }
 };
 
@@ -244,7 +254,7 @@ JULIA_CPP_MODULE_BEGIN(registry)
     .apply_combination<ApplyFoo2, ParameterList<int32_t, double>>(WrapFoo2());
 
   types.add_type<Parametric<TypeVar<1>>>("CppVector", jlcxx::julia_type("AbstractVector"))
-    .apply<CppVector<double>>(WrapCppVector());
+    .apply<CppVector<double>, CppVector<std::complex<float>>>(WrapCppVector());
 
   types.add_type<Parametric<TypeVar<1>, TypeVar<2>>, ParameterList<TypeVar<1>>>("CppVector2", jlcxx::julia_type("AbstractVector"))
     .apply<CppVector2<double,float>>(WrapCppVector2());

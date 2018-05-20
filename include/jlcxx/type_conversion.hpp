@@ -1416,8 +1416,7 @@ struct JuliaComplex
 }
 
 // Complex numbers
-template<typename NumberT> struct IsBits<std::complex<NumberT>> : std::true_type {};
-template<typename NumberT> struct IsImmutable<std::complex<NumberT>> : std::true_type {};
+template<typename NumberT> struct IsFundamental<std::complex<NumberT>> : std::true_type {};
 
 template<typename NumberT> struct static_type_mapping<std::complex<NumberT>>
 {
