@@ -1434,7 +1434,7 @@ template<typename NumberT> struct static_type_mapping<std::complex<NumberT>>
 };
 
 template<typename NumberT>
-struct ConvertToCpp<std::complex<NumberT>, false, true, true>
+struct ConvertToCpp<std::complex<NumberT>, true, false, false>
 {
   std::complex<NumberT> operator()(std::complex<NumberT> julia_value) const
   {
@@ -1443,7 +1443,7 @@ struct ConvertToCpp<std::complex<NumberT>, false, true, true>
 };
 
 template<typename NumberT>
-struct ConvertToJulia<std::complex<NumberT>, false, true, true>
+struct ConvertToJulia<std::complex<NumberT>, true, false, false>
 {
   detail::JuliaComplex<NumberT> operator()(std::complex<NumberT> cpp_value) const
   {
