@@ -117,6 +117,8 @@ struct Foo
   std::vector<double> data;
 };
 
+struct NullableStruct {};
+
 } // namespace cpp_types
 
 namespace jlcxx
@@ -254,6 +256,9 @@ JULIA_CPP_MODULE_BEGIN(registry)
     }
   });
 
+  types.add_type<NullableStruct>("NullableStruct");
+  types.method("return_ptr", [] () { return new NullableStruct; });
+  types.method("return_null", [] () { return static_cast<NullableStruct*>(nullptr); });
 
   types.export_symbols("enum_to_int", "get_enum_b", "World");
   types.export_symbols("AConstRef", "ReturnConstRef", "value", "CallOperator", "ConstPtrConstruct");
