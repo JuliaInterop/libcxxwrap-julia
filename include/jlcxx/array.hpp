@@ -167,9 +167,13 @@ public:
     assert(wrapped() != nullptr);
   }
 
-  /// Convert from existing C-array
+  /// Convert from existing C-array (memory owned by C++)
   template<typename... SizesT>
   ArrayRef(ValueT* ptr, const SizesT... sizes);
+
+  /// Convert from existing C-array, explicitly setting Julia ownership
+  template<typename... SizesT>
+  ArrayRef(const bool julia_owned, ValueT* ptr, const SizesT... sizes);
 
   typedef mapped_julia_type<ValueT> julia_t;
 
@@ -237,16 +241,37 @@ template<typename T, int Dim> struct static_type_mapping<ArrayRef<T, Dim>>
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_array_type(static_type_mapping<T>::julia_type(), Dim); }
 };
 
+
+template<typename ValueT, typename... SizesT>
+jl_array_t* wrap_array(const bool julia_owned, ValueT* c_ptr, const SizesT... sizes)
+{
+  jl_datatype_t* dt = static_type_mapping<ArrayRef<ValueT, sizeof...(SizesT)>>::julia_type();
+  jl_value_t *dims = nullptr;
+  JL_GC_PUSH1(&dims);
+  dims = convert_to_julia(std::make_tuple(static_cast<int_t>(sizes)...));
+  jl_array_t* result = jl_ptr_to_array((jl_value_t*)dt, c_ptr, dims, julia_owned);
+  JL_GC_POP();
+  return result;
+}
+
 template<typename ValueT, int Dim>
 template<typename... SizesT>
 ArrayRef<ValueT, Dim>::ArrayRef(ValueT* c_ptr, const SizesT... sizes) : IndexedArrayRef<julia_t, ValueT>(nullptr)
 {
-  jl_datatype_t* dt = static_type_mapping<ArrayRef<ValueT, Dim>>::julia_type();
-  jl_value_t *dims = nullptr;
-  JL_GC_PUSH1(&dims);
-  dims = convert_to_julia(std::make_tuple(static_cast<int_t>(sizes)...));
-  IndexedArrayRef<julia_t, ValueT>::m_array = jl_ptr_to_array((jl_value_t*)dt, c_ptr, dims, 0);
-  JL_GC_POP();
+  IndexedArrayRef<julia_t, ValueT>::m_array = wrap_array(false, c_ptr, sizes...);
+}
+
+template<typename ValueT, int Dim>
+template<typename... SizesT>
+ArrayRef<ValueT, Dim>::ArrayRef(const bool julia_owned, ValueT* c_ptr, const SizesT... sizes) : IndexedArrayRef<julia_t, ValueT>(nullptr)
+{
+  IndexedArrayRef<julia_t, ValueT>::m_array = wrap_array(julia_owned, c_ptr, sizes...);
+}
+
+template<typename ValueT, typename... SizesT>
+auto make_julia_array(ValueT* c_ptr, const SizesT... sizes) -> ArrayRef<ValueT, sizeof...(SizesT)>
+{
+  return ArrayRef<ValueT, sizeof...(SizesT)>(true, c_ptr, sizes...);
 }
 
 template<typename T, int Dim>
