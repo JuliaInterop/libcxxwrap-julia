@@ -85,6 +85,11 @@ private:
   const size_t m_sizes;
 };
 
+template<typename T, index_t N>
+struct InstantiateParametricType<ConstArray<T,N>> : InstantiateParametricType<ConstPtr<T>>
+{
+};
+
 template<typename T, typename... SizesT>
 ConstArray<T, sizeof...(SizesT)> make_const_array(const T* p, const SizesT... sizes)
 {

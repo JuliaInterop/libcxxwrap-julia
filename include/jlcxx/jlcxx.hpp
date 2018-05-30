@@ -269,7 +269,7 @@ class JLCXX_API Module;
 template<typename T>
 struct InstantiateParametricType
 {
-  // Returns int to expand parameter packs into an initilization list
+  // Returns int to expand parameter packs into an initialization list
   int operator()(Module&) const
   {
     return 0;
