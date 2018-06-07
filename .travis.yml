@@ -2,7 +2,7 @@ language: cpp
 matrix:
   include:
     - os: linux
-      compiler: "g++-7"
+      compiler: gcc
       addons:
         apt:
           sources:
@@ -12,11 +12,9 @@ matrix:
             - g++-7
             - cmake
             - cmake-data
-      env:
-        - CC=gcc-7
-        - CXX=g++-7
       before_install:
         - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
+        - export CC="gcc-7" CXX="g++-7"
         - mkdir -p ~/julia
         - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://julialang-s3.julialang.org/bin/linux/x64/0.6/julia-0.6-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
     - os: osx
