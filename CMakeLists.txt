@@ -98,6 +98,7 @@ target_include_directories(${JLCXX_TARGET} PUBLIC
 generate_export_header(${JLCXX_TARGET})
 
 target_link_libraries(${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
+link_directories(${Julia_LIBRARY_DIR} ${Julia_LIBRARY_DIR}/julia)
 set_target_properties(${JLCXX_TARGET} PROPERTIES
                       PUBLIC_HEADER "${JLCXX_HEADERS}"
                       COMPILE_DEFINITIONS "JLCXX_EXPORTS")
