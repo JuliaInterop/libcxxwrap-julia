@@ -1,13 +1,13 @@
 language: julia
 julia:
   # Test against these exact versions
-  - 0.6.2
+  #- 0.6.2
   - 0.6.3
+dist: trusty
 sudo: false
 matrix:
   include:
     - os: linux
-      compiler: gcc
       addons:
         apt:
           sources:
