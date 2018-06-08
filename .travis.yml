@@ -18,7 +18,7 @@ matrix:
 install:
   # On Linux, do the build within docker, on OSX just run the build directly
   - if [ $(uname) == Linux ]; then
-      docker run -t -v $(pwd):/build -w /build ubuntu_with_cmake .ci/build.sh;
+        docker run -t -v ${HOME}/julia:/usr/local -v $(pwd):/build -w /build ubuntu_with_cmake .ci/build.sh;
     elif [ $(uname) == Darwin ]; then
       .ci/build.sh;
     fi
