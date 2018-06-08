@@ -3,22 +3,16 @@ julia:
   # Test against these exact versions
   #- 0.6.2
   - 0.6.3
-dist: trusty
+dist: xenial
 sudo: false
 matrix:
   include:
     - os: linux
       addons:
         apt:
-          sources:
-            # For gcc-7/g++-7
-            - sourceline: 'ppa:jonathonf/gcc'
-            # For cmake 3.2.3 / doxygen 1.8.3
-            - sourceline: 'ppa:george-edison55/cmake-3.x'
           packages:
-            - g++-7
+            - g++
             - cmake
-            - cmake-data
       before_install:
         - export CC="gcc-7" CXX="g++-7"
    
