@@ -24,7 +24,7 @@ install:
     fi
 
 script:
-  - ctest -V
+  - cd build && ctest -V
 
 notifications:
   email: true
