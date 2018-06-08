@@ -3,27 +3,25 @@ julia:
   # Test against these exact versions
   #- 0.6.2
   - 0.6.3
-dist: xenial
+dist: trusty
 sudo: false
 matrix:
   include:
     - os: linux
-      addons:
-        apt:
-          packages:
-            - g++
-            - cmake
       before_install:
-        - export CC="gcc-7" CXX="g++-7"
+        - docker build -t ubuntu_with_cmake .ci
    
     # OSX build using clang
     - os: osx
       compiler: "clang"
 
 install:
-  - mkdir build; cd build
-  - cmake -DJulia_EXECUTABLE=$(which julia) ..
-  - VERBOSE=ON cmake --build . --config Debug --target all
+  # On Linux, do the build within docker, on OSX just run the build directly
+  - if [ $(uname) == Linux ]; then
+      docker run -t ubuntu_with_cmake -v $(pwd):/build -w /build .ci/build.sh;
+    elif [ $(uname) == Darwin ]; then
+      .ci/build.sh;
+    fi
 
 script:
   - ctest -V
