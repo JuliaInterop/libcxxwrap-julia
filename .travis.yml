@@ -1,41 +1,28 @@
-language: cpp
-matrix:
-  include:
-    - os: linux
-      compiler: "g++-4.9"
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - george-edison55-precise-backports # cmake 3.2.3 / doxygen 1.8.3
-          packages:
-            - g++-4.9
-            - cmake
-            - cmake-data
-      env:
-        - CC=gcc-4.9
-        - CXX=g++-4.9
-      before_install:
-        - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
-        - mkdir -p ~/julia
-        - curl -A "$CURL_USER_AGENT" -s -L --retry 7 'https://julialang-s3.julialang.org/bin/linux/x64/0.6/julia-0.6-latest-linux-x86_64.tar.gz' | tar -C ~/julia -x -z --strip-components=1 -f -
-    - os: osx
-      compiler: "clang"
-      before_install:
-        - CURL_USER_AGENT="Travis-CI $(curl --version | head -n 1)"
-        - curl -A "$CURL_USER_AGENT" -s -L --retry 7 -o julia.dmg 'https://julialang-s3.julialang.org/bin/mac/x64/0.6/julia-0.6-latest-mac64.dmg'
-        - mkdir juliamnt
-        - hdiutil mount -readonly -mountpoint juliamnt julia.dmg
-        - cp -a juliamnt/*.app/Contents/Resources/julia ~/
+language: julia
+julia:
+  # Test against these exact versions
+  - 0.6.1
+  - 0.6.2
+  - 0.6.3
+dist: trusty
+sudo: false
+os:
+  - linux
+  - osx
 
 install:
-  - mkdir build
-  - cd build
-  - cmake -DJulia_EXECUTABLE=$HOME/julia/bin/julia ..
-  - VERBOSE=ON cmake --build . --config Debug --target all
+  # On Linux, do the build within docker, on OSX just run the build directly
+  - if [ $(uname) == Linux ]; then
+        docker build -t ubuntu_with_cmake .ci;
+        DOCKER_PATH=$(docker run -t ubuntu_with_cmake /bin/sh -c 'echo -n "$PATH"');
+        JULIA_DIR=$(dirname $(dirname $(which julia)));
+        docker run -t -e PATH="${JULIA_DIR}/bin:${DOCKER_PATH}" -v ${JULIA_DIR}:${JULIA_DIR} -v $(pwd):$(pwd) -w $(pwd) ubuntu_with_cmake .ci/build.sh;
+    elif [ $(uname) == Darwin ]; then
+      .ci/build.sh;
+    fi
 
 script:
-  ctest -V
+  - cd build && ctest -V
 
 notifications:
   email: true
