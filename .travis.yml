@@ -17,7 +17,7 @@ matrix:
 
 install:
   # On Linux, do the build within docker, on OSX just run the build directly
-  - if [ $(uname) == Linux ]; then
+  - set -x; if [ $(uname) == Linux ]; then
         DOCKER_PATH=$(docker run -t ubuntu_with_cmake /bin/sh -c 'echo "$PATH"');
         JULIA_DIR=$(dirname $(which julia));
         docker run -t -e PATH="${JULIA_DIR}/bin:${DOCKER_PATH}" -v ${JULIA_DIR}:${JULIA_DIR} -v $(pwd):$(pwd) -w $(pwd) ubuntu_with_cmake .ci/build.sh;
