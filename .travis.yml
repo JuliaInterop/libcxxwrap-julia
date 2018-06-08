@@ -14,9 +14,9 @@ matrix:
             # For gcc-7/g++-7
             - sourceline: 'ppa:jonathonf/gcc'
             # For cmake 3.2.3 / doxygen 1.8.3
-            - george-edison55-trusty-backports
+            - sourceline: 'ppa:george-edison55/cmake-3.x'
           packages:
-            - gcc-7
+            - g++-7
             - cmake
             - cmake-data
       before_install:
