@@ -19,6 +19,8 @@ matrix:
             - gcc-7
             - cmake
             - cmake-data
+      before_install:
+        - export CC="gcc-7" CXX="g++-7"
    
     # OSX build using clang
     - os: osx
