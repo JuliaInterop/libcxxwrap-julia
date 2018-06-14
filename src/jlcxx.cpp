@@ -54,8 +54,13 @@ Module& ModuleRegistry::create_module(const std::string &name)
   jl_module_t* jmod = m_jl_mod;
   if(jmod == nullptr)
   {
-    static const JuliaFunction create_julia_module("create_module", "CxxWrap");
-    jmod = (jl_module_t*)create_julia_module(name, (jl_value_t*)m_parent_mod);
+    const std::string filename = "none";
+    std::stringstream modstr;
+    modstr << "module " << name << " end";
+    jl_value_t* modexpr = jl_parse_input_line(modstr.str().c_str(), modstr.str().length(), filename.c_str(), filename.length());
+    JL_GC_PUSH1(&modexpr);
+    jmod = (jl_module_t*)jl_toplevel_eval_in(m_parent_mod, modexpr);
+    JL_GC_POP();
   }
   else
   {

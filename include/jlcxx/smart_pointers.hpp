@@ -67,6 +67,7 @@ struct ConvertToBase
   static jl_value_t* apply(void*)
   {
     static_assert(sizeof(T)==0, "No appropriate specialization for ConvertToBase");
+    return nullptr;
   }
 };
 

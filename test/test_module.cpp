@@ -43,7 +43,7 @@ int main()
 {
   jl_init();
 
-  jl_eval_string("include(\"cxxwrap_testmod.jl\")");
+  jl_eval_string("Base.include(\"cxxwrap_testmod.jl\")");
   if (jl_exception_occurred())
   {
     jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());

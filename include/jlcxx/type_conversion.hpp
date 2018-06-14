@@ -712,7 +712,11 @@ template<> struct IsValueType<ObjectIdDict> : std::true_type {};
 template<> struct static_type_mapping<ObjectIdDict>
 {
   typedef jl_value_t* type;
+  #if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 7
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("ObjectIdDict")); }
+  #else
+  static jl_datatype_t* julia_type() { return (jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("IdDict")); }
+  #endif
 };
 
 /// Wrap a C++ pointer in a Julia type that contains a single void pointer field, returning the result as an any
@@ -1426,7 +1430,7 @@ template<typename NumberT> struct static_type_mapping<std::complex<NumberT>>
     static jl_datatype_t* dt = nullptr;
     if(dt == nullptr)
     {
-      dt = (jl_datatype_t*)apply_type((jl_value_t*)jl_complex_type, jl_svec1(static_type_mapping<NumberT>::julia_type()));
+      dt = (jl_datatype_t*)apply_type(jlcxx::julia_type("Complex"), jl_svec1(static_type_mapping<NumberT>::julia_type()));
       protect_from_gc(dt);
     }
     return dt;

@@ -32,14 +32,21 @@ MESSAGE(STATUS "Julia_VERSION_STRING: ${Julia_VERSION_STRING}")
 # Julia Includes #
 ##################
 
+set(JULIA_HOME_NAME "Sys.BINDIR")
+if(${Julia_VERSION_STRING} VERSION_LESS "0.7.0")
+set(JULIA_HOME_NAME "JULIA_HOME")
+else()
+set(USING_LIBDL "using Libdl")
+endif()
+
 if(DEFINED ENV{JULIA_INCLUDE_DIRS})
     set(Julia_INCLUDE_DIRS $ENV{JULIA_INCLUDE_DIRS}
         CACHE STRING "Location of Julia include files")
 else()
     execute_process(
-        COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "julia_include_dir = joinpath(match(r\"(.*)(bin)\",JULIA_HOME).captures[1],\"include\",\"julia\")\n
+        COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "julia_include_dir = joinpath(match(r\"(.*)(bin)\",${JULIA_HOME_NAME}).captures[1],\"include\",\"julia\")\n
             if !isdir(julia_include_dir)  # then we're running directly from build\n
-            julia_base_dir_aux = splitdir(splitdir(JULIA_HOME)[1])[1]  # useful for running-from-build\n
+            julia_base_dir_aux = splitdir(splitdir(${JULIA_HOME_NAME})[1])[1]  # useful for running-from-build\n
             julia_include_dir = joinpath(julia_base_dir_aux, \"usr\", \"include\" )\n
             julia_include_dir *= \";\" * joinpath(julia_base_dir_aux, \"src\", \"support\" )\n
             julia_include_dir *= \";\" * joinpath(julia_base_dir_aux, \"src\" )\n
@@ -60,7 +67,7 @@ MESSAGE(STATUS "Julia_INCLUDE_DIRS:   ${Julia_INCLUDE_DIRS}")
 ###################
 
 execute_process(
-    COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "abspath(dirname(Libdl.dlpath(\"libjulia\")))"
+    COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "${USING_LIBDL}\nabspath(dirname(Libdl.dlpath(\"libjulia\")))"
     OUTPUT_VARIABLE Julia_LIBRARY_DIR
 )
 
@@ -94,7 +101,7 @@ MESSAGE(STATUS "Julia_LIBRARY:        ${Julia_LIBRARY}")
 ##############
 
 execute_process(
-    COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "JULIA_HOME"
+    COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "${JULIA_HOME_NAME}"
     OUTPUT_VARIABLE JULIA_HOME
 )
 
