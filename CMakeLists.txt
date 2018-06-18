@@ -173,7 +173,7 @@ endif()
 if(WIN32)
     string(SUBSTRING ${Julia_VERSION_STRING} 0 3 Julia_VERSION_SHORT)
     add_custom_target(create_zip
-        COMMAND ${CMAKE_COMMAND} -E tar "cfv" "jlcxx-julia${Julia_VERSION_SHORT}-${Julia_WORD_SIZE}-v${${PROJECT_NAME}_VERSION}.zip" --format=zip "usr"
+        COMMAND ${CMAKE_COMMAND} -E tar "cfv" "libcxxwrap-julia-${Julia_VERSION_SHORT}-msvc${Julia_WORD_SIZE}-v${${PROJECT_NAME}_VERSION}.zip" --format=zip "usr"
         DEPENDS install
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/..
         )

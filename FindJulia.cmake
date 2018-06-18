@@ -10,6 +10,7 @@ endif()
 ####################
 
 if(Julia_ROOT)
+    message(STATUS "Adding path ${Julia_ROOT} to search path")
     list(APPEND CMAKE_PREFIX_PATH ${Julia_ROOT})
 else()
     find_program(Julia_EXECUTABLE julia DOC "Julia executable")
@@ -105,7 +106,7 @@ if(Julia_EXECUTABLE)
         )
     endif()
 else()
-    find_library(Julia_LIBRARY NAMES julia libjulia)
+    find_library(Julia_LIBRARY NAMES libjulia.${Julia_VERSION_STRING}.dylib julia libjulia libjulia.dll.a CMAKE_FIND_ROOT_PATH_BOTH)
     get_filename_component(Julia_LIBRARY_DIR ${Julia_LIBRARY} DIRECTORY)
 endif()
 

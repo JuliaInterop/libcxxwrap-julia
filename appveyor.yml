@@ -37,11 +37,11 @@ test_script:
 after_test:
   - cmake --build . --config Release --target create_zip
   - cd ..
-  - copy install\jlcxx*.zip .
+  - copy install\libcxxwrap-julia*.zip .
   - echo %APPVEYOR_JOB_NAME%
 
 artifacts:
-  - path: 'jlcxx*.zip'
+  - path: 'libcxxwrap-julia*.zip'
 
 deploy:
   provider: GitHub
