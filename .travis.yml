@@ -24,7 +24,7 @@ before_script:
   - julia -e 'Pkg.clone("https://github.com/JuliaPackaging/BinaryBuilder.jl"); Pkg.build()'
 
 script:
-  - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl --verbose
+  - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl
   - ls -l products
 
 deploy:

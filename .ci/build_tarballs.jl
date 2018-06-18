@@ -6,24 +6,37 @@ sources = [
 ]
 
 # Bash recipe for building across all platforms
-script = raw"""
-# Download julia
-cd /usr/local
-curl -L 'https://julialang-s3.julialang.org/bin/linux/x64/0.6/julia-0.6.3-linux-x86_64.tar.gz' | tar -zx --strip-components=1
+function getscript(version)
+    shortversion = version[1:3]
+    return """
+    Julia_ROOT=/usr/local
 
-# Build libcxxwrap
-cd $WORKSPACE/srcdir/libcxxwrap-julia*
-mkdir build && cd build
-#cmake -DJulia_EXECUTABLE=$(which julia) -DCMAKE_INSTALL_PREFIX=${prefix} ..
-#VERBOSE=ON cmake --build . --config Release --target install
-#ctest -V
-echo $target
-echo $proc_family
-"""
+    apk add p7zip
+
+    # Download julia
+    cd /usr/local
+    curl -L "https://github.com/barche/julia-binaries/releases/download/$version/julia-$version-\$target.tar.gz" | tar -zx --strip-components=1 
+    
+    # Build libcxxwrap
+    cd \$WORKSPACE/srcdir/libcxxwrap-julia*
+    mkdir build && cd build
+    cmake -DJulia_ROOT=\$Julia_ROOT -DCMAKE_TOOLCHAIN_FILE=/opt/\$target/\$target.toolchain -DCMAKE_INSTALL_PREFIX=\${prefix} ..
+    VERBOSE=ON cmake --build . --config Release --target install
+    if [[ "\$target" == "x86_64-linux-gnu" ]]; then
+        ctest -V
+    fi
+    """
+end
 
 # These are the platforms we will build for by default, unless further
 # platforms are passed in on the command line
-platforms = supported_platforms()
+platforms = [
+    #Linux(:i686),
+    Linux(:x86_64),
+    MacOS(:x86_64),
+    Windows(:i686),
+    Windows(:x86_64)
+]
 
 # The products that we will ensure are always built
 products = prefix -> [
@@ -35,4 +48,5 @@ dependencies = [
 ]
 
 # Build the tarballs, and possibly a `build.jl` as well.
-build_tarballs(ARGS, "libcxxwrap-julia", sources, script, platforms, products, dependencies)
+download_info_07 = build_tarballs(ARGS, "libcxxwrap-julia-0.7", sources, getscript("0.7.0-alpha"), platforms, products, dependencies)
+@show download_info_07
