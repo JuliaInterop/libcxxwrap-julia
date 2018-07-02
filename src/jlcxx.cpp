@@ -42,38 +42,26 @@ JLCXX_API std::map<jl_value_t*, std::pair<std::size_t,std::size_t>>& gc_index_ma
   return m_map;
 }
 
-Module::Module(const std::string& name, jl_module_t* jmod) : m_name(name), m_jl_mod(jmod)
+Module::Module(jl_module_t* jmod) : m_jl_mod(jmod)
 {
 }
 
-Module& ModuleRegistry::create_module(const std::string &name)
+Module &ModuleRegistry::create_module(jl_module_t* jmod)
 {
-  if(m_modules.count(name))
-    throw std::runtime_error("Error registering module: " + name + " was already registered");
-
-  jl_module_t* jmod = m_jl_mod;
   if(jmod == nullptr)
-  {
-    const std::string filename = "none";
-    std::stringstream modstr;
-    modstr << "module " << name << " end";
-    jl_value_t* modexpr = jl_parse_input_line(modstr.str().c_str(), modstr.str().length(), filename.c_str(), filename.length());
-    JL_GC_PUSH1(&modexpr);
-    jmod = (jl_module_t*)jl_toplevel_eval_in(m_parent_mod, modexpr);
-    JL_GC_POP();
-  }
-  else
-  {
-    const std::string my_name = symbol_name(jmod->name);
-    if(my_name != name)
-    {
-      throw std::runtime_error("Name mismatch between Julia-declared module \"" + my_name + "\" and C++ module name \"" + name + "\"");
-    }
-  }
+    throw std::runtime_error("Can't create module from null Julia module");
+  if(m_modules.count(jmod))
+    throw std::runtime_error("Error registering module: " + module_name(jmod) + " was already registered");
 
-  Module* mod = new Module(name, jmod);
-  m_modules[name].reset(mod);
+  Module* mod = new Module(jmod);
+  m_modules[jmod].reset(mod);
   return *mod;
+}
+
+ModuleRegistry& registry()
+{
+  static ModuleRegistry m_registry;
+  return m_registry;
 }
 
 JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& module_name)

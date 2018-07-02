@@ -48,5 +48,5 @@ dependencies = [
 ]
 
 # Build the tarballs, and possibly a `build.jl` as well.
-download_info_07 = build_tarballs(ARGS, "libcxxwrap-julia-0.7", sources, getscript("0.7.0-alpha"), platforms, products, dependencies)
+download_info_07 = build_tarballs(ARGS, "libcxxwrap-julia-0.7", sources, getscript("0.7.0-beta"), platforms, products, dependencies)
 @show download_info_07
