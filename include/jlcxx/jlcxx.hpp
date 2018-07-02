@@ -371,7 +371,7 @@ class JLCXX_API Module
 {
 public:
 
-  Module(const std::string& name, jl_module_t* jl_mod);
+  Module(jl_module_t* jl_mod);
 
   void append_function(FunctionWrapperBase* f)
   {
@@ -459,9 +459,9 @@ public:
     m_jl_constants[name] = boxed_const;
   }
 
-  const std::string& name() const
+  std::string name() const
   {
-    return m_name;
+    return module_name(m_jl_mod);
   }
 
   void bind_constants(jl_module_t* mod)
@@ -470,18 +470,6 @@ public:
     {
       jl_set_const(mod, jl_symbol(dt_pair.first.c_str()), dt_pair.second);
     }
-  }
-
-  /// Export the given symbols
-  template<typename... ArgsT>
-  void export_symbols(ArgsT... args)
-  {
-    m_exported_symbols.insert(m_exported_symbols.end(), {args...});
-  }
-
-  const std::vector<std::string>& exported_symbols()
-  {
-    return m_exported_symbols;
   }
 
   jl_datatype_t* get_julia_type(const char* name)
@@ -548,11 +536,9 @@ private:
     return method(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)));
   }
 
-  std::string m_name;
   jl_module_t* m_jl_mod;
   std::vector<std::shared_ptr<FunctionWrapperBase>> m_functions;
   std::map<std::string, jl_value_t*> m_jl_constants;
-  std::vector<std::string> m_exported_symbols;
   std::vector<jl_datatype_t*> m_reference_types;
   std::vector<jl_datatype_t*> m_allocated_types;
 
@@ -1050,49 +1036,25 @@ void Module::add_bits(const std::string& name, JLSuperT* super)
 class JLCXX_API ModuleRegistry
 {
 public:
-
-  ModuleRegistry(jl_module_t* parent_mod, jl_module_t* mod) : m_parent_mod(parent_mod), m_jl_mod(mod)
-  {
-  }
-
   /// Create a module and register it
-  Module& create_module(const std::string& name);
+  Module& create_module(jl_module_t* jmod);
 
-  /// Loop over the modules
-  template<typename F>
-  void for_each_module(const F f) const
+  Module& get_module(jl_module_t* mod) const
   {
-    for(const auto& item : m_modules)
-    {
-      f(*item.second);
-    }
-  }
-
-  Module& get_module(const std::string& name)
-  {
-    const auto iter = m_modules.find(name);
+    const auto iter = m_modules.find(mod);
     if(iter == m_modules.end())
     {
-      throw std::runtime_error("Module with name " + name + " was not found in registry");
+      throw std::runtime_error("Module with name " + module_name(mod) + " was not found in registry");
     }
 
     return *(iter->second);
   }
 
-  jl_module_t* get_wrapped_module() const
-  {
-    if(m_jl_mod == nullptr)
-    {
-      throw std::runtime_error("Wrapped Julia module is null");
-    }
-    return m_jl_mod;
-  }
-
 private:
-  std::map<std::string, std::shared_ptr<Module>> m_modules;
-  jl_module_t* m_parent_mod;
-  jl_module_t* m_jl_mod;
+  std::map<jl_module_t*, std::shared_ptr<Module>> m_modules;
 };
+
+ModuleRegistry& registry();
 
 /// Registry for functions that are called when the CxxWrap module is initialized
 class InitHooks
@@ -1125,18 +1087,9 @@ struct RegisterHook
 
 } // namespace jlcxx
 
-#ifdef _WIN32
-   #define JLCXX_ONLY_EXPORTS __declspec(dllexport)
-#else
-   #define JLCXX_ONLY_EXPORTS
-#endif
-
 /// Register a new module
-#define JULIA_CPP_MODULE_BEGIN(registry) \
-extern "C" JLCXX_ONLY_EXPORTS void register_julia_modules(void* void_reg) { \
-  jlcxx::ModuleRegistry& registry = *reinterpret_cast<jlcxx::ModuleRegistry*>(void_reg); \
-  try {
+extern "C" JLCXX_API void register_julia_module(jl_module_t* mod, void (*regfunc)(jlcxx::Module&));
 
-#define JULIA_CPP_MODULE_END } catch (const std::runtime_error& e) { jl_error(e.what()); } }
+#define JLCXX_MODULE extern "C" JLCXX_ONLY_EXPORTS void
 
 #endif

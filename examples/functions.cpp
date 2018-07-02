@@ -13,7 +13,7 @@
       #define JLCXX_EXAMPLES_API __declspec(dllimport)
   #endif
 #else
-  #define JLCXX_EXAMPLES_API
+  #define JLCXX_EXAMPLES_API __attribute__ ((visibility("default")))
 #endif
 
 // C function for performance comparison
@@ -91,7 +91,7 @@ std::string test_type_name(const std::string& name)
   return jlcxx::julia_type_name(jlcxx::julia_type(name));
 }
 
-void init_half_module(jlcxx::Module& mod)
+JLCXX_MODULE init_half_module(jlcxx::Module& mod)
 {
   // register a standard C++ function
   mod.method("half_d", half_function);
@@ -161,7 +161,7 @@ double get_test_double()
   return g_test_double;
 }
 
-void init_test_module(jlcxx::Module& mod)
+JLCXX_MODULE init_test_module(jlcxx::Module& mod)
 {
   mod.method("concatenate_numbers", &concatenate_numbers);
   mod.method("concatenate_strings", &concatenate_strings);
@@ -253,8 +253,3 @@ void init_test_module(jlcxx::Module& mod)
 }
 
 }
-
-JULIA_CPP_MODULE_BEGIN(registry)
-  functions::init_half_module(registry.create_module("CppHalfFunctions"));
-  functions::init_test_module(registry.create_module("CppTestFunctions"));
-JULIA_CPP_MODULE_END

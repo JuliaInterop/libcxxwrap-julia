@@ -14,12 +14,10 @@ struct ExtendedWorld
 
 } // namespace extended
 
-JULIA_CPP_MODULE_BEGIN(registry)
+JLCXX_MODULE define_julia_module(jlcxx::Module& types)
+{
   using namespace extended;
-
-  jlcxx::Module& types = registry.create_module("ExtendedTypes");
 
   types.add_type<ExtendedWorld>("ExtendedWorld")
     .method("greet", &ExtendedWorld::greet);
-
-JULIA_CPP_MODULE_END
+}

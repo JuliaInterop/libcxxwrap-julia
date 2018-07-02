@@ -221,10 +221,10 @@ namespace jlcxx
   };
 } // namespace jlcxx
 
-JULIA_CPP_MODULE_BEGIN(registry)
+JLCXX_MODULE define_julia_module(jlcxx::Module& types)
+{
   using namespace jlcxx;
   using namespace parametric;
-  Module& types = registry.create_module("ParametricTypes");
 
   types.add_type<P1>("P1");
   types.add_type<P2>("P2");
@@ -258,4 +258,4 @@ JULIA_CPP_MODULE_BEGIN(registry)
 
   types.add_type<Parametric<TypeVar<1>, TypeVar<2>>, ParameterList<TypeVar<1>>>("CppVector2", jlcxx::julia_type("AbstractVector"))
     .apply<CppVector2<double,float>>(WrapCppVector2());
-JULIA_CPP_MODULE_END
+}

@@ -107,6 +107,11 @@ inline std::string symbol_name(jl_sym_t* symbol)
 #endif
 }
 
+inline std::string module_name(jl_module_t* mod)
+{
+  return symbol_name(mod->name);
+}
+
 /// Backwards-compatible apply_type
 JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params);
 

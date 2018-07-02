@@ -22,28 +22,26 @@ private:
 
 }
 
-JULIA_CPP_MODULE_BEGIN(registry)
-  jlcxx::Module& mod = registry.create_module("TestModule");
-
+JLCXX_MODULE register_test_module(jlcxx::Module& mod)
+{
   using namespace test_module;
 
   mod.add_type<Foo>("Foo")
     .method("getx", &Foo::getx);
-
-JULIA_CPP_MODULE_END
+}
 
 extern "C"
 {
 extern void initialize(jl_value_t* julia_module, jl_value_t* cpp_any_type, jl_value_t* cppfunctioninfo_type);
-extern void* create_registry(jl_value_t* parent_module, jl_value_t* wrapped_module);
-extern void bind_module_constants(void* void_registry, jl_value_t* module_any);
+extern void* create_registry();
+extern void bind_module_constants(jl_value_t* module_any);
 }
 
 int main()
 {
   jl_init();
 
-  jl_eval_string("Base.include(\"cxxwrap_testmod.jl\")");
+  jl_eval_string("Base.include(@__MODULE__, \"cxxwrap_testmod.jl\")");
   if (jl_exception_occurred())
   {
     jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
@@ -63,9 +61,9 @@ int main()
 
   JL_GC_PUSH1(&mod);
 
-  void* reg = create_registry((jl_value_t*)jl_main_module, (jl_value_t*)mod);
-  register_julia_modules(reg);
-  bind_module_constants(reg, mod);
+  register_julia_module((jl_module_t*)mod, register_test_module);
+
+  bind_module_constants(mod);
 
   jl_value_t* dt = jl_eval_string("TestModule.Foo");
   if(jlcxx::julia_type_name(dt) != "Foo")

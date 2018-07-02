@@ -5,7 +5,7 @@
 #ifdef _WIN32
   #define jlcxx_EXCEPT_EXPORT __declspec(dllexport)
 #else
-  #define jlcxx_EXCEPT_EXPORT
+  #define jlcxx_EXCEPT_EXPORT __attribute__ ((visibility("default")))
 #endif
 
 extern "C" jlcxx_EXCEPT_EXPORT int internalthrow(int i);

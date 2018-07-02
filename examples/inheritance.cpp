@@ -90,8 +90,8 @@ namespace jlcxx
   template<> struct SuperType<virtualsolver::F> { typedef virtualsolver::Base type; };
 }
 
-JULIA_CPP_MODULE_BEGIN(registry)
-  jlcxx::Module& types = registry.create_module("CppInheritance");
+JLCXX_MODULE define_types_module(jlcxx::Module& types)
+{
   types.add_type<A>("A").method("message", &A::message);
   types.add_type<B>("B", jlcxx::julia_type<A>());
   types.add_type<C>("C", jlcxx::julia_type<B>());
@@ -109,15 +109,14 @@ JULIA_CPP_MODULE_BEGIN(registry)
   types.method("dynamic_message_c", [](const A* c) { return dynamic_cast<const C*>(c)->data; });
 
   types.method("take_ref", take_ref);
+}
 
-  types.export_symbols("A", "B", "C", "D", "message", "create_abstract", "shared_ptr_message", "shared_b", "shared_c", "shared_d", "weak_ptr_message_a", "weak_ptr_message_b", "dynamic_message_c", "take_ref");
-
-  jlcxx::Module& vsolver_mod = registry.create_module("VirtualSolver");
-
+JLCXX_MODULE define_vsolver_module(jlcxx::Module& vsolver_mod)
+{
   vsolver_mod.add_type<virtualsolver::Base>("BaseV")
     .method("solve", &virtualsolver::Base::solve);
 
   vsolver_mod.add_type<virtualsolver::E>("E", jlcxx::julia_type<virtualsolver::Base>());
   vsolver_mod.add_type<virtualsolver::F>("F", jlcxx::julia_type<virtualsolver::Base>())
     .constructor<virtualsolver::history_f>();
-JULIA_CPP_MODULE_END
+}

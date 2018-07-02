@@ -20,10 +20,9 @@ const double* const_matrix()
 
 double mutable_array[2][3] = {{1., 2., 3}, {4., 5., 6.}};
 
-JULIA_CPP_MODULE_BEGIN(registry)
+JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
+{
   using namespace jlcxx;
-
-  jlcxx::Module& containers = registry.create_module("Containers");
 
   containers.method("test_tuple", []() { return std::make_tuple(1, 2., 3.f); });
   containers.method("const_ptr", []() { return ConstPtr<double>({const_vector()}); });
@@ -51,6 +50,4 @@ JULIA_CPP_MODULE_BEGIN(registry)
     float arr1_jl[] = {1.0, 2.0, 3.0};
     func1((jl_value_t*)jlcxx::ArrayRef<float, 1>(&arr1_jl[0], 3).wrapped());
   });
-
-  containers.export_symbols("test_tuple", "const_ptr", "const_ptr_arg", "const_vector", "const_matrix");
-JULIA_CPP_MODULE_END
+}
