@@ -150,6 +150,12 @@ write_basic_package_version_file(
   COMPATIBILITY AnyNewerVersion
 )
 
+configure_file(FindJulia.cmake ${CMAKE_CURRENT_BINARY_DIR}/FindJulia.cmake COPYONLY)
+export(EXPORT JlCxxTargets
+  FILE ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}ConfigExports.cmake
+  NAMESPACE JlCxx::
+)
+
 install(EXPORT JlCxxTargets
   FILE ${PROJECT_NAME}ConfigExports.cmake
   NAMESPACE JlCxx::
