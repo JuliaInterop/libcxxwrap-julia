@@ -4,7 +4,7 @@
 #include "jlcxx/jlcxx_config.hpp"
 
 #include <julia.h>
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4
+#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4 || JULIA_VERSION_MAJOR > 0
 #include <julia_threads.h>
 #endif
 
@@ -19,7 +19,7 @@ JLCXX_API jl_array_t* gc_protected()
   static jl_array_t* m_arr = nullptr;
   if (m_arr == nullptr)
   {
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4
+#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4 || JULIA_VERSION_MAJOR > 0
     jl_value_t* array_type = apply_array_type(jl_any_type, 1);
     m_arr = jl_alloc_array_1d(array_type, 0);
 #else
