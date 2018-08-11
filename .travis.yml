@@ -20,7 +20,7 @@ sudo: required
 before_script:
   - cd ../..
   - pwd
-  - julia -e 'Pkg.clone("https://github.com/JuliaPackaging/BinaryProvider.jl")'
+  - julia -e 'Pkg.add("BinaryProvider")'
   - julia -e 'Pkg.clone("https://github.com/JuliaPackaging/BinaryBuilder.jl"); Pkg.build()'
 
 script:
