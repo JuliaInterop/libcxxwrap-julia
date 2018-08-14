@@ -60,6 +60,7 @@ set(JLCXX_HEADERS
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx_config.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/functions.hpp
+    ${JLCXX_INCLUDE_DIR}/jlcxx/module.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/smart_pointers.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/tuple.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/type_conversion.hpp
