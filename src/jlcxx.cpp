@@ -42,8 +42,17 @@ JLCXX_API std::map<jl_value_t*, std::pair<std::size_t,std::size_t>>& gc_index_ma
   return m_map;
 }
 
-Module::Module(jl_module_t* jmod) : m_jl_mod(jmod)
+Module::Module(jl_module_t* jmod) :
+  m_jl_mod(jmod),
+  m_pointer_array((jl_array_t*)jl_get_global(jmod, jl_symbol("__cxxwrap_pointers")))
 {
+}
+
+int_t Module::store_pointer(void *ptr)
+{
+  assert(ptr != nullptr);
+  m_pointer_array.push_back(ptr);
+  return m_pointer_array.size();
 }
 
 Module &ModuleRegistry::create_module(jl_module_t* jmod)
@@ -53,12 +62,32 @@ Module &ModuleRegistry::create_module(jl_module_t* jmod)
   if(m_modules.count(jmod))
     throw std::runtime_error("Error registering module: " + module_name(jmod) + " was already registered");
 
-  Module* mod = new Module(jmod);
-  m_modules[jmod].reset(mod);
-  return *mod;
+  m_current_module = new Module(jmod);
+  m_modules[jmod].reset(m_current_module);
+  return *m_current_module;
 }
 
-ModuleRegistry& registry()
+Module& ModuleRegistry::current_module()
+{
+  assert(m_current_module != nullptr);
+  return *m_current_module;
+}
+
+void FunctionWrapperBase::set_pointer_indices()
+{
+  m_pointer_index = m_module->store_pointer(pointer());
+  void* thk = thunk();
+  if(thk != nullptr)
+  {
+    m_thunk_index = m_module->store_pointer(thunk());
+  }
+
+  // Make sure any pointers in the types are also resolved at module init.
+  argument_types();
+  return_type();
+}
+
+JLCXX_API ModuleRegistry& registry()
 {
   static ModuleRegistry m_registry;
   return m_registry;

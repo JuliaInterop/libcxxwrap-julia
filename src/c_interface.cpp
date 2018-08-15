@@ -21,9 +21,11 @@ JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cpp_any_type, jl
 
 JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::Module&))
 {
-  try {
+  try
+  {
     jlcxx::Module& mod = jlcxx::registry().create_module(jlmod);
     regfunc(mod);
+    jlcxx::registry().reset_current_module();
   }
   catch (const std::runtime_error& e)
   {
@@ -73,8 +75,8 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
     fill_types_vec(arg_types_array, f.argument_types());
     fill_types_vec(ref_arg_types_array, f.reference_argument_types());
 
-    boxed_f = jl_box_voidpointer(f.pointer());
-    boxed_thunk = jl_box_voidpointer(f.thunk());
+    boxed_f = jlcxx::box(f.pointer_index());
+    boxed_thunk = jlcxx::box(f.thunk_index());
 
     function_array.push_back(jl_new_struct(g_cppfunctioninfo_type,
       f.name(),

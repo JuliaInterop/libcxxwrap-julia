@@ -11,6 +11,7 @@
 #include <typeindex>
 #include <vector>
 
+#include "array.hpp"
 #include "type_conversion.hpp"
 
 namespace jlcxx
@@ -139,19 +140,15 @@ struct DownCast
 extern jl_module_t* g_cxxwrap_module;
 extern jl_datatype_t* g_cppfunctioninfo_type;
 
+class JLCXX_API Module;
+
 /// Abstract base class for storing any function
-class FunctionWrapperBase
+class JLCXX_API FunctionWrapperBase
 {
 public:
-  FunctionWrapperBase(jl_datatype_t* return_type) : m_return_type(return_type)
+  FunctionWrapperBase(Module* mod, jl_datatype_t* return_type) : m_module(mod), m_return_type(return_type)
   {
   }
-
-  /// Function pointer as void*, since that's what Julia expects
-  virtual void* pointer() = 0;
-
-  /// The thunk (i.e. std::function) to pass as first argument to the function pointed to by function_pointer
-  virtual void* thunk() = 0;
 
   /// Types of the arguments (used in the wrapper signature)
   virtual std::vector<jl_datatype_t*> argument_types() const = 0;
@@ -177,9 +174,24 @@ public:
     return m_name;
   }
 
+  inline int_t pointer_index() { return m_pointer_index; }
+  inline int_t thunk_index() { return m_thunk_index; }
+
+protected:
+  /// Function pointer as void*, since that's what Julia expects
+  virtual void* pointer() = 0;
+
+  /// The thunk (i.e. std::function) to pass as first argument to the function pointed to by function_pointer
+  virtual void* thunk() = 0;
+
+  void set_pointer_indices();
 private:
   jl_value_t* m_name;
+  Module* m_module;
   jl_datatype_t* m_return_type = nullptr;
+
+  int_t m_pointer_index = 0;
+  int_t m_thunk_index = 0;
 };
 
 /// Implementation of function storage, case of std::function
@@ -189,18 +201,9 @@ class FunctionWrapper : public FunctionWrapperBase
 public:
   typedef std::function<R(Args...)> functor_t;
 
-  FunctionWrapper(const functor_t& function) : FunctionWrapperBase(julia_return_type<R>()), m_function(function)
+  FunctionWrapper(Module* mod, const functor_t &function) : FunctionWrapperBase(mod, julia_return_type<R>()), m_function(function)
   {
-  }
-
-  virtual void* pointer()
-  {
-    return reinterpret_cast<void*>(detail::CallFunctor<R, Args...>::apply);
-  }
-
-  virtual void* thunk()
-  {
-    return reinterpret_cast<void*>(&m_function);
+    set_pointer_indices();
   }
 
   virtual std::vector<jl_datatype_t*> argument_types() const
@@ -211,6 +214,17 @@ public:
   virtual std::vector<jl_datatype_t*> reference_argument_types() const
   {
     return detail::reference_argtype_vector<Args...>();
+  }
+
+protected:
+  virtual void* pointer()
+  {
+    return reinterpret_cast<void*>(detail::CallFunctor<R, Args...>::apply);
+  }
+
+  virtual void* thunk()
+  {
+    return reinterpret_cast<void*>(&m_function);
   }
 
 private:
@@ -224,18 +238,9 @@ class FunctionPtrWrapper : public FunctionWrapperBase
 public:
   typedef std::function<R(Args...)> functor_t;
 
-  FunctionPtrWrapper(R(*f)(Args...)) : FunctionWrapperBase(julia_return_type<R>()), m_function(f)
+  FunctionPtrWrapper(Module* mod, R (*f)(Args...)) : FunctionWrapperBase(mod, julia_return_type<R>()), m_function(f)
   {
-  }
-
-  virtual void* pointer()
-  {
-    return reinterpret_cast<void*>(m_function);
-  }
-
-  virtual void* thunk()
-  {
-    return nullptr;
+    set_pointer_indices();
   }
 
   virtual std::vector<jl_datatype_t*> argument_types() const
@@ -246,6 +251,17 @@ public:
   virtual std::vector<jl_datatype_t*> reference_argument_types() const
   {
     return detail::reference_argtype_vector<Args...>();
+  }
+
+protected:
+  virtual void* pointer()
+  {
+    return reinterpret_cast<void*>(m_function);
+  }
+
+  virtual void* thunk()
+  {
+    return nullptr;
   }
 
 private:
@@ -260,8 +276,6 @@ struct Parametric
 
 template<typename T>
 class TypeWrapper;
-
-class JLCXX_API Module;
 
 /// Specialise this to instantiate parametric types when first used in a wrapper
 template<typename T>
@@ -382,7 +396,7 @@ public:
   FunctionWrapperBase& method(const std::string& name,  std::function<R(Args...)> f)
   {
     instantiate_parametric_types<R, Args...>(*this);
-    auto* new_wrapper = new FunctionWrapper<R, Args...>(f);
+    auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     append_function(new_wrapper);
     return *new_wrapper;
@@ -403,7 +417,7 @@ public:
     instantiate_parametric_types<R, Args...>(*this);
 
     // No conversion needed -> call can be through a naked function pointer
-    auto* new_wrapper = new FunctionPtrWrapper<R, Args...>(f);
+    auto* new_wrapper = new FunctionPtrWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     append_function(new_wrapper);
     return *new_wrapper;
@@ -501,6 +515,8 @@ public:
     return m_jl_mod;
   }
 
+  int_t store_pointer(void* ptr);
+
 private:
 
   template<typename T>
@@ -535,6 +551,7 @@ private:
   }
 
   jl_module_t* m_jl_mod;
+  ArrayRef<void*> m_pointer_array;
   std::vector<std::shared_ptr<FunctionWrapperBase>> m_functions;
   std::map<std::string, jl_value_t*> m_jl_constants;
   std::vector<jl_datatype_t*> m_reference_types;
@@ -1048,11 +1065,15 @@ public:
     return *(iter->second);
   }
 
+  Module& current_module();
+  void reset_current_module() { m_current_module = nullptr; }
+
 private:
   std::map<jl_module_t*, std::shared_ptr<Module>> m_modules;
+  Module* m_current_module = nullptr;
 };
 
-ModuleRegistry& registry();
+JLCXX_API ModuleRegistry& registry();
 
 /// Registry for functions that are called when the CxxWrap module is initialized
 class InitHooks
