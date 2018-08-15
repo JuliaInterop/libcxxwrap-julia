@@ -20,8 +20,8 @@ mutable struct CppFunctionInfo
   argument_types::Array{Type,1}
   reference_argument_types::Array{Type,1}
   return_type::Type
-  function_pointer::Ptr{Cvoid}
-  thunk_pointer::Ptr{Cvoid}
+  function_pointer::Int
+  thunk_pointer::Int
 end
 
 mutable struct ConstructorFname

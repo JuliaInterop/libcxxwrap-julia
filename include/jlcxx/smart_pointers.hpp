@@ -1,6 +1,7 @@
 ﻿#ifndef JLCXX_SMART_POINTER_HPP
 #define JLCXX_SMART_POINTER_HPP
 
+#include "module.hpp"
 #include "type_conversion.hpp"
 
 namespace jlcxx
@@ -17,10 +18,9 @@ template<typename T> struct ConstructorPointerType<std::weak_ptr<T>> { typedef s
 template<typename T>
 struct DereferenceSmartPointer
 {
-  static WrappedCppPtr apply(void* smart_void_ptr)
+  static auto& apply(T& smart_ptr)
   {
-    auto smart_ptr = reinterpret_cast<T*>(smart_void_ptr);
-    return {const_cast<void*>(static_cast<const void*>(&(**smart_ptr)))};
+    return *smart_ptr;
   }
 };
 
@@ -28,32 +28,25 @@ struct DereferenceSmartPointer
 template<typename T>
 struct DereferenceSmartPointer<std::weak_ptr<T>>
 {
-  static WrappedCppPtr apply(void* smart_void_ptr)
+  static auto& apply(std::weak_ptr<T>& smart_ptr)
   {
-    auto smart_ptr = reinterpret_cast<std::weak_ptr<T>*>(smart_void_ptr);
-    return {static_cast<void*>(smart_ptr->lock().get())};
+    return *(smart_ptr.lock());
   }
 };
 
 template<typename ToType, typename FromType> struct
 ConstructFromOther
 {
-  static jl_value_t* apply(jl_value_t* smart_void_ptr)
+  static jl_value_t* apply(FromType& from_ptr)
   {
-    if(jl_typeof(smart_void_ptr) != (jl_value_t*)julia_type<FromType>())
-    {
-      jl_error("Invalid smart pointer convert");
-      return nullptr;
-    }
-    auto smart_ptr = unbox_wrapped_ptr<FromType>(smart_void_ptr);
-    return boxed_cpp_pointer(new ToType(*smart_ptr), static_type_mapping<ToType>::julia_type(), true);
+    return boxed_cpp_pointer(new ToType(from_ptr), static_type_mapping<ToType>::julia_type(), true);
   }
 };
 
 template<typename ToType>
 struct ConstructFromOther<ToType, void>
 {
-  static jl_value_t* apply(jl_value_t*)
+  static jl_value_t* apply(void)
   {
     jl_error("ConstructFromOther not available for this smart pointer type");
     return nullptr;
@@ -64,7 +57,7 @@ struct ConstructFromOther<ToType, void>
 template<typename T>
 struct ConvertToBase
 {
-  static jl_value_t* apply(void*)
+  static jl_value_t* apply(T&)
   {
     static_assert(sizeof(T)==0, "No appropriate specialization for ConvertToBase");
     return nullptr;
@@ -74,21 +67,20 @@ struct ConvertToBase
 template<template<typename...> class PtrT, typename T>
 struct ConvertToBase<PtrT<T>>
 {
-  static jl_value_t* apply(void* smart_void_ptr)
+  static jl_value_t* apply(PtrT<T>& smart_ptr)
   {
-    auto smart_ptr = reinterpret_cast<PtrT<T>*>(smart_void_ptr);
     if(std::is_same<T,supertype<T>>::value)
     {
       jl_error(("No compile-time type hierarchy specified. Specialize SuperType to get automatic pointer conversion from " + julia_type_name(julia_type<T>()) + " to its base.").c_str());
     }
-    return boxed_cpp_pointer(new PtrT<supertype<T>>(*smart_ptr), static_type_mapping<PtrT<supertype<T>>>::julia_type(), true);
+    return boxed_cpp_pointer(new PtrT<supertype<T>>(smart_ptr), static_type_mapping<PtrT<supertype<T>>>::julia_type(), true);
   }
 };
 
 template<typename T>
 struct ConvertToBase<std::unique_ptr<T>>
 {
-  static jl_value_t* apply(void*)
+  static jl_value_t* apply(std::unique_ptr<T>&)
   {
     jl_error("No convert to base for std::unique_ptr");
     return nullptr;
@@ -119,18 +111,11 @@ inline jl_datatype_t* smart_julia_type()
 
   if(result == nullptr)
   {
-    jl_value_t* type_hash = nullptr;
-    jl_value_t* deref_ptr = nullptr;
-    jl_value_t* construct_ptr = nullptr;
-    jl_value_t* cast_ptr = nullptr;
-    JL_GC_PUSH4(&type_hash, &deref_ptr, &construct_ptr, &cast_ptr);
-    type_hash = box(typeid(DefaultPtrT).hash_code());
-    deref_ptr = jl_box_voidpointer(reinterpret_cast<void*>(DereferenceSmartPointer<PtrT>::apply));
-    construct_ptr = jl_box_voidpointer(reinterpret_cast<void*>(ConstructFromOther<PtrT, typename ConstructorPointerType<PtrT>::type>::apply));
-    cast_ptr = jl_box_voidpointer(reinterpret_cast<void*>(ConvertToBase<PtrT>::apply));
-    result = (jl_datatype_t*)apply_type(julia_smartpointer_type(), jl_svec(5, wrapped_dt, type_hash, deref_ptr, construct_ptr, cast_ptr));
+    result = (jl_datatype_t*)apply_type(julia_smartpointer_type(), jl_svec2(wrapped_dt, jl_symbol(typeid(DefaultPtrT).name())));
     protect_from_gc(result);
-    JL_GC_POP();
+    registry().current_module().method("__cxxwrap_smartptr_dereference", DereferenceSmartPointer<PtrT>::apply);
+    registry().current_module().method("__cxxwrap_smartptr_construct_from_other", ConstructFromOther<PtrT, typename ConstructorPointerType<PtrT>::type>::apply);
+    registry().current_module().method("__cxxwrap_smartptr_cast_to_base", ConvertToBase<PtrT>::apply);
   }
   return result;
 }

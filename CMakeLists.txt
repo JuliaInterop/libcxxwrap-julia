@@ -26,14 +26,16 @@ include(InstallRequiredSystemLibraries)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-parameter -Wextra -Wreorder")
-    CHECK_CXX_COMPILER_FLAG("-std=c++11" HAS_CPP11_FLAG)
+    CHECK_CXX_COMPILER_FLAG("-std=c++14" HAS_CPP14_FLAG)
 
-    if (HAS_CPP11_FLAG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    if (HAS_CPP14_FLAG)
+        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
     else()
-        message(FATAL_ERROR "Unsupported compiler -- jlcxx requires C++11 support!")
+        message(FATAL_ERROR "Unsupported compiler -- jlcxx requires C++14 support!")
     endif()
 endif()
+
+set(CMAKE_CXX_STANDARD 14)
 
 add_definitions(-DJULIA_ENABLE_THREADING)
 
@@ -97,7 +99,6 @@ target_include_directories(${JLCXX_TARGET} PUBLIC
   $<BUILD_INTERFACE:${JLCXX_INCLUDE_DIR}>
   "$<BUILD_INTERFACE:${Julia_INCLUDE_DIRS}>"
 )
-generate_export_header(${JLCXX_TARGET})
 
 target_link_libraries(${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
 link_directories(${Julia_LIBRARY_DIR} ${Julia_LIBRARY_DIR}/julia)
@@ -112,6 +113,9 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${JLCXX_TARGET}_MAJOR_VERSION
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
+target_compile_options(${JLCXX_TARGET} PUBLIC "-std=c++14")
+
+generate_export_header(${JLCXX_TARGET})
 
 set(JLCXX_NAME ${JLCXX_TARGET})
 if(WIN32)

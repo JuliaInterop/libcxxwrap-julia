@@ -50,7 +50,11 @@ int main()
     return 1;
   }
 
-  jl_value_t* mod = jl_eval_string("TestModule = Module(:TestModule)");
+  jl_value_t* mod = jl_eval_string(R"(
+    module TestModule
+      const __cxxwrap_pointers = Ptr{Cvoid}[]
+    end
+  )");
   if (jlcxx::julia_type_name(jl_typeof(mod)) != "Module")
   {
     std::cout << "TestModule creation failed" << std::endl;
