@@ -81,10 +81,6 @@ void FunctionWrapperBase::set_pointer_indices()
   {
     m_thunk_index = m_module->store_pointer(thunk());
   }
-
-  // Make sure any pointers in the types are also resolved at module init.
-  argument_types();
-  return_type();
 }
 
 JLCXX_API ModuleRegistry& registry()

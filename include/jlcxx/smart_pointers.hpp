@@ -7,12 +7,16 @@
 namespace jlcxx
 {
 
+
+struct NoSmartOther {};
+struct NoSmartBase {};
+
 template<typename T> struct IsSmartPointerType<std::shared_ptr<T>> : std::true_type { };
 template<typename T> struct IsSmartPointerType<std::unique_ptr<T>> : std::true_type { };
 template<typename T> struct IsSmartPointerType<std::weak_ptr<T>> : std::true_type { };
 
 /// Override to indicate what smart pointer type is a valid constructor argument, e.g. shared_ptr can be used to construct a weak_ptr
-template<typename T> struct ConstructorPointerType { typedef void type; };
+template<typename T> struct ConstructorPointerType { typedef NoSmartOther type; };
 template<typename T> struct ConstructorPointerType<std::weak_ptr<T>> { typedef std::shared_ptr<T> type; };
 
 template<typename T>
@@ -34,22 +38,18 @@ struct DereferenceSmartPointer<std::weak_ptr<T>>
   }
 };
 
+template<typename PtrT>
+inline jl_value_t* box_smart_pointer(PtrT* p)
+{
+  return boxed_cpp_pointer(p, static_type_mapping<PtrT>::julia_type(), true);
+}
+
 template<typename ToType, typename FromType> struct
 ConstructFromOther
 {
-  static jl_value_t* apply(FromType& from_ptr)
+  static ToType* apply(FromType& from_ptr)
   {
-    return boxed_cpp_pointer(new ToType(from_ptr), static_type_mapping<ToType>::julia_type(), true);
-  }
-};
-
-template<typename ToType>
-struct ConstructFromOther<ToType, void>
-{
-  static jl_value_t* apply(void)
-  {
-    jl_error("ConstructFromOther not available for this smart pointer type");
-    return nullptr;
+    return new ToType(from_ptr);
   }
 };
 
@@ -57,7 +57,7 @@ struct ConstructFromOther<ToType, void>
 template<typename T>
 struct ConvertToBase
 {
-  static jl_value_t* apply(T&)
+  static NoSmartBase* apply(T&)
   {
     static_assert(sizeof(T)==0, "No appropriate specialization for ConvertToBase");
     return nullptr;
@@ -67,23 +67,9 @@ struct ConvertToBase
 template<template<typename...> class PtrT, typename T>
 struct ConvertToBase<PtrT<T>>
 {
-  static jl_value_t* apply(PtrT<T>& smart_ptr)
+  static PtrT<supertype<T>>* apply(PtrT<T> &smart_ptr)
   {
-    if(std::is_same<T,supertype<T>>::value)
-    {
-      jl_error(("No compile-time type hierarchy specified. Specialize SuperType to get automatic pointer conversion from " + julia_type_name(julia_type<T>()) + " to its base.").c_str());
-    }
-    return boxed_cpp_pointer(new PtrT<supertype<T>>(smart_ptr), static_type_mapping<PtrT<supertype<T>>>::julia_type(), true);
-  }
-};
-
-template<typename T>
-struct ConvertToBase<std::unique_ptr<T>>
-{
-  static jl_value_t* apply(std::unique_ptr<T>&)
-  {
-    jl_error("No convert to base for std::unique_ptr");
-    return nullptr;
+    return new PtrT<supertype<T>>(smart_ptr);
   }
 };
 
@@ -95,6 +81,44 @@ inline jl_value_t* julia_smartpointer_type()
 
 namespace detail
 {
+
+template<typename PtrT, typename OtherPtrT>
+struct BaseMapping
+{
+};
+
+template<template<typename...> class PtrT, typename PointeeT, typename OtherPtrT>
+struct BaseMapping<PtrT<PointeeT>, OtherPtrT>
+{
+  template<bool B, typename DummyT=void>
+  struct ConditionalConstructFromOther
+  {
+    static void apply()
+    {
+      registry().current_module().method("__cxxwrap_smartptr_construct_from_other", [] (OtherPtrT& ptr) { return box_smart_pointer(ConstructFromOther<PtrT<PointeeT>, OtherPtrT>::apply(ptr)); });
+    }
+  };
+  template<typename DummyT> struct ConditionalConstructFromOther<false, DummyT> { static void apply() {} };
+
+  template<bool B, typename DummyT=void>
+  struct ConditionalCastToBase
+  {
+    static void apply()
+    {
+      registry().current_module().method("__cxxwrap_smartptr_cast_to_base", [] (PtrT<PointeeT>& ptr) { return box_smart_pointer(ConvertToBase<PtrT<PointeeT>>::apply(ptr)); });
+      // Make sure to instantiate the pointer type to the base class
+      static_type_mapping<typename std::remove_pointer<decltype(ConvertToBase<PtrT<PointeeT>>::apply(std::declval<PtrT<PointeeT>&>()))>::type>::julia_type();
+    }
+  };
+  template<typename DummyT> struct ConditionalCastToBase<false, DummyT> { static void apply() {} };
+
+  static void instantiate()
+  {
+    registry().current_module().method("__cxxwrap_smartptr_dereference", DereferenceSmartPointer<PtrT<PointeeT>>::apply);
+    ConditionalConstructFromOther<!std::is_same<OtherPtrT, NoSmartOther>::value>::apply();
+    ConditionalCastToBase<!std::is_same<PointeeT,supertype<PointeeT>>::value && !std::is_same<std::unique_ptr<PointeeT>, PtrT<PointeeT>>::value>::apply();
+  }
+};
 
 template<typename PtrT, typename DefaultPtrT, typename T>
 inline jl_datatype_t* smart_julia_type()
@@ -113,9 +137,8 @@ inline jl_datatype_t* smart_julia_type()
   {
     result = (jl_datatype_t*)apply_type(julia_smartpointer_type(), jl_svec2(wrapped_dt, jl_symbol(typeid(DefaultPtrT).name())));
     protect_from_gc(result);
-    registry().current_module().method("__cxxwrap_smartptr_dereference", DereferenceSmartPointer<PtrT>::apply);
-    registry().current_module().method("__cxxwrap_smartptr_construct_from_other", ConstructFromOther<PtrT, typename ConstructorPointerType<PtrT>::type>::apply);
-    registry().current_module().method("__cxxwrap_smartptr_cast_to_base", ConvertToBase<PtrT>::apply);
+
+    BaseMapping<PtrT, typename ConstructorPointerType<PtrT>::type>::instantiate();
   }
   return result;
 }
