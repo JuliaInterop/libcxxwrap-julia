@@ -322,6 +322,7 @@ struct static_type_mapping
   // Abstract base type for both the reference and allocated type
   static jl_datatype_t* julia_type()
   {
+    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -332,6 +333,7 @@ struct static_type_mapping
   // Immutable (stack-allocated) reference to existing C++ pointers
   static jl_datatype_t* julia_reference_type()
   {
+    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -343,6 +345,7 @@ struct static_type_mapping
   // Type holding a pointer allocated using new. Stack allocated and instances are created with a finalizer that calls delete.
   static jl_datatype_t* julia_allocated_type()
   {
+    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");

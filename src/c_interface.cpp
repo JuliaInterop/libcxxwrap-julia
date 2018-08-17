@@ -25,12 +25,22 @@ JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::
   {
     jlcxx::Module& mod = jlcxx::registry().create_module(jlmod);
     regfunc(mod);
+    mod.for_each_function([] (FunctionWrapperBase& f) {
+      // Make sure any pointers in the types are also resolved at module init.
+      f.argument_types();
+      f.return_type();
+    });
     jlcxx::registry().reset_current_module();
   }
   catch (const std::runtime_error& e)
   {
     jl_error(e.what());
   }
+}
+
+JLCXX_API bool has_cxx_module(jl_module_t* jlmod)
+{
+  return jlcxx::registry().has_module(jlmod);
 }
 
 JLCXX_API jl_datatype_t* get_any_type()

@@ -387,8 +387,9 @@ public:
 
   void append_function(FunctionWrapperBase* f)
   {
-    m_functions.resize(m_functions.size()+1);
-    m_functions.back().reset(f);
+    assert(f != nullptr);
+    m_functions.push_back(std::shared_ptr<FunctionWrapperBase>(f));
+    assert(m_functions.back() != nullptr);
   }
 
   /// Define a new function
@@ -442,9 +443,23 @@ public:
   template<typename F>
   void for_each_function(const F f) const
   {
-    for(const auto& item : m_functions)
+    auto funcs_copy = m_functions;
+    for(const auto &item : funcs_copy)
     {
+      assert(item != nullptr);
       f(*item);
+    }
+    // Account for any new functions added during the loop
+    while(funcs_copy.size() != m_functions.size())
+    {
+      const std::size_t oldsize = funcs_copy.size();
+      const std::size_t newsize = m_functions.size();
+      funcs_copy = m_functions;
+      for(std::size_t i = oldsize; i != newsize; ++i)
+      {
+        assert(funcs_copy[i] != nullptr);
+        f(*funcs_copy[i]);
+      }
     }
   }
 
@@ -1063,6 +1078,11 @@ public:
     }
 
     return *(iter->second);
+  }
+
+  bool has_module(jl_module_t* jmod) const
+  {
+    return m_modules.find(jmod) != m_modules.end();
   }
 
   Module& current_module();
