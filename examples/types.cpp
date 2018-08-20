@@ -44,6 +44,8 @@ struct World
   ~World() { std::cout << "Destroying World with message " << msg << std::endl; }
 };
 
+struct Array {};
+
 struct NonCopyable
 {
   NonCopyable() {}
@@ -101,7 +103,7 @@ void call_testype_function()
   jlcxx::JuliaFunction("julia_test_func")(result);
 }
 
-enum CppEnum
+enum MyEnum
 {
   EnumValA,
   EnumValB
@@ -123,7 +125,7 @@ struct NullableStruct {};
 
 namespace jlcxx
 {
-  template<> struct IsBits<cpp_types::CppEnum> : std::true_type {};
+  template<> struct IsBits<cpp_types::MyEnum> : std::true_type {};
   template<typename T> struct IsSmartPointerType<cpp_types::MySmartPointer<T>> : std::true_type { };
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
 }
@@ -142,6 +144,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .method("set", &World::set)
     .method("greet", &World::greet)
     .method("greet_lambda", [] (const World& w) { return w.greet(); } );
+
+  types.add_type<Array>("Array");
 
   types.method("world_factory", []()
   {
@@ -230,10 +234,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .method("greet", &ConstPtrConstruct::greet);
 
   // Enum
-  types.add_bits<CppEnum>("CppEnum", jlcxx::julia_type("CppEnum"));
+  types.add_bits<MyEnum>("MyEnum", jlcxx::julia_type("CppEnum"));
   types.set_const("EnumValA", EnumValA);
   types.set_const("EnumValB", EnumValB);
-  types.method("enum_to_int", [] (const CppEnum e) { return static_cast<int>(e); });
+  types.method("enum_to_int", [] (const MyEnum e) { return static_cast<int>(e); });
   types.method("get_enum_b", [] () { return EnumValB; });
 
   types.add_type<Foo>("Foo")
