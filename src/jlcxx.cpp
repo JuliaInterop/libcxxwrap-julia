@@ -55,6 +55,14 @@ int_t Module::store_pointer(void *ptr)
   return m_pointer_array.size();
 }
 
+void Module::bind_constants(jl_module_t* mod)
+{
+  for(auto& dt_pair : m_jl_constants)
+  {
+    jl_set_const(mod, jl_symbol(dt_pair.first.c_str()), dt_pair.second);
+  }
+}
+
 Module &ModuleRegistry::create_module(jl_module_t* jmod)
 {
   if(jmod == nullptr)
@@ -91,8 +99,43 @@ JLCXX_API ModuleRegistry& registry()
 
 JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& module_name)
 {
-  const auto mods = {module_name.empty() ? nullptr : (jl_module_t*)jl_get_global(jl_current_module, jl_symbol(module_name.c_str())), jl_base_module, g_cxxwrap_module, jl_current_module, jl_current_module->parent};
-  std::string found_type;
+  std::vector<jl_module_t*> mods;
+  mods.reserve(6);
+  jl_module_t* current_mod = registry().has_current_module() ? registry().current_module().julia_module() : nullptr;
+  if(!module_name.empty())
+  {
+    jl_sym_t* modsym = jl_symbol(module_name.c_str());
+    jl_module_t* found_mod = nullptr;
+    if(current_mod != nullptr)
+    {
+      found_mod = (jl_module_t*)jl_get_global(current_mod, modsym);
+    }
+    if(found_mod == nullptr)
+    {
+      found_mod = (jl_module_t*)jl_get_global(jl_main_module, jl_symbol(module_name.c_str()));
+    }
+    if(found_mod != nullptr)
+    {
+      mods.push_back(found_mod);
+    }
+    else
+    {
+      throw std::runtime_error("Failed to find module " + module_name);
+    }
+  }
+  else
+  {
+    if (current_mod != nullptr)
+    {
+      mods.push_back(current_mod);
+    }
+    mods.push_back(jl_main_module);
+    mods.push_back(jl_base_module);
+    mods.push_back(g_cxxwrap_module);
+    mods.push_back(jl_top_module);
+  }
+
+  std::string found_type = "null";
   for(jl_module_t* mod : mods)
   {
     if(mod == nullptr)
@@ -170,6 +213,24 @@ std::wstring ConvertToCpp<std::wstring, false, false, false>::operator()(jl_valu
   return std::wstring(arr.data(), arr.size());
 }
 
+static constexpr const char* dt_prefix = "__cxxwrap_dt_";
+
+jl_datatype_t* existing_datatype(jl_module_t* mod, jl_sym_t* name)
+{
+  const std::string prefixed_name = dt_prefix + symbol_name(name);
+  jl_value_t* found_dt = jl_get_global(mod, jl_symbol(prefixed_name.c_str()));
+  if(found_dt == nullptr || !jl_is_datatype(found_dt))
+  {
+    return nullptr;
+  }
+  return (jl_datatype_t*)found_dt;
+}
+
+void set_internal_constant(jl_module_t* mod, jl_datatype_t* dt, const std::string& prefixed_name)
+{
+  jl_set_const(mod, jl_symbol(prefixed_name.c_str()), (jl_value_t*)dt);
+}
+
 JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
                             jl_module_t* module,
                             jl_datatype_t *super,
@@ -182,11 +243,32 @@ JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
   {
     throw std::runtime_error("null module when creating type");
   }
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 7
-  return jl_new_datatype(name, super, parameters, fnames, ftypes, abstract, mutabl, ninitialized);
-#else
-  return jl_new_datatype(name, module, super, parameters, fnames, ftypes, abstract, mutabl, ninitialized);
-#endif
+  jl_datatype_t* dt = existing_datatype(module, name);
+  if(dt != nullptr)
+  {
+    return dt;
+  }
+
+  dt = jl_new_datatype(name, module, super, parameters, fnames, ftypes, abstract, mutabl, ninitialized);
+  set_internal_constant(module, dt, dt_prefix + symbol_name(name));
+  return dt;
+}
+
+JLCXX_API jl_datatype_t* new_bitstype(jl_sym_t *name,
+                            jl_module_t* module,
+                            jl_datatype_t *super,
+                            jl_svec_t *parameters, const size_t nbits)
+{
+  assert(module != nullptr);
+  jl_datatype_t* dt = existing_datatype(module, name);
+  if(dt != nullptr)
+  {
+    return dt;
+  }
+
+  dt = jl_new_primitivetype((jl_value_t*)name, module, super, parameters, nbits);
+  set_internal_constant(module, dt, dt_prefix + symbol_name(name));
+  return dt;
 }
 
 }

@@ -87,8 +87,8 @@ struct BaseMapping
 {
 };
 
-template<template<typename...> class PtrT, typename PointeeT, typename OtherPtrT>
-struct BaseMapping<PtrT<PointeeT>, OtherPtrT>
+template<template<typename...> class PtrT, typename PointeeT, typename OtherPtrT, typename... ExtraArgs>
+struct BaseMapping<PtrT<PointeeT, ExtraArgs...>, OtherPtrT>
 {
   template<bool B, typename DummyT=void>
   struct ConditionalConstructFromOther

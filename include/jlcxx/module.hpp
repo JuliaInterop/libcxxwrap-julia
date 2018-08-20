@@ -17,7 +17,7 @@
 namespace jlcxx
 {
 
-/// Compatibility between 0.6 and 0.7
+/// Wrappers for creating new datatype
 JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
                             jl_module_t* module,
                             jl_datatype_t *super,
@@ -25,6 +25,11 @@ JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
                             jl_svec_t *fnames, jl_svec_t *ftypes,
                             int abstract, int mutabl,
                             int ninitialized);
+
+JLCXX_API jl_datatype_t* new_bitstype(jl_sym_t *name,
+                            jl_module_t* module,
+                            jl_datatype_t *super,
+                            jl_svec_t *parameters, const size_t nbits);
 
 /// Some helper functions
 namespace detail
@@ -491,13 +496,7 @@ public:
     return module_name(m_jl_mod);
   }
 
-  void bind_constants(jl_module_t* mod)
-  {
-    for(auto& dt_pair : m_jl_constants)
-    {
-      jl_set_const(mod, jl_symbol(dt_pair.first.c_str()), dt_pair.second);
-    }
-  }
+  void bind_constants(jl_module_t* mod);
 
   jl_datatype_t* get_julia_type(const char* name)
   {
@@ -1049,13 +1048,7 @@ void Module::add_bits(const std::string& name, JLSuperT* super)
   static_assert(std::is_scalar<T>::value, "Bits types must be a scalar type");
   jl_svec_t* params = is_parametric ? parameter_list<T>()() : jl_emptysvec;
   JL_GC_PUSH1(&params);
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 6
-  jl_datatype_t* dt = jl_new_bitstype((jl_value_t*)jl_symbol(name.c_str()), (jl_datatype_t*)super, params, 8*sizeof(T));
-#elif JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 7
-  jl_datatype_t* dt = jl_new_primitivetype((jl_value_t*)jl_symbol(name.c_str()), (jl_datatype_t*)super, params, 8*sizeof(T));
-#else
-  jl_datatype_t* dt = jl_new_primitivetype((jl_value_t*)jl_symbol(name.c_str()), m_jl_mod, (jl_datatype_t*)super, params, 8*sizeof(T));
-#endif
+  jl_datatype_t* dt = new_bitstype(jl_symbol(name.c_str()), m_jl_mod, (jl_datatype_t*)super, params, 8*sizeof(T));
   protect_from_gc(dt);
   JL_GC_POP();
   detail::dispatch_set_julia_type<T, is_parametric>()(dt);
@@ -1085,6 +1078,7 @@ public:
     return m_modules.find(jmod) != m_modules.end();
   }
 
+  bool has_current_module() { return m_current_module != nullptr; }
   Module& current_module();
   void reset_current_module() { m_current_module = nullptr; }
 
