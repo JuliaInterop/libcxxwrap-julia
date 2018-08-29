@@ -113,7 +113,7 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${JLCXX_TARGET}_MAJOR_VERSION
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
-target_compile_options(${JLCXX_TARGET} PUBLIC "-std=c++14")
+target_compile_options(${JLCXX_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++14>" )
 
 generate_export_header(${JLCXX_TARGET})
 
