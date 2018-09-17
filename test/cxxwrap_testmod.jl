@@ -2,18 +2,13 @@
 module CxxWrap
 
 # Base type for wrapped C++ types
-abstract type CppAny end
-abstract type CppBits <: CppAny end
-abstract type CppDisplay <: AbstractDisplay end
-abstract type CppArray{T,N} <: AbstractArray{T,N} end
-abstract type CppAssociative{K,V} <: AbstractDict{K,V} end
 abstract type CppEnum end
 Base.convert(::Type{Int32}, x::CppEnum) = reinterpret(Int32, x)
 import Base: +, |
 +(a::T, b::T) where {T <: CppEnum} = reinterpret(T, Int32(a) + Int32(b))
 |(a::T, b::T) where {T <: CppEnum} = reinterpret(T, Int32(a) | Int32(b))
 cxxdowncast(x) = error("No downcast for type $(supertype(typeof(x))). Did you specialize SuperType to enable automatic downcasting?")
-abstract type SmartPointer{T} <: CppAny end
+abstract type SmartPointer{T} end
 
 mutable struct CppFunctionInfo
   name::Any

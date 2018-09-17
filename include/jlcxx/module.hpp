@@ -470,10 +470,10 @@ public:
 
   /// Add a composite type
   template<typename T, typename SuperParametersT=ParameterList<>, typename JLSuperT=jl_datatype_t>
-  TypeWrapper<T> add_type(const std::string& name, JLSuperT* super = julia_type<CppAny>());
+  TypeWrapper<T> add_type(const std::string& name, JLSuperT* super = jl_any_type);
 
   template<typename T, typename JLSuperT=jl_datatype_t>
-  void add_bits(const std::string& name, JLSuperT* super = (jl_datatype_t*)julia_type("CppBits"));
+  void add_bits(const std::string& name, JLSuperT* super = jl_any_type);
 
   /// Set a global constant value at the module level
   template<typename T>

@@ -14,7 +14,7 @@
 #endif
 
 #define JLCXX_VERSION_MAJOR 0
-#define JLCXX_VERSION_MINOR 4
+#define JLCXX_VERSION_MINOR 5
 #define JLCXX_VERSION_PATCH 0
 
 // From https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor

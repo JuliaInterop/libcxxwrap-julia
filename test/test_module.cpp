@@ -32,7 +32,7 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 
 extern "C"
 {
-extern void initialize(jl_value_t* julia_module, jl_value_t* cpp_any_type, jl_value_t* cppfunctioninfo_type);
+extern void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type);
 extern void* create_registry();
 extern void bind_module_constants(jl_value_t* module_any);
 }
@@ -61,7 +61,7 @@ int main()
     return 1;
   }
 
-  initialize(jl_eval_string("CxxWrap"), jl_eval_string("CxxWrap.CppAny"), jl_eval_string("CxxWrap.CppFunctionInfo"));
+  initialize(jl_eval_string("CxxWrap"), jl_eval_string("CxxWrap.CppFunctionInfo"));
 
   JL_GC_PUSH1(&mod);
 

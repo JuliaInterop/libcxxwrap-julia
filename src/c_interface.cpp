@@ -7,13 +7,10 @@ extern "C"
 
 using namespace jlcxx;
 
-jl_datatype_t* g_any_type = nullptr;
-
 /// Initialize the module
-JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cpp_any_type, jl_value_t* cppfunctioninfo_type)
+JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type)
 {
   g_cxxwrap_module = (jl_module_t*)julia_module;
-  g_any_type = (jl_datatype_t*)cpp_any_type;
   g_cppfunctioninfo_type = (jl_datatype_t*)cppfunctioninfo_type;
 
   InitHooks::instance().run_hooks();
@@ -41,11 +38,6 @@ JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::
 JLCXX_API bool has_cxx_module(jl_module_t* jlmod)
 {
   return jlcxx::registry().has_module(jlmod);
-}
-
-JLCXX_API jl_datatype_t* get_any_type()
-{
-  return g_any_type;
 }
 
 JLCXX_API jl_module_t* get_cxxwrap_module()

@@ -157,11 +157,6 @@ inline std::string julia_type_name(jl_value_t* dt)
   return jl_typename_str(dt);
 }
 
-/// Base type for all wrapped classes
-struct CppAny
-{
-};
-
 // Specialize to indicate direct Julia supertype in a smart-pointer compatible way i.e. using this to define supertypes
 // will make conversion to a smart pointer of the base type work like in C++
 template<typename T>
@@ -522,15 +517,7 @@ inline jl_datatype_t* julia_return_type()
 /// Specializations
 
 // Needed for Visual C++, static members are different in each DLL
-extern "C" JLCXX_API jl_datatype_t* get_any_type(); // Implemented in c_interface.cpp
 extern "C" JLCXX_API jl_module_t* get_cxxwrap_module();
-
-template<>
-struct JLCXX_API static_type_mapping<CppAny>
-{
-  typedef jl_value_t* type;
-  static jl_datatype_t* julia_type() { return get_any_type(); }
-};
 
 template<>
 struct static_type_mapping<void>
@@ -1064,6 +1051,17 @@ namespace detail
     return nullptr;
   }
 
+  inline jl_value_t* box_long_long(long long x)
+  {
+    return jl_box_int64(x);
+  }
+
+  inline jl_value_t* box_long_long(unused_type<long long>)
+  {
+    // never called
+    return nullptr;
+  }
+
   inline jl_value_t* box_us_long(unsigned long x)
   {
     if(sizeof(unsigned long) == 8)
@@ -1090,6 +1088,12 @@ template<>
 inline jl_value_t* box(const detail::define_if_different<unsigned long, uint64_t>& x)
 {
   return detail::box_us_long(x);
+}
+
+template<>
+inline jl_value_t* box(const detail::define_if_different<long long, int64_t>& x)
+{
+  return detail::box_long_long(x);
 }
 
 template<>
