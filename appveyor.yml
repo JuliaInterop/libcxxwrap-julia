@@ -5,9 +5,7 @@ environment:
 
 platform:
   - x86 # 32-bit
-    CMAKE_GEN: "Visual Studio 14 2015"
   - x64 # 64-bit
-    CMAKE_GEN: "Visual Studio 14 2015 Win64"
 
 branches:
   only:
@@ -26,7 +24,9 @@ install:
 build_script:
   - mkdir build
   - cd build
-  - cmake -G "%CMAKE_GEN%" -DJulia_EXECUTABLE=C:\projects\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\install\usr ..
+  - set "CMAKE_GEN=Visual Studio 14 2015 Win64"
+  - IF %PLATFORM% EQU x86 set "CMAKE_GEN=Visual Studio 14 2015"
+  - cmake -G "%CMAKE_GEN%" -DJulia_EXECUTABLE=C:\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\install\usr ..
   - cmake --build . --config Release --target install
 
 test_script:
