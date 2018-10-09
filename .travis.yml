@@ -2,7 +2,7 @@ language: julia
 os:
   - linux
 julia:
-  - 0.6
+  - 1.0
 notifications:
   email: false
 git:
@@ -19,9 +19,8 @@ sudo: required
 # Before anything else, get the latest versions of things
 before_script:
   - cd ../..
-  - pwd
-  - julia -e 'Pkg.add("BinaryProvider")'
-  - julia -e 'Pkg.clone("https://github.com/JuliaPackaging/BinaryBuilder.jl"); Pkg.build()'
+  - julia -e 'using Pkg; Pkg.add(PackageSpec(name="BinaryProvider", rev="master"))'
+  - julia -e 'using Pkg; Pkg.add(PackageSpec(name="BinaryBuilder", rev="master"))'
 
 script:
   - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl

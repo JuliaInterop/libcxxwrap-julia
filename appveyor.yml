@@ -1,9 +1,13 @@
 environment:
   matrix:
-  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x64/julia-latest-win64.exe"
-    CMAKE_GEN: "Visual Studio 14 2015 Win64"
-  - JULIA_URL: "https://julialangnightlies-s3.julialang.org/bin/winnt/x86/julia-latest-win32.exe"
+  - julia_version: 0.7
+  - julia_version: 1
+
+platform:
+  - x86 # 32-bit
     CMAKE_GEN: "Visual Studio 14 2015"
+  - x64 # 64-bit
+    CMAKE_GEN: "Visual Studio 14 2015 Win64"
 
 branches:
   only:
@@ -17,13 +21,7 @@ notifications:
     on_build_status_changed: true
 
 install:
-  - ps: "[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12"
-# Download most recent Julia Windows binary
-  - ps: (new-object net.webclient).DownloadFile(
-        $env:JULIA_URL,
-        "C:\projects\julia-binary.exe")
-# Run installer silently, output to C:\projects\julia
-  - C:\projects\julia-binary.exe /S /D=C:\projects\julia
+  - ps: iex ((new-object net.webclient).DownloadString("https://raw.githubusercontent.com/JuliaCI/Appveyor.jl/version-1/bin/install.ps1"))
 
 build_script:
   - mkdir build
