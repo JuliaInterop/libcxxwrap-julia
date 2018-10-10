@@ -20,10 +20,10 @@ sudo: required
 before_script:
   - cd ../..
   - julia -e 'using Pkg; Pkg.add("BinaryProvider")'
-  - julia -e 'using Pkg; Pkg.add("BinaryBuilder")'
+  - julia -e 'using Pkg; Pkg.add(PackageSpec(name="BinaryBuilder", rev="master"))'
 
 script:
-  - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl --verbose
+  - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl
   - ls -l products
 
 deploy:

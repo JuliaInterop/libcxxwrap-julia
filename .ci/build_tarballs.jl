@@ -9,12 +9,12 @@ sources = [
 function getscript(version)
     shortversion = version[1:3]
     return """
-    # Julia_ROOT=\$prefix/julia-$version
-    Julia_ROOT=/usr/local
+    Julia_ROOT=\$prefix
+    # Julia_ROOT=/usr/local
 
     # Download julia
-    cd /usr/local
-    curl -L "https://github.com/JuliaPackaging/JuliaBuilder/releases/download/$version/julia-$version-\$target.tar.gz" | tar -zx --strip-components=1 
+    #cd /usr/local
+    #curl -L "https://github.com/JuliaPackaging/JuliaBuilder/releases/download/$version/julia-$version-\$target.tar.gz" | tar -zx --strip-components=1 
 
     # Build libcxxwrap
     cd \$WORKSPACE/srcdir/libcxxwrap-julia*
@@ -49,7 +49,7 @@ products = prefix -> [
 
 # Dependencies that must be installed before this package can be built
 dependencies = [
- #   "https://github.com/JuliaPackaging/JuliaBuilder/releases/download/1.0.0/build_Julia.v1.0.0.jl"
+   "https://github.com/JuliaPackaging/JuliaBuilder/releases/download/v1.0.0-2/build_Julia.v1.0.0.jl"
 ]
 
 # Build the tarballs, and possibly a `build.jl` as well.
