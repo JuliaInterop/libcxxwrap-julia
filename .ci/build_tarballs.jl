@@ -36,7 +36,7 @@ _archs(::Type{Linux}) = (:x86_64,)
 for p in (Linux,Windows)
     for a in _archs(p)
         for abi in _abis(p)
-            push!(platforms, p(a, compiler_abi=CompilerABI(abi)))
+            push!(platforms, p(a, compiler_abi=CompilerABI(abi,:cxx11)))
         end
     end
 end
