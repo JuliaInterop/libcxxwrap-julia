@@ -24,6 +24,9 @@ before_script:
 
 script:
   - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl
+  - cd JuliaInterop/libcxxwrap-julia/testlib-builder
+  - julia --color=yes build_tarballs.jl
+  - cd ../../..
   - ls -l products
 
 deploy:
