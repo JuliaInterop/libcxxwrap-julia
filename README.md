@@ -1,6 +1,6 @@
 # JlCxx
 
-[![Build Status](https://travis-ci.org/JuliaInterop/libcxxwrap-julia.svg?branch=master)](https://travis-ci.org/JuliaInterop/libcxxwrap-julia.svg)
+[![Build Status](https://travis-ci.org/JuliaInterop/libcxxwrap-julia.svg?branch=master)](https://travis-ci.org/JuliaInterop/libcxxwrap-julia)
 [![Build status](https://ci.appveyor.com/api/projects/status/96h6josegra2ct2d?svg=true)](https://ci.appveyor.com/project/barche/libcxxwrap-julia)
 
 This is the C++ library component of the [CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl) package, distributed as a regular CMake library
