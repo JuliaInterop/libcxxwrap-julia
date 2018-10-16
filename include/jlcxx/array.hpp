@@ -27,7 +27,7 @@ struct ValueExtractor<PointedT, PointedT>
 };
 
 template<typename PointedT, typename CppT>
-class array_iterator_base : public std::iterator<std::random_access_iterator_tag, PointedT>
+class array_iterator_base : public std::iterator<std::random_access_iterator_tag, CppT>
 {
 private:
   PointedT* m_ptr;
