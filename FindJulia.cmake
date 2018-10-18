@@ -9,11 +9,13 @@ endif()
 # Julia Executable #
 ####################
 
-if(Julia_ROOT)
-    message(STATUS "Adding path ${Julia_ROOT} to search path")
-    list(APPEND CMAKE_PREFIX_PATH ${Julia_ROOT})
+if(Julia_PREFIX)
+    message(STATUS "Adding path ${Julia_PREFIX} to search path")
+    list(APPEND CMAKE_PREFIX_PATH ${Julia_PREFIX})
+    message(STATUS "THIS BRANCH")
 else()
     find_program(Julia_EXECUTABLE julia DOC "Julia executable")
+    message(STATUS "Found Julia executable: " ${Julia_EXECUTABLE})
 endif()
 
 #################
@@ -69,8 +71,8 @@ elseif(Julia_EXECUTABLE)
     string(REGEX REPLACE "\n" "" Julia_INCLUDE_DIRS "${Julia_INCLUDE_DIRS}")
     set(Julia_INCLUDE_DIRS ${Julia_INCLUDE_DIRS}
         CACHE PATH "Location of Julia include files")
-elseif(Julia_ROOT)
-    set(Julia_INCLUDE_DIRS ${Julia_ROOT}/include/julia)
+elseif(Julia_PREFIX)
+    set(Julia_INCLUDE_DIRS ${Julia_PREFIX}/include/julia)
 endif()
 MESSAGE(STATUS "Julia_INCLUDE_DIRS:   ${Julia_INCLUDE_DIRS}")
 

@@ -9,8 +9,8 @@ sources = [
 function getscript(version)
     shortversion = version[1:3]
     return """
-    Julia_ROOT=\$prefix
-    # Julia_ROOT=/usr/local
+    Julia_PREFIX=\$prefix
+
 
     # Download julia
     #cd /usr/local
@@ -19,7 +19,7 @@ function getscript(version)
     # Build libcxxwrap
     cd \$WORKSPACE/srcdir/libcxxwrap-julia*
     mkdir build && cd build
-    cmake -DJulia_ROOT=\$Julia_ROOT -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/opt/\$target/\$target.toolchain -DCMAKE_CXX_FLAGS="-march=x86-64" -DCMAKE_INSTALL_PREFIX=\${prefix} ..
+    cmake -DJulia_PREFIX=\$Julia_PREFIX -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/opt/\$target/\$target.toolchain -DCMAKE_CXX_FLAGS="-march=x86-64" -DCMAKE_INSTALL_PREFIX=\${prefix} ..
     VERBOSE=ON cmake --build . --config Release --target install
     if [[ "\$target" == "x86_64-linux-gnu" ]]; then
         ctest -V
