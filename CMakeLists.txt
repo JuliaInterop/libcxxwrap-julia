@@ -1,6 +1,15 @@
 cmake_minimum_required(VERSION 2.8.12)
 project(JlCxx)
 
+# Cmake policies
+# ==============
+
+if(POLICY CMP0074)
+    # find_package() uses <PackageName>_ROOT variables.
+    # This policy was introduced in CMake version 3.12.
+    cmake_policy(SET CMP0074 NEW)
+endif()
+
 # Dependencies
 # ============
 
@@ -19,7 +28,6 @@ include(CMakePackageConfigHelpers)
 include(GenerateExportHeader)
 include(GNUInstallDirs)
 include(InstallRequiredSystemLibraries)
-
 
 # Compilation flags
 # =================
