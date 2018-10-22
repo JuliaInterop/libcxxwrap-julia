@@ -284,6 +284,15 @@ struct ConvertToJulia<ArrayRef<T,Dim>, false, false, false>
   }
 };
 
+template<typename T>
+struct ConvertToJulia<Array<T>, false, false, false>
+{
+  jl_value_t* operator()(Array<T>&& arr) const
+  {
+    return (jl_value_t*)arr.wrapped();
+  }
+};
+
 template<typename T, int Dim>
 struct ConvertToCpp<ArrayRef<T,Dim>, false, false, false>
 {

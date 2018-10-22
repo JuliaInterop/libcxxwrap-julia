@@ -50,4 +50,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
     float arr1_jl[] = {1.0, 2.0, 3.0};
     func1((jl_value_t*)jlcxx::ArrayRef<float, 1>(&arr1_jl[0], 3).wrapped());
   });
+
+  containers.method("array_return", [] () {
+    Array<std::string> result;
+    result.push_back("hello");
+    result.push_back("world");
+    return result;
+  });
 }
