@@ -316,7 +316,6 @@ struct static_type_mapping
   // Abstract base type for both the reference and allocated type
   static jl_datatype_t* julia_type()
   {
-    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
