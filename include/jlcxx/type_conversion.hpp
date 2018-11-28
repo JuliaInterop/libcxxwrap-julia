@@ -303,7 +303,8 @@ namespace detail
   template<typename T1, typename T2> using define_if_different = typename DefineIfDifferent<T1,T2>::type;
 }
 
-/// Static mapping base template, for dynamically added types
+// template<typename SourceT>
+// struct static_type_mapping_base
 template<typename SourceT, typename Enable=void>
 struct static_type_mapping
 {
@@ -390,6 +391,12 @@ private:
     return m_allocated_type_pointer;
   }
 };
+
+/// Static mapping base template, for dynamically added types
+// template<typename SourceT, typename Enable=void>
+// struct static_type_mapping : static_type_mapping_base<SourceT>
+// {
+// };
 
 namespace detail
 {

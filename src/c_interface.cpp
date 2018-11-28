@@ -10,10 +10,22 @@ using namespace jlcxx;
 /// Initialize the module
 JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type)
 {
+  std::cout << "calling init with g_cxxwrap_module = " << g_cxxwrap_module << std::endl;
+  if(g_cxxwrap_module != nullptr)
+  {
+    if((jl_module_t*)julia_module != g_cxxwrap_module)
+    {
+      throw std::runtime_error("Two different CxxWrap modules are loaded, aborting.");
+    }
+    return;
+  }
+
   g_cxxwrap_module = (jl_module_t*)julia_module;
   g_cppfunctioninfo_type = (jl_datatype_t*)cppfunctioninfo_type;
 
-  InitHooks::instance().run_hooks();
+  //InitHooks::instance().run_hooks();
+
+  std::cout << "finished calling init with g_cxxwrap_module = " << g_cxxwrap_module << std::endl;
 }
 
 JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::Module&))
@@ -31,6 +43,7 @@ JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::
   }
   catch (const std::runtime_error& e)
   {
+    std::cout << "ERROR IN REGISTER" << std::endl;
     jl_error(e.what());
   }
 }

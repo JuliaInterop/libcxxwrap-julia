@@ -16,6 +16,7 @@ jl_datatype_t* g_cppfunctioninfo_type;
 
 JLCXX_API jl_array_t* gc_protected()
 {
+  assert(g_cxxwrap_module != nullptr);
   static jl_array_t* m_arr = nullptr;
   if (m_arr == nullptr)
   {
