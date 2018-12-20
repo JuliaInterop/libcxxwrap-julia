@@ -9,36 +9,38 @@ namespace jlcxx
 namespace stl
 {
 
-struct WrapVector
+std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr<StlWrappers>();
+
+void StlWrappers::instantiate(Module& mod)
 {
-  template<typename TypeWrapperT>
-  void operator()(TypeWrapperT&& wrapped)
+  m_instance.reset(new StlWrappers(mod));
+}
+
+StlWrappers& StlWrappers::instance()
+{
+  if(m_instance == nullptr)
   {
-    using WrappedT = typename TypeWrapperT::type;
-    using T = typename WrappedT::value_type;
-    using size_type = typename WrappedT::size_type;
-    wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&) >(&WrappedT::push_back));
-    wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("getindex", [] (const WrappedT& v, int_t i) { return v[i-1]; });
-    wrapped.method("setindex!", [] (WrappedT& v, const T& val, int_t i) { v[i-1] = val; });
-    wrapped.method("resize", [] (WrappedT& v, const int_t s) { v.resize(s); });
-    wrapped.method("append", [] (WrappedT& v, jlcxx::ArrayRef<T> arr)
-    {
-      v.reserve(v.size() + arr.size());
-      for(const T& x : arr)
-      {
-        v.push_back(x);
-      }
-    });
+    throw std::runtime_error("StlWrapper was not instantiated");
   }
-};
+  return *m_instance;
+}
+
+StlWrappers& wrappers()
+{
+  return StlWrappers::instance();
+}
+
+StlWrappers::StlWrappers(Module& stl) :
+  vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector")))
+{
+  vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
+}
 
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& stl)
 {
-  stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))
-    .apply<std::vector<int>>(stl::WrapVector());
+  jlcxx::stl::StlWrappers::instantiate(stl);
 }
 
 }

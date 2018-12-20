@@ -41,59 +41,19 @@ namespace detail
   };
 }
 
-JLCXX_API jl_array_t* gc_protected();
-JLCXX_API std::stack<std::size_t>& gc_free_stack();
-JLCXX_API std::map<jl_value_t*, std::pair<std::size_t,std::size_t>>& gc_index_map();
+JLCXX_API void protect_from_gc(jl_value_t* v);
+JLCXX_API void unprotect_from_gc(jl_value_t* v);
 
 template<typename T>
 inline void protect_from_gc(T* x)
 {
-  jl_value_t* val = (jl_value_t*)x;
-  JL_GC_PUSH1(&val);
-
-  // Increase count if already protected
-  auto map_it = gc_index_map().find(val);
-  if(map_it != gc_index_map().end())
-  {
-    map_it->second.second += 1;
-    JL_GC_POP();
-    return;
-  }
-
-  std::size_t pos = 0;
-  if(gc_free_stack().empty())
-  {
-    pos = jl_array_len(gc_protected());
-    jl_array_grow_end(gc_protected(), 1);
-  }
-  else
-  {
-    pos = gc_free_stack().top();
-    gc_free_stack().pop();
-  }
-  jl_arrayset(gc_protected(), val, pos);
-  gc_index_map()[val] = std::make_pair(pos,1);
-  JL_GC_POP();
+  protect_from_gc((jl_value_t*)x);
 }
 
 template<typename T>
-inline void unprotect_from_gc(T* val)
+inline void unprotect_from_gc(T* x)
 {
-  const auto found = gc_index_map().find((jl_value_t*)val);
-  if(found == gc_index_map().end())
-  {
-    std::cout << "WARNING: attempt to unprotect a jl_value_t* that was never protected" << std::endl;
-    return;
-  }
-  // Decrement use count
-  found->second.second -= 1;
-  if(found->second.second > 0)
-  {
-    return;
-  }
-  gc_free_stack().push(found->second.first);
-  jl_arrayset(gc_protected(), jl_nothing, found->second.first);
-  gc_index_map().erase(found);
+  unprotect_from_gc((jl_value_t*)x);
 }
 
 /// Get the symbol name correctly depending on Julia version
@@ -116,6 +76,7 @@ JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params);
 
 /// Get the type from a global symbol
 JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& module_name = "");
+JLCXX_API jl_value_t* julia_type(jl_module_t* mod, const std::string& name);
 
 /// Backwards-compatible apply_array_type
 template<typename T>
@@ -303,10 +264,8 @@ namespace detail
   template<typename T1, typename T2> using define_if_different = typename DefineIfDifferent<T1,T2>::type;
 }
 
-// template<typename SourceT>
-// struct static_type_mapping_base
-template<typename SourceT, typename Enable=void>
-struct static_type_mapping
+template<typename SourceT>
+struct static_type_mapping_base
 {
   typedef typename detail::StaticIf<IsBits<remove_const_ref<SourceT>>::value, remove_const_ref<SourceT>, WrappedCppPtr>::type type;
 
@@ -327,7 +286,6 @@ struct static_type_mapping
   // Immutable (stack-allocated) reference to existing C++ pointers
   static jl_datatype_t* julia_reference_type()
   {
-    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -339,7 +297,6 @@ struct static_type_mapping
   // Type holding a pointer allocated using new. Stack allocated and instances are created with a finalizer that calls delete.
   static jl_datatype_t* julia_allocated_type()
   {
-    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -372,7 +329,7 @@ struct static_type_mapping
     return type_pointer() != nullptr;
   }
 
-private:
+protected:
   static jl_datatype_t*& type_pointer()
   {
     static jl_datatype_t* m_type_pointer = nullptr;
@@ -393,10 +350,10 @@ private:
 };
 
 /// Static mapping base template, for dynamically added types
-// template<typename SourceT, typename Enable=void>
-// struct static_type_mapping : static_type_mapping_base<SourceT>
-// {
-// };
+template<typename SourceT, typename Enable=void>
+struct static_type_mapping : static_type_mapping_base<SourceT>
+{
+};
 
 namespace detail
 {
@@ -1147,6 +1104,12 @@ template<>
 inline void* unbox(jl_value_t* v)
 {
   return jl_unbox_voidpointer(v);
+}
+
+template<>
+inline std::string unbox(jl_value_t* v)
+{
+  return convert_to_cpp<std::string>(v);
 }
 
 // Fundamental type conversion

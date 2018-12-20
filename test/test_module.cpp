@@ -20,6 +20,8 @@ private:
   int m_data;
 };
 
+void dummy_gc_func(jl_value_t*) {}
+
 }
 
 JLCXX_MODULE register_test_module(jlcxx::Module& mod)
@@ -32,7 +34,7 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 
 extern "C"
 {
-extern void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type);
+extern void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f);
 extern void* create_registry();
 extern void bind_module_constants(jl_value_t* module_any);
 }
@@ -61,7 +63,7 @@ int main()
     return 1;
   }
 
-  initialize(jl_eval_string("CxxWrap"), jl_eval_string("CxxWrap.CppFunctionInfo"));
+  initialize(jl_eval_string("CxxWrap"), jl_eval_string("CxxWrap.CppFunctionInfo"), (void*)test_module::dummy_gc_func, (void*)test_module::dummy_gc_func);
 
   JL_GC_PUSH1(&mod);
 

@@ -111,13 +111,14 @@ target_include_directories(${JLCXX_TARGET} PUBLIC
 
 target_link_libraries(${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
 
-add_library(cxxwrap_julia_stl SHARED ${JLCXX_SOURCE_DIR}/stl.cpp)
-target_include_directories(cxxwrap_julia_stl PUBLIC
+set(JLCXX_STL_TARGET cxxwrap_julia_stl)
+add_library(${JLCXX_STL_TARGET} SHARED ${JLCXX_SOURCE_DIR}/stl.cpp)
+target_include_directories(${JLCXX_STL_TARGET} PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${JLCXX_INCLUDE_DIR}>
   "$<BUILD_INTERFACE:${Julia_INCLUDE_DIRS}>"
 )
-target_link_libraries(cxxwrap_julia_stl ${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
+target_link_libraries(${JLCXX_STL_TARGET} ${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
 
 link_directories(${Julia_LIBRARY_DIR} ${Julia_LIBRARY_DIR}/julia)
 set_target_properties(${JLCXX_TARGET} PROPERTIES

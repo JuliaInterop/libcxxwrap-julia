@@ -144,6 +144,10 @@ struct DownCast
 extern jl_module_t* g_cxxwrap_module;
 extern jl_datatype_t* g_cppfunctioninfo_type;
 
+typedef void (*protect_f_t)(jl_value_t*);
+extern protect_f_t g_protect_from_gc;
+extern protect_f_t g_unprotect_from_gc;
+
 class JLCXX_API Module;
 
 /// Abstract base class for storing any function
@@ -382,6 +386,35 @@ struct ParameterList
   }
 };
 
+// Some helpers to filter out a type from a ParameterList
+namespace detail
+{
+  template<typename FilteredT, typename PL, typename OutPL=ParameterList<>>
+  struct FilterPL
+  {
+  };
+
+  template<typename FilteredT, typename P1, typename... OtherParamsT, typename... OutputParamsT>
+  struct FilterPL<FilteredT, ParameterList<P1, OtherParamsT...>, ParameterList<OutputParamsT...>>
+  {
+    using result = typename FilterPL<FilteredT, ParameterList<OtherParamsT...>, ParameterList<OutputParamsT..., P1>>::result;
+  };
+
+  template<typename FilteredT, typename... OtherParamsT, typename... OutputParamsT>
+  struct FilterPL<FilteredT, ParameterList<FilteredT, OtherParamsT...>, ParameterList<OutputParamsT...>>
+  {
+    using result = typename FilterPL<FilteredT, ParameterList<OtherParamsT...>, ParameterList<OutputParamsT...>>::result;
+  };
+
+  template<typename FilteredT, typename... OutputParamsT>
+  struct FilterPL<FilteredT, ParameterList<>, ParameterList<OutputParamsT...>>
+  {
+    using result = ParameterList<OutputParamsT...>;
+  };
+}
+
+template<typename FilteredT, typename PL> using filter_parameterlist = typename detail::FilterPL<FilteredT, PL>::result;
+
 /// Store all exposed C++ functions associated with a module
 class JLCXX_API Module
 {
@@ -483,10 +516,7 @@ public:
       throw std::runtime_error("Duplicate registration of constant " + name);
     }
     jl_value_t* boxed_const = box(std::forward<T>(value));
-    if(gc_index_map().count(boxed_const) == 0)
-    {
-      protect_from_gc(boxed_const);
-    }
+    protect_from_gc(boxed_const);
     m_jl_constants[name] = boxed_const;
   }
 

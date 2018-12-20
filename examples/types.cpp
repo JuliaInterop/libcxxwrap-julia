@@ -5,6 +5,7 @@
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
+#include "jlcxx/stl.hpp"
 
 namespace cpp_types
 {
@@ -274,4 +275,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   jlcxx::static_type_mapping<ImmutableBits>::set_julia_type((jl_datatype_t*)jlcxx::julia_type("ImmutableBits"));
   types.method("increment_immutable", [] (const ImmutableBits& x) { return ImmutableBits({x.a+1.0, x.b+1.0}); });
+
+  types.method("reverse_worlds", [] (std::vector<World>& worlds) { std::reverse(worlds.begin(), worlds.end()); });
 }

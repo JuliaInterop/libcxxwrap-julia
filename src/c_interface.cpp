@@ -8,9 +8,8 @@ extern "C"
 using namespace jlcxx;
 
 /// Initialize the module
-JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type)
+JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f)
 {
-  std::cout << "calling init with g_cxxwrap_module = " << g_cxxwrap_module << std::endl;
   if(g_cxxwrap_module != nullptr)
   {
     if((jl_module_t*)julia_module != g_cxxwrap_module)
@@ -22,10 +21,10 @@ JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_
 
   g_cxxwrap_module = (jl_module_t*)julia_module;
   g_cppfunctioninfo_type = (jl_datatype_t*)cppfunctioninfo_type;
+  g_protect_from_gc = reinterpret_cast<protect_f_t>(gc_protect_f);
+  g_unprotect_from_gc = reinterpret_cast<protect_f_t>(gc_unprotect_f);
 
-  //InitHooks::instance().run_hooks();
-
-  std::cout << "finished calling init with g_cxxwrap_module = " << g_cxxwrap_module << std::endl;
+  InitHooks::instance().run_hooks();
 }
 
 JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::Module&))
@@ -128,11 +127,6 @@ JLCXX_API jl_array_t* get_reference_types(jl_module_t* jlmod)
 JLCXX_API jl_array_t* get_allocated_types(jl_module_t* jlmod)
 {
   return convert_type_vector(registry().get_module(jlmod).allocated_types());
-}
-
-JLCXX_API void gcprotect(jl_value_t* val)
-{
-  jlcxx::protect_from_gc(val);
 }
 
 JLCXX_API void gcunprotect(jl_value_t *val)

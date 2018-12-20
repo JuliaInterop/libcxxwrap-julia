@@ -9,7 +9,7 @@ add_library(hello SHARED hello.cpp)
 target_link_libraries(hello ${JLCXX_TARGET} ${Julia_LIBRARY})
 
 add_library(types SHARED types.cpp)
-target_link_libraries(types ${JLCXX_TARGET} ${Julia_LIBRARY})
+target_link_libraries(types ${JLCXX_TARGET} ${JLCXX_STL_TARGET} ${Julia_LIBRARY})
 
 add_library(inheritance SHARED inheritance.cpp)
 target_link_libraries(inheritance ${JLCXX_TARGET} ${Julia_LIBRARY})
