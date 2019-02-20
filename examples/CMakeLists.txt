@@ -27,6 +27,9 @@ add_library(except SHARED except.cpp)
 target_include_directories(except PRIVATE ${Julia_INCLUDE_DIRS})
 target_link_libraries(except ${JLCXX_TARGET})
 
+add_library(pointer_modification SHARED pointer_modification.cpp)
+target_link_libraries(pointer_modification ${JLCXX_TARGET} ${Julia_LIBRARY})
+
 install(TARGETS
   jlcxx_containers
   except
@@ -35,6 +38,7 @@ install(TARGETS
   hello
   inheritance
   parametric
+  pointer_modification
   types
 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}

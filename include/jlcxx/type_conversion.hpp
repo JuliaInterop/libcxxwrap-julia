@@ -187,6 +187,12 @@ struct IsFundamental<T*>
   static constexpr bool value = IsFundamental<T>::value;
 };
 
+template<typename T>
+struct IsFundamental<T**>
+{
+  static constexpr bool value = true;
+};
+
 template<>
 struct IsFundamental<const char*>
 {
@@ -463,6 +469,12 @@ namespace detail
   };
 
   template<typename T>
+  struct JuliaReferenceMapping<T*&>
+  {
+    typedef T*& type;
+  };
+
+  template<typename T>
   struct JuliaReferenceMapping<const T&>
   {
     typedef T type;
@@ -651,10 +663,18 @@ struct static_type_mapping<std::wstring>
 };
 
 template<typename T>
+// struct static_type_mapping<T*, typename std::enable_if<IsFundamental<T>::value && !std::is_const<T>::value && !std::is_pointer<T>::value>::type>
 struct static_type_mapping<T*, typename std::enable_if<IsFundamental<T>::value && !std::is_const<T>::value>::type>
 {
   typedef T* type;
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jl_pointer_type, jl_svec1(static_type_mapping<T>::julia_type())); }
+};
+
+template<typename T>
+struct static_type_mapping<T**, typename std::enable_if<!IsFundamental<T>::value>::type>
+{
+  typedef T** type;
+  static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jl_pointer_type, jl_svec1(static_type_mapping<T>::julia_allocated_type())); }
 };
 
 template<typename T>
@@ -1168,6 +1188,16 @@ struct ConvertToCpp<CppT&, true, false, false>
   }
 };
 
+// Reference to pointer conversion
+template<typename CppT>
+struct ConvertToCpp<CppT*&, false, false, false>
+{
+  CppT*& operator()(CppT** julia_val) const
+  {
+    return *julia_val;
+  }
+};
+
 // Boxed immutable conversion
 template<typename CppT>
 struct ConvertToCpp<CppT, false, true, false>
@@ -1415,6 +1445,13 @@ template<typename T> struct static_type_mapping<T&, typename std::enable_if<IsFu
 {
   typedef T* type;
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)::jlcxx::julia_type("Ref"), jl_svec1(static_type_mapping<T>::julia_type())); }
+};
+
+// References to pointers
+template<typename T> struct static_type_mapping<T*&, typename std::enable_if<!IsFundamental<T>::value>::type>
+{
+  typedef T** type;
+  static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)::jlcxx::julia_type("Ref"), jl_svec1(static_type_mapping<T>::julia_allocated_type())); }
 };
 
 namespace detail

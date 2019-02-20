@@ -130,6 +130,17 @@ jl_value_t* create(ArgsT&&... args)
   return boxed_cpp_pointer(cpp_obj, dt, finalize);
 }
 
+template<typename T>
+jl_value_t* createnull()
+{
+  jl_datatype_t* dt = static_type_mapping<T>::julia_allocated_type();
+  assert(!jl_isbits(dt));
+
+  T* cpp_obj = nullptr;
+
+  return boxed_cpp_pointer(cpp_obj, dt, true);
+}
+
 /// Safe downcast to base type
 template<typename T>
 struct DownCast
@@ -554,6 +565,12 @@ private:
   {
   }
 
+  template <typename T>
+  void add_null_constructor()
+  {
+    method("__nullptr", [](SingletonType<T>) { return createnull<T>(); });
+  }
+
   template<typename T, typename SuperParametersT, typename JLSuperT>
   TypeWrapper<T> add_type_internal(const std::string& name, JLSuperT* super);
 
@@ -886,6 +903,7 @@ private:
     set_julia_type<AppliedT>(app_dt);
     m_module.add_default_constructor<AppliedT>(DefaultConstructible<AppliedT>(), app_dt);
     m_module.add_copy_constructor<AppliedT>(CopyConstructible<AppliedT>(), app_dt);
+    m_module.add_null_constructor<AppliedT>();
     static_type_mapping<AppliedT>::set_reference_type(app_ref_dt);
     static_type_mapping<AppliedT>::set_allocated_type(app_alloc_dt);
 
@@ -975,6 +993,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   if(!is_parametric)
   {
     set_julia_type<T>(base_dt);
+    add_null_constructor<T>();
     add_default_constructor<T>(DefaultConstructible<T>(), base_dt);
     add_copy_constructor<T>(CopyConstructible<T>(), base_dt);
     static_type_mapping<T>::set_reference_type(ref_dt);

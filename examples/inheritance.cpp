@@ -7,6 +7,7 @@
 struct A
 {
   virtual std::string message() const = 0;
+  virtual ~A() {}
   std::string data = "mydata";
 };
 
@@ -16,6 +17,7 @@ struct B : A
   {
     return "B";
   }
+  virtual ~B() {}
 };
 
 struct C : B
@@ -62,6 +64,7 @@ namespace virtualsolver
           std::cout<<history((double) i)<<" \n";
         }
       }
+      virtual ~Base() {}
   };
 
   class E: public Base
