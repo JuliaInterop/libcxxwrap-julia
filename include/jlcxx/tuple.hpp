@@ -10,59 +10,50 @@ namespace jlcxx
 
 namespace detail
 {
-  template<typename CppT, typename JuliaT>
-  struct TupleBox
+  template<std::size_t I, std::size_t N>
+  struct AppendTupleValues
   {
-    jl_value_t* operator()(CppT&& v)
+    template<typename TupleT>
+    static void apply(jl_value_t** boxed, const TupleT& tup)
     {
-      return box(v);
+      boxed[I] = box(std::get<I>(tup));
+      AppendTupleValues<I+1, std::tuple_size<TupleT>::value>::apply(boxed, tup);
     }
   };
 
-  template<typename CppT>
-  struct TupleBox<CppT, jl_value_t*>
+  template<std::size_t N>
+  struct AppendTupleValues<N,N>
   {
-    jl_value_t* operator()(CppT&& v)
+    template<typename TupleT>
+    static void apply(jl_value_t**, const TupleT&)
     {
-      return convert_to_julia(v);
     }
   };
 
-  /// Box primitive types for tuple construction
-  template<typename T>
-  int tuple_add(jl_value_t* tup, std::size_t i, T&& v)
-  {
-    jl_value_t* boxed_val = TupleBox<T, mapped_reference_type<T>>()(std::forward<T>(v));
-    JL_GC_PUSH1(&boxed_val);
-    jl_set_nth_field(tup, i, boxed_val);
-    JL_GC_POP();
-    return 0;
-  }
-
-  // From http://stackoverflow.com/questions/7858817/unpacking-a-tuple-to-call-a-matching-function-pointer
-  template<int...>
-  struct Sequence
-  {
-  };
-
-  template<int N, int... S>
-  struct GenerateSequence : GenerateSequence<N-1, N-1, S...>
-  {
-  };
-
-  template<int... S>
-  struct GenerateSequence<0, S...>
-  {
-    typedef Sequence<S...> type;
-  };
-
-  template<typename TupleT, int... S>
-  jl_value_t* new_jl_tuple(Sequence<S...>, jl_datatype_t* dt, const TupleT& tp)
+  template<typename TupleT>
+  jl_value_t* new_jl_tuple(const TupleT& tp)
   {
     jl_value_t* result = nullptr;
-    JL_GC_PUSH1(&result);
-    result = jl_new_struct_uninit(dt);
-    auto dummy = {tuple_add(result, S, std::get<S>(tp))...};
+    jl_datatype_t* concrete_dt = nullptr;
+    JL_GC_PUSH2(&result, &concrete_dt);
+    {
+      constexpr std::size_t tup_sz = std::tuple_size<TupleT>::value;
+      jl_value_t** args;
+      JL_GC_PUSHARGS(args, tup_sz);
+      detail::AppendTupleValues<0, tup_sz>::apply(args, tp);
+      {
+        jl_value_t** concrete_types;
+        JL_GC_PUSHARGS(concrete_types, tup_sz);
+        for(std::size_t i = 0; i != tup_sz; ++i)
+        {
+          concrete_types[i] = jl_typeof(args[i]);
+        }
+        concrete_dt = jl_apply_tuple_type_v(concrete_types, tup_sz);
+        JL_GC_POP();
+      }
+      result = jl_new_structv(concrete_dt, args, tup_sz);
+      JL_GC_POP();
+    }
     JL_GC_POP();
     return result;
   }
@@ -93,7 +84,7 @@ struct ConvertToJulia<std::tuple<TypesT...>, false, false, false>
 {
   jl_value_t* operator()(const std::tuple<TypesT...>& tp)
   {
-    return detail::new_jl_tuple(typename detail::GenerateSequence<sizeof...(TypesT)>::type(), julia_type<std::tuple<TypesT...>>(), tp);
+    return detail::new_jl_tuple(tp);
   }
 };
 

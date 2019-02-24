@@ -53,4 +53,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("alive_count", [] () { return MyData::alive_count; });
 
   mod.method("divrem", divrem);
+  mod.method("prettydivrem", [] (MyData* a, MyData* b)
+  {
+    MyData* r = nullptr;
+    auto q = divrem(a, b, r);
+    return std::make_tuple(q, jlcxx::julia_owned(r));
+  });
 }

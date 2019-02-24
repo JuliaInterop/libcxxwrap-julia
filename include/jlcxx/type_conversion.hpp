@@ -332,7 +332,6 @@ struct static_type_mapping
   // Immutable (stack-allocated) reference to existing C++ pointers
   static jl_datatype_t* julia_reference_type()
   {
-    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -344,7 +343,6 @@ struct static_type_mapping
   // Type holding a pointer allocated using new. Stack allocated and instances are created with a finalizer that calls delete.
   static jl_datatype_t* julia_allocated_type()
   {
-    assert(type_pointer() != nullptr);
     if(type_pointer() == nullptr)
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -757,6 +755,16 @@ jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
   JL_GC_POP();
   return result;
 };
+
+/// Transfer ownership of a regular pointer to Julia
+template<typename T>
+jl_value_t* julia_owned(T* cpp_ptr)
+{
+  typedef typename std::remove_const<T>::type NCT;
+  static_assert(!IsFundamental<NCT>::value, "Ownership can't be transferred for fundamental types");
+  const bool finalize = true;
+  return boxed_cpp_pointer(cpp_ptr, static_type_mapping<NCT>::julia_allocated_type(), finalize);
+}
 
 /// Base class to specialize for conversion to Julia
 template<typename T, bool Fundamental=false, bool Immutable=false, bool Bits=false, typename Enable=void>
