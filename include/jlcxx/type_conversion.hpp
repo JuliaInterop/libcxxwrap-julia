@@ -410,7 +410,6 @@ struct static_type_mapping<SingletonType<T>>
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jl_type_type, jl_svec1(static_type_mapping<T>::julia_type())); }
 };
 
-
 namespace detail
 {
   // Helper to deal with references
@@ -621,7 +620,6 @@ struct static_type_mapping<std::wstring>
 };
 
 template<typename T>
-// struct static_type_mapping<T*, typename std::enable_if<IsFundamental<T>::value && !std::is_const<T>::value && !std::is_pointer<T>::value>::type>
 struct static_type_mapping<T*, typename std::enable_if<IsFundamental<T>::value && !std::is_const<T>::value>::type>
 {
   typedef T* type;

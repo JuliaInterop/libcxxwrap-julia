@@ -30,12 +30,16 @@ target_link_libraries(except ${JLCXX_TARGET})
 add_library(pointer_modification SHARED pointer_modification.cpp)
 target_link_libraries(pointer_modification ${JLCXX_TARGET} ${Julia_LIBRARY})
 
+add_library(immutable_types SHARED immutable_types.cpp)
+target_link_libraries(immutable_types ${JLCXX_TARGET} ${Julia_LIBRARY})
+
 install(TARGETS
   jlcxx_containers
   except
   extended
   functions
   hello
+  immutable_types
   inheritance
   parametric
   pointer_modification

@@ -121,12 +121,6 @@ struct Foo
 
 struct NullableStruct {};
 
-struct ImmutableBits
-{
-  double a;
-  double b;
-};
-
 } // namespace cpp_types
 
 namespace jlcxx
@@ -134,9 +128,6 @@ namespace jlcxx
   template<> struct IsBits<cpp_types::MyEnum> : std::true_type {};
   template<typename T> struct IsSmartPointerType<cpp_types::MySmartPointer<T>> : std::true_type { };
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
-
-  template<> struct IsImmutable<cpp_types::ImmutableBits> : std::true_type {};
-  template<> struct IsBits<cpp_types::ImmutableBits> : std::true_type {};
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& types)
@@ -271,7 +262,4 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_type<NullableStruct>("NullableStruct");
   types.method("return_ptr", [] () { return new NullableStruct; });
   types.method("return_null", [] () { return static_cast<NullableStruct*>(nullptr); });
-
-  jlcxx::static_type_mapping<ImmutableBits>::set_julia_type((jl_datatype_t*)jlcxx::julia_type("ImmutableBits"));
-  types.method("increment_immutable", [] (const ImmutableBits& x) { return ImmutableBits({x.a+1.0, x.b+1.0}); });
 }
