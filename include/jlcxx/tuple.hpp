@@ -80,7 +80,7 @@ template<typename... TypesT> struct static_type_mapping<std::tuple<TypesT...>>
 };
 
 template<typename... TypesT>
-struct ConvertToJulia<std::tuple<TypesT...>, false, false, false>
+struct ConvertToJulia<std::tuple<TypesT...>>
 {
   jl_value_t* operator()(const std::tuple<TypesT...>& tp)
   {

@@ -85,7 +85,7 @@ class Array
 public:
   Array(const size_t n = 0)
   {
-    jl_value_t* array_type = apply_array_type(static_type_mapping<ValueT>::julia_type(), 1);
+    jl_value_t* array_type = apply_array_type(julia_type<ValueT>(), 1);
     m_array = jl_alloc_array_1d(array_type, n);
   }
 
@@ -238,7 +238,6 @@ template<typename T, int Dim> struct IsValueType<ArrayRef<T,Dim>> : std::true_ty
 template<typename T, int Dim> struct static_type_mapping<ArrayRef<T, Dim>>
 {
   typedef jl_array_t* type;
-  static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_array_type(static_type_mapping<T>::julia_type(), Dim); }
 };
 
 
@@ -275,7 +274,7 @@ auto make_julia_array(ValueT* c_ptr, const SizesT... sizes) -> ArrayRef<ValueT, 
 }
 
 template<typename T, int Dim>
-struct ConvertToJulia<ArrayRef<T,Dim>, false, false, false>
+struct ConvertToJulia<ArrayRef<T,Dim>>
 {
   template<typename ArrayRefT>
   jl_array_t* operator()(ArrayRefT&& arr) const
@@ -285,7 +284,7 @@ struct ConvertToJulia<ArrayRef<T,Dim>, false, false, false>
 };
 
 template<typename T>
-struct ConvertToJulia<Array<T>, false, false, false>
+struct ConvertToJulia<Array<T>>
 {
   jl_value_t* operator()(Array<T>&& arr) const
   {
@@ -294,7 +293,7 @@ struct ConvertToJulia<Array<T>, false, false, false>
 };
 
 template<typename T, int Dim>
-struct ConvertToCpp<ArrayRef<T,Dim>, false, false, false>
+struct ConvertToCpp<ArrayRef<T,Dim>>
 {
   ArrayRef<T,Dim> operator()(jl_array_t* arr) const
   {

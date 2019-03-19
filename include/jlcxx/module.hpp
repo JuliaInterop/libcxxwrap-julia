@@ -44,7 +44,7 @@ struct ReturnTypeAdapter
   {
     auto std_func = reinterpret_cast<const std::function<R(Args...)>*>(functor);
     assert(std_func != nullptr);
-    return convert_to_julia((*std_func)(convert_to_cpp<mapped_reference_type<Args>>(args)...));
+    return convert_to_julia((*std_func)(convert_to_cpp<static_julia_type<Args>>(args)...));
   }
 };
 
@@ -55,7 +55,7 @@ struct ReturnTypeAdapter<void, Args...>
   {
     auto std_func = reinterpret_cast<const std::function<void(Args...)>*>(functor);
     assert(std_func != nullptr);
-    (*std_func)(convert_to_cpp<mapped_reference_type<Args>>(args)...);
+    (*std_func)(convert_to_cpp<static_julia_type<Args>>(args)...);
   }
 };
 
@@ -84,12 +84,12 @@ struct CallFunctor
 template<typename... Args>
 std::vector<jl_datatype_t*> argtype_vector()
 {
-  return {julia_type<dereference_for_mapping<Args>>()...};
+  return {julia_type<Args>()...};
 }
 template<typename... Args>
 std::vector<jl_datatype_t*> reference_argtype_vector()
 {
-  return {julia_reference_type<dereference_for_mapping<Args>>()...};
+  return {julia_type<Args>()...};
 }
 
 
@@ -1136,6 +1136,8 @@ struct RegisterHook
     InitHooks::instance().add_hook(InitHooks::hook_t(f));
   }
 };
+
+JLCXX_API void register_core_types();
 
 } // namespace jlcxx
 

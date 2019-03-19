@@ -177,8 +177,16 @@ struct SmartJuliaType<std::unique_ptr<const T>>
 
 }
 
+struct SmartPointerTrait {};
+
 template<typename T>
-struct static_type_mapping<T, typename std::enable_if<IsSmartPointerType<typename std::remove_reference<T>::type>::value>::type>
+struct MappingTrait<T, typename std::enable_if<IsSmartPointerType<T>::value>::type>
+{
+  using type = SmartPointerTrait;
+};
+
+template<typename T>
+struct static_type_mapping<T, SmartPointerTrait>
 {
   typedef jl_value_t* type;
   static jl_datatype_t* julia_type()
@@ -188,7 +196,7 @@ struct static_type_mapping<T, typename std::enable_if<IsSmartPointerType<typenam
 };
 
 template<typename T>
-struct ConvertToJulia<T, false, false, false, typename std::enable_if<IsSmartPointerType<T>::value>::type>
+struct ConvertToJulia<T, SmartPointerTrait>
 {
   jl_value_t* operator()(T cpp_val) const
   {
@@ -197,7 +205,7 @@ struct ConvertToJulia<T, false, false, false, typename std::enable_if<IsSmartPoi
 };
 
 template<typename T>
-struct ConvertToCpp<T, false, false, false, typename std::enable_if<IsSmartPointerType<T>::value>::type>
+struct ConvertToCpp<T, SmartPointerTrait>
 {
   T operator()(jl_value_t* julia_val) const
   {
@@ -206,7 +214,7 @@ struct ConvertToCpp<T, false, false, false, typename std::enable_if<IsSmartPoint
 };
 
 template<typename T>
-struct ConvertToJulia<T&, false, false, false, typename std::enable_if<IsSmartPointerType<T>::value && !std::is_const<T>::value>::type>
+struct ConvertToJulia<T&, SmartPointerTrait>
 {
   jl_value_t* operator()(T& cpp_val) const
   {
@@ -215,7 +223,7 @@ struct ConvertToJulia<T&, false, false, false, typename std::enable_if<IsSmartPo
 };
 
 template<typename T>
-struct ConvertToCpp<T&, false, false, false, typename std::enable_if<IsSmartPointerType<T>::value && !std::is_const<T>::value>::type>
+struct ConvertToCpp<T&, SmartPointerTrait>
 {
   T& operator()(jl_value_t* julia_val) const
   {

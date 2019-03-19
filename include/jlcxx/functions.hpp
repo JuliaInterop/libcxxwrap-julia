@@ -119,7 +119,7 @@ template<> struct static_type_mapping<SafeCFunction>
 };
 
 template<>
-struct ConvertToCpp<SafeCFunction, false, true, false>
+struct ConvertToCpp<SafeCFunction>
 {
   SafeCFunction operator()(const SafeCFunction& julia_value) const
   {
@@ -145,7 +145,7 @@ namespace detail
 
     std::vector<jl_datatype_t*> operator()()
     {
-      return std::vector<jl_datatype_t*>({julia_reference_type<ArgsT>()...});
+      return std::vector<jl_datatype_t*>({julia_type<ArgsT>()...});
     }
 
     fptr_t cast_ptr(void* ptr)
@@ -204,7 +204,7 @@ template<typename R, typename...ArgsT> struct static_type_mapping<R(*)(ArgsT...)
 };
 
 template<typename R, typename...ArgsT>
-struct ConvertToCpp<R(*)(ArgsT...), false, false, false>
+struct ConvertToCpp<R(*)(ArgsT...)>
 {
   typedef R(*fptr_t)(ArgsT...);
   fptr_t operator()(const SafeCFunction& julia_value) const

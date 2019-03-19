@@ -193,18 +193,18 @@ JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params)
 #endif
 }
 
-jl_value_t* ConvertToJulia<std::wstring, false, false, false>::operator()(const std::wstring& str) const
-{
-  static const JuliaFunction wstring_to_julia("wstring_to_julia", "CxxWrap");
-  return wstring_to_julia(str.c_str(), static_cast<int_t>(str.size()));
-}
+// jl_value_t* ConvertToJulia<std::wstring, false, false, false>::operator()(const std::wstring& str) const
+// {
+//   static const JuliaFunction wstring_to_julia("wstring_to_julia", "CxxWrap");
+//   return wstring_to_julia(str.c_str(), static_cast<int_t>(str.size()));
+// }
 
-std::wstring ConvertToCpp<std::wstring, false, false, false>::operator()(jl_value_t* jstr) const
-{
-  static const JuliaFunction wstring_to_cpp("wstring_to_cpp", "CxxWrap");
-  ArrayRef<wchar_t> arr((jl_array_t*)wstring_to_cpp(jstr));
-  return std::wstring(arr.data(), arr.size());
-}
+// std::wstring ConvertToCpp<std::wstring, false, false, false>::operator()(jl_value_t* jstr) const
+// {
+//   static const JuliaFunction wstring_to_cpp("wstring_to_cpp", "CxxWrap");
+//   ArrayRef<wchar_t> arr((jl_array_t*)wstring_to_cpp(jstr));
+//   return std::wstring(arr.data(), arr.size());
+// }
 
 static constexpr const char* dt_prefix = "__cxxwrap_dt_";
 
@@ -262,6 +262,14 @@ JLCXX_API jl_datatype_t* new_bitstype(jl_sym_t *name,
   dt = jl_new_primitivetype((jl_value_t*)name, module, super, parameters, nbits);
   set_internal_constant(module, dt, dt_prefix + symbol_name(name));
   return dt;
+}
+
+JLCXX_API void register_core_types()
+{
+  dynamic_type_mapping<void>::set_julia_type(jl_void_type);
+  dynamic_type_mapping<void*>::set_julia_type(jl_voidpointer_type);
+  dynamic_type_mapping<float>::set_julia_type(jl_float32_type);
+  dynamic_type_mapping<jl_datatype_t*>::set_julia_type(jl_any_type);
 }
 
 }

@@ -24,6 +24,8 @@ JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_
   g_protect_from_gc = reinterpret_cast<protect_f_t>(gc_protect_f);
   g_unprotect_from_gc = reinterpret_cast<protect_f_t>(gc_unprotect_f);
 
+  register_core_types();
+
   InitHooks::instance().run_hooks();
 }
 
