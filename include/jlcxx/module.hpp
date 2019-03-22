@@ -486,6 +486,13 @@ public:
   template<typename T, typename SuperParametersT=ParameterList<>, typename JLSuperT=jl_datatype_t>
   TypeWrapper<T> add_type(const std::string& name, JLSuperT* super = jl_any_type);
 
+  /// Add types that are directly mapped to a Julia struct
+  template<typename T>
+  void map_type(const std::string& name)
+  {
+    dynamic_type_mapping<T>::set_julia_type((jl_datatype_t*)julia_type(name, m_jl_mod));
+  }
+
   template<typename T, typename JLSuperT=jl_datatype_t>
   void add_bits(const std::string& name, JLSuperT* super = jl_any_type);
 

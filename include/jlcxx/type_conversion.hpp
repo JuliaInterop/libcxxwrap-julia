@@ -76,6 +76,7 @@ JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params);
 
 /// Get the type from a global symbol
 JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& module_name = "");
+JLCXX_API jl_value_t* julia_type(const std::string& name, jl_module_t* mod);
 
 /// Backwards-compatible apply_array_type
 template<typename T>
@@ -328,6 +329,44 @@ struct dynamic_type_mapping<SourceT&>
   }
 };
 
+// Mapping for const pointers
+template<typename SourceT>
+struct dynamic_type_mapping<const SourceT*>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return dynamic_type_mapping<const SourceT&>::julia_type();
+  }
+};
+
+// Mapping for mutable pointers
+template<typename SourceT>
+struct dynamic_type_mapping<SourceT*>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return dynamic_type_mapping<SourceT&>::julia_type();
+  }
+};
+
+template<>
+struct dynamic_type_mapping<void*>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return jl_voidpointer_type;
+  }
+};
+
+template<>
+struct dynamic_type_mapping<jl_datatype_t*>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return jl_any_type;
+  }
+};
+
 template<typename T, typename Enable = void>
 struct NeedsStorage
 {
@@ -383,9 +422,9 @@ struct ConvertToCpp
 
 /// Conversion to C++
 template<typename CppT, typename JuliaT>
-inline CppT convert_to_cpp(JuliaT&& julia_val)
+inline CppT convert_to_cpp(JuliaT julia_val)
 {
-  return ConvertToCpp<CppT>()(std::forward<JuliaT>(julia_val));
+  return ConvertToCpp<CppT>()(julia_val);
 }
 
 /// Automatically register pointer types

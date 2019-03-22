@@ -136,15 +136,12 @@ JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& mod
       continue;
     }
 
-    jl_value_t* gval = jl_get_global(mod, jl_symbol(name.c_str()));
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 6
-    if(gval != nullptr && (jl_is_datatype(gval) || jl_is_typector(gval)))
-#else
-    if(gval != nullptr && (jl_is_datatype(gval) || jl_is_unionall(gval)))
-#endif
+    jl_value_t* gval = julia_type(name, mod);
+    if(gval != nullptr)
     {
       return gval;
     }
+    gval = jl_get_global(mod, jl_symbol(name.c_str()));
     if(gval != nullptr)
     {
       found_type = julia_type_name(jl_typeof(gval));
@@ -159,6 +156,16 @@ JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& mod
     }
   }
   throw std::runtime_error(errmsg);
+}
+
+JLCXX_API jl_value_t* julia_type(const std::string& name, jl_module_t* mod)
+{
+  jl_value_t* gval = jl_get_global(mod, jl_symbol(name.c_str()));
+  if(gval != nullptr && (jl_is_datatype(gval) || jl_is_unionall(gval)))
+  {
+    return gval;
+  }
+  return nullptr;
 }
 
 InitHooks& InitHooks::instance()
@@ -267,9 +274,7 @@ JLCXX_API jl_datatype_t* new_bitstype(jl_sym_t *name,
 JLCXX_API void register_core_types()
 {
   dynamic_type_mapping<void>::set_julia_type(jl_void_type);
-  dynamic_type_mapping<void*>::set_julia_type(jl_voidpointer_type);
   dynamic_type_mapping<float>::set_julia_type(jl_float32_type);
-  dynamic_type_mapping<jl_datatype_t*>::set_julia_type(jl_any_type);
 }
 
 }
