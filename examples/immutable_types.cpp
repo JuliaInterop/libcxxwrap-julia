@@ -19,6 +19,11 @@ float f(A a){ return a.x + a.y; }
 float g(const A & a){ return a.x + a.y; }
 float h(const A * a){ return a ? a->x + a->y : 0.0; }
 
+A* return_a_ptr(A& a) { a.x += 1; a.y += 1; return &a; }
+const A* return_a_cptr(A& a) { a.x += 1; a.y += 1; return &a; }
+A& return_a_ref(A& a) { a.x += 1; a.y += 1; return a; }
+const A& return_a_cref(A& a) { a.x += 1; a.y += 1; return a; }
+
 float twice_val(float x) { return 2.0*x; }
 float twice_cref(const float& x) { return 2.0*x; }
 float twice_ref(float& x) { return 2.0*x; }
@@ -46,17 +51,20 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
   using namespace immutable;
 
-  
-  //jlcxx::static_type_mapping<ImmutableBits>::set_julia_type((jl_datatype_t*)jlcxx::julia_type("ImmutableBits"));
-  // mod.method("increment_immutable", [] (const ImmutableBits& x) { return ImmutableBits({x.a+1.0, x.b+1.0}); });
+  mod.map_type<ImmutableBits>("ImmutableBits");
+  mod.method("increment_immutable", [] (const ImmutableBits& x)
+  {
+    return ImmutableBits({x.a+1.0, x.b+1.0});
+  });
 
   mod.map_type<A>("A");
   mod.method("f", f);
   mod.method("g", g);
   mod.method("h", h);
-
-  // //julia_type<dereference_for_mapping<A&>>();
-  // //jlcxx::mapped_julia_type<const A&> x = 10;
+  mod.method("return_a_ptr", return_a_ptr);
+  mod.method("return_a_cptr", return_a_cptr);
+  mod.method("return_a_ref", return_a_ref);
+  mod.method("return_a_cref", return_a_cref);
 
   mod.method("twice_val", twice_val);
   mod.method("twice_cref", twice_cref);
@@ -65,16 +73,4 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("twice_cptr", twice_cptr);
   mod.method("twice_ptr", twice_ptr);
   mod.method("twice_ptr_mut", twice_ptr_mut);
-
-  // mod.method("arrtest", [] ()
-  // {
-  //   jlcxx::ArrayRef<double, 2> y(jlcxx::make_julia_array(new double[6], 3, 2));
-  //   // write to y. for example:
-  //   for(auto &z : y)
-  //     z = 1.0;
-
-  //   std::transform(y.begin(), y.end(), y.begin(), [] (double x) { return 2*x; });
-
-  //   return y;
-  // });
 }

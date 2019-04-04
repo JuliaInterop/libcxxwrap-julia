@@ -242,11 +242,12 @@ struct static_type_mapping
   typedef SourceT type;
 };
 
-// template<typename SourceT>
-// struct static_type_mapping<const SourceT&>
-// {
-//   typedef const SourceT* type;
-// };
+/// References are pointers
+template<typename SourceT>
+struct static_type_mapping<SourceT&>
+{
+  typedef SourceT* type;
+};
 
 struct WrappedClassTrait {};
 
@@ -335,7 +336,7 @@ struct dynamic_type_mapping<const SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return dynamic_type_mapping<const SourceT&>::julia_type();
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstPtr"), jl_svec1(dynamic_type_mapping<SourceT>::julia_type()));
   }
 };
 
@@ -345,7 +346,7 @@ struct dynamic_type_mapping<SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return dynamic_type_mapping<SourceT&>::julia_type();
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Ptr"), jl_svec1(dynamic_type_mapping<SourceT>::julia_type()));
   }
 };
 
@@ -766,6 +767,16 @@ struct ConvertToJulia<T, NoMappingTrait>
   }
 };
 
+// Turn references into pointers when returing them
+template<typename T>
+struct ConvertToJulia<T&, NoMappingTrait>
+{
+  T* operator()(T& cpp_val) const
+  {
+    return &cpp_val;
+  }
+};
+
 /// Conversion to the statically mapped target type.
 template<typename T>
 inline auto convert_to_julia(T&& cpp_val) -> decltype(ConvertToJulia<T>()(std::forward<T>(cpp_val)))
@@ -795,9 +806,9 @@ inline typename std::enable_if<std::is_same<WrappedCppPtr, mapped_julia_type<Cpp
 
 // Pass-through for already boxed types
 template<typename CppT>
-inline typename std::enable_if<std::is_same<jl_value_t*, mapped_julia_type<CppT>>::value, jl_value_t*>::type box(const CppT& cpp_val)
+inline typename std::enable_if<std::is_same<jl_value_t*, mapped_julia_type<CppT>>::value, jl_value_t*>::type box(CppT&& cpp_val)
 {
-  return (jl_value_t*)convert_to_julia(cpp_val);
+  return (jl_value_t*)convert_to_julia(std::forward<CppT>(cpp_val));
 }
 
 // Generic bits type conversion
@@ -977,14 +988,27 @@ inline void* unbox(jl_value_t* v)
 template<typename CppT>
 struct ConvertToCpp<CppT, NoMappingTrait>
 {
-  CppT operator()(static_julia_type<CppT> julia_val) const
+  inline CppT operator()(CppT julia_val) const
   {
+    //std::cout << "got julia_val " << julia_val.a << julia_val.b << std::endl;
+    //std::cout << "Converting from type " << typeid(static_julia_type<CppT>).name() << " to type " << typeid(CppT).name() << std::endl;
     return julia_val;
   }
 
   CppT operator()(jl_value_t* julia_val) const
   {
+    std::cout << "unboxing julia value" << std::endl;
     return unbox<CppT>(julia_val);
+  }
+};
+
+/// References are pointers for Julia
+template<typename CppT>
+struct ConvertToCpp<CppT&, NoMappingTrait>
+{
+  inline CppT& operator()(CppT* julia_val) const
+  {
+    return *julia_val;
   }
 };
 

@@ -96,12 +96,13 @@ public:
   }
 
   /// Append an element to the end of the list
-  void push_back(const ValueT& val)
+  template<typename VT>
+  void push_back(VT&& val)
   {
     JL_GC_PUSH1(&m_array);
     const size_t pos = jl_array_len(m_array);
     jl_array_grow_end(m_array, 1);
-    jl_arrayset(m_array, box(val), pos);
+    jl_arrayset(m_array, box(std::forward<VT>(val)), pos);
     JL_GC_POP();
   }
 

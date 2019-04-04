@@ -44,7 +44,7 @@ struct ReturnTypeAdapter
   {
     auto std_func = reinterpret_cast<const std::function<R(Args...)>*>(functor);
     assert(std_func != nullptr);
-    return convert_to_julia((*std_func)(convert_to_cpp<static_julia_type<Args>>(args)...));
+    return convert_to_julia((*std_func)(convert_to_cpp<Args>(args)...));
   }
 };
 
@@ -55,7 +55,7 @@ struct ReturnTypeAdapter<void, Args...>
   {
     auto std_func = reinterpret_cast<const std::function<void(Args...)>*>(functor);
     assert(std_func != nullptr);
-    (*std_func)(convert_to_cpp<static_julia_type<Args>>(args)...);
+    (*std_func)(convert_to_cpp<Args>(args)...);
   }
 };
 
