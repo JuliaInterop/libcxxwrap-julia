@@ -2,7 +2,7 @@
 
 #include "jlcxx/jlcxx.hpp"
 
-namespace immutable
+namespace basic
 {
 
 struct ImmutableBits
@@ -36,12 +36,12 @@ void twice_ptr_mut(float* x) { (*x) *= 2.0; }
 
 extern "C"
 {
-  immutable::ImmutableBits make_immutable()
+  basic::ImmutableBits make_immutable()
   {
     return {1.0,5.0};
   }
 
-  void print_final(immutable::ImmutableBits b)
+  void print_final(basic::ImmutableBits b)
   {
     std::cout << "finalizing bits (" << b.a << "," << b.b << ")" << std::endl;
   }
@@ -49,7 +49,7 @@ extern "C"
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
-  using namespace immutable;
+  using namespace basic;
 
   mod.map_type<ImmutableBits>("ImmutableBits");
   mod.method("increment_immutable", [] (const ImmutableBits& x)
