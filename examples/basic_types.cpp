@@ -32,6 +32,11 @@ float twice_cptr(const float* x) { return 2.0*(*x); }
 float twice_ptr(float* x) { return 2.0*(*x); }
 void twice_ptr_mut(float* x) { (*x) *= 2.0; }
 
+int strlen_cchar(const char* str)
+{
+  return std::string(str).size();
+}
+
 }
 
 extern "C"
@@ -73,4 +78,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("twice_cptr", twice_cptr);
   mod.method("twice_ptr", twice_ptr);
   mod.method("twice_ptr_mut", twice_ptr_mut);
+
+  // String tests
+  mod.method("strlen_cchar", strlen_cchar);
+  mod.method("strlen_char", [] (char* str) { return std::string(str).size(); });
 }

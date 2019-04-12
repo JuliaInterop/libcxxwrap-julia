@@ -98,7 +98,7 @@ struct NeedConvertHelper
 {
   bool operator()()
   {
-    for(const bool b : {std::is_same<remove_const_ref<mapped_julia_type<Args>>,remove_const_ref<Args>>::value...})
+    for(const bool b : {std::is_same<mapped_julia_type<Args>,Args>::value...})
     {
       if(!b)
         return true;
@@ -426,7 +426,7 @@ public:
   template<typename R, typename... Args>
   FunctionWrapperBase& method(const std::string& name,  R(*f)(Args...), const bool force_convert = false)
   {
-    const bool need_convert = force_convert || !std::is_same<mapped_julia_type<R>,remove_const_ref<R>>::value || detail::NeedConvertHelper<Args...>()();
+    const bool need_convert = force_convert || detail::NeedConvertHelper<R, Args...>()();
 
     // Conversion is automatic when using the std::function calling method, so if we need conversion we use that
     if(need_convert)

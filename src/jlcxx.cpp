@@ -275,6 +275,17 @@ JLCXX_API void register_core_types()
 {
   dynamic_type_mapping<void>::set_julia_type(jl_void_type);
   dynamic_type_mapping<float>::set_julia_type(jl_float32_type);
+  dynamic_type_mapping<int>::set_julia_type(jl_int32_type);
+  dynamic_type_mapping<char>::set_julia_type(jl_uint8_type);
+  if(sizeof(unsigned long) == 8)
+  {
+    dynamic_type_mapping<unsigned long>::set_julia_type(jl_uint64_type);
+  }
+  else
+  {
+    assert(sizeof(unsigned long) == 4);
+    dynamic_type_mapping<unsigned long>::set_julia_type(jl_uint32_type);
+  }
 }
 
 }
