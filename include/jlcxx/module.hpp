@@ -122,23 +122,14 @@ struct NeedConvertHelper<>
 template<typename T, bool finalize=true, typename... ArgsT>
 jl_value_t* create(ArgsT&&... args)
 {
-  jl_datatype_t* dt = static_type_mapping<T>::julia_allocated_type();
-  assert(!jl_isbits(dt));
+  jl_datatype_t* dt = julia_type<T>();
+  std::cout << "obtained type " << julia_type_name(dt) << std::endl;
+  assert(jl_is_mutable_datatype(dt));
+  
 
   T* cpp_obj = new T(std::forward<ArgsT>(args)...);
 
   return boxed_cpp_pointer(cpp_obj, dt, finalize);
-}
-
-template<typename T>
-jl_value_t* createnull()
-{
-  jl_datatype_t* dt = static_type_mapping<T>::julia_allocated_type();
-  assert(!jl_isbits(dt));
-
-  T* cpp_obj = nullptr;
-
-  return boxed_cpp_pointer(cpp_obj, dt, true);
 }
 
 /// Safe downcast to base type
@@ -490,7 +481,7 @@ public:
   template<typename T>
   void map_type(const std::string& name)
   {
-    dynamic_type_mapping<T>::set_julia_type((jl_datatype_t*)julia_type(name, m_jl_mod));
+    set_julia_type<T>((jl_datatype_t*)julia_type(name, m_jl_mod));
   }
 
   template<typename T, typename JLSuperT=jl_datatype_t>
@@ -526,20 +517,14 @@ public:
     return nullptr;
   }
 
-  void register_type_pair(jl_datatype_t* reference_type, jl_datatype_t* allocated_type)
+  void register_type(jl_datatype_t* box_type)
   {
-    m_reference_types.push_back(reference_type);
-    m_allocated_types.push_back(allocated_type);
+    m_box_types.push_back(box_type);
   }
 
-  const std::vector<jl_datatype_t*> reference_types() const
+  const std::vector<jl_datatype_t*> box_types() const
   {
-    return m_reference_types;
-  }
-
-  const std::vector<jl_datatype_t*> allocated_types() const
-  {
-    return m_allocated_types;
+    return m_box_types;
   }
 
   jl_module_t* julia_module() const
@@ -573,12 +558,6 @@ private:
   {
   }
 
-  template <typename T>
-  void add_null_constructor()
-  {
-    method("__nullptr", [](SingletonType<T>) { return createnull<T>(); });
-  }
-
   template<typename T, typename SuperParametersT, typename JLSuperT>
   TypeWrapper<T> add_type_internal(const std::string& name, JLSuperT* super);
 
@@ -592,8 +571,7 @@ private:
   ArrayRef<void*> m_pointer_array;
   std::vector<std::shared_ptr<FunctionWrapperBase>> m_functions;
   std::map<std::string, jl_value_t*> m_jl_constants;
-  std::vector<jl_datatype_t*> m_reference_types;
-  std::vector<jl_datatype_t*> m_allocated_types;
+  std::vector<jl_datatype_t*> m_box_types;
 
   template<class T> friend class TypeWrapper;
 };
@@ -798,11 +776,10 @@ class TypeWrapper
 public:
   typedef T type;
 
-  TypeWrapper(Module& mod, jl_datatype_t* dt, jl_datatype_t* ref_dt, jl_datatype_t* alloc_dt) :
+  TypeWrapper(Module& mod, jl_datatype_t* dt, jl_datatype_t* box_dt) :
     m_module(mod),
     m_dt(dt),
-    m_ref_dt(ref_dt),
-    m_alloc_dt(alloc_dt)
+    m_box_dt(box_dt)
   {
   }
 
@@ -838,23 +815,19 @@ public:
     return *this;
   }
 
-  /// Call operator overload. For both reference and allocated type to work around https://github.com/JuliaLang/julia/issues/14919
+  /// Call operator overload. For concrete type box to work around https://github.com/JuliaLang/julia/issues/14919
   template<typename R, typename CT, typename... ArgsT>
   TypeWrapper<T>& method(R(CT::*f)(ArgsT...))
   {
     m_module.method("operator()", [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); } )
-      .set_name(detail::make_fname("CallOpOverload", m_ref_dt));
-    m_module.method("operator()", [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); } )
-      .set_name(detail::make_fname("CallOpOverload", m_alloc_dt));
+      .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
   template<typename R, typename CT, typename... ArgsT>
   TypeWrapper<T>& method(R(CT::*f)(ArgsT...) const)
   {
     m_module.method("operator()", [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); } )
-      .set_name(detail::make_fname("CallOpOverload", m_ref_dt));
-    m_module.method("operator()", [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); } )
-      .set_name(detail::make_fname("CallOpOverload", m_alloc_dt));
+      .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
 
@@ -863,9 +836,7 @@ public:
   TypeWrapper<T>& method(LambdaT&& lambda)
   {
     m_module.method("operator()", std::forward<LambdaT>(lambda))
-      .set_name(detail::make_fname("CallOpOverload", m_ref_dt));
-    m_module.method("operator()", std::forward<LambdaT>(lambda))
-      .set_name(detail::make_fname("CallOpOverload", m_alloc_dt));
+      .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
 
@@ -905,19 +876,15 @@ private:
     const bool is_abstract = jl_is_abstracttype(m_dt);
 
     jl_datatype_t* app_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_dt, parameter_list<AppliedT>()(parameter_list<T>::nb_parameters));
-    jl_datatype_t* app_ref_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_ref_dt, parameter_list<AppliedT>()(parameter_list<T>::nb_parameters));
-    jl_datatype_t* app_alloc_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_alloc_dt, parameter_list<AppliedT>()(parameter_list<T>::nb_parameters));
+    jl_datatype_t* app_box_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_box_dt, parameter_list<AppliedT>()(parameter_list<T>::nb_parameters));
 
-    set_julia_type<AppliedT>(app_dt);
+    set_julia_type<AppliedT>(app_box_dt);
     m_module.add_default_constructor<AppliedT>(DefaultConstructible<AppliedT>(), app_dt);
     m_module.add_copy_constructor<AppliedT>(CopyConstructible<AppliedT>(), app_dt);
-    m_module.add_null_constructor<AppliedT>();
-    static_type_mapping<AppliedT>::set_reference_type(app_ref_dt);
-    static_type_mapping<AppliedT>::set_allocated_type(app_alloc_dt);
 
-    apply_ftor(TypeWrapper<AppliedT>(m_module, app_dt, app_ref_dt, app_alloc_dt));
+    apply_ftor(TypeWrapper<AppliedT>(m_module, app_dt, app_box_dt));
 
-    m_module.register_type_pair(app_ref_dt, app_alloc_dt);
+    m_module.register_type(app_box_dt);
 
     if(!std::is_same<supertype<AppliedT>,AppliedT>::value)
     {
@@ -928,8 +895,7 @@ private:
   }
   Module& m_module;
   jl_datatype_t* m_dt;
-  jl_datatype_t* m_ref_dt;
-  jl_datatype_t* m_alloc_dt;
+  jl_datatype_t* m_box_dt;
 };
 
 template<typename ApplyT, typename... TypeLists> using combine_types = typename CombineTypes<ApplyT, TypeLists...>::type;
@@ -953,7 +919,7 @@ template<typename T, typename SuperParametersT, typename JLSuperT>
 TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* super_generic)
 {
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
-  static_assert(!IsImmutable<T>::value, "Immutable types (marked with IsImmutable) can't be added using add_type, map them directly to a struct instead");
+  static_assert(!IsImmutable<T>::value, "Immutable types (marked with IsImmutable) can't be added using add_type, map them directly to a struct instead and use map_type");
   static_assert(!IsBits<T>::value, "Bits types must be added using add_bits");
 
   if(m_jl_constants.count(name) > 0)
@@ -983,8 +949,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
     super = (jl_datatype_t*)apply_type((jl_value_t*)super_generic, super_parameters);
   }
 
-  const std::string refname = name+"Ref";
-  const std::string allocname = name+"Allocated";
+  const std::string boxname = name+"Box";
 
   // Create the datatypes
   jl_datatype_t* base_dt = new_datatype(jl_symbol(name.c_str()), m_jl_mod, super, parameters, jl_emptysvec, jl_emptysvec, 1, 0, 0);
@@ -992,35 +957,23 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
 
   super = is_parametric ? (jl_datatype_t*)apply_type((jl_value_t*)base_dt, parameters) : base_dt;
 
-  jl_datatype_t* ref_dt = new_datatype(jl_symbol(refname.c_str()), m_jl_mod, super, parameters, fnames, ftypes, 0, 0, 1);
-  protect_from_gc(ref_dt);
-  jl_datatype_t* alloc_dt = new_datatype(jl_symbol(allocname.c_str()), m_jl_mod, super, parameters, fnames, ftypes, 0, 1, 1);
-  protect_from_gc(alloc_dt);
+  jl_datatype_t* box_dt = new_datatype(jl_symbol(boxname.c_str()), m_jl_mod, super, parameters, fnames, ftypes, 0, 1, 1);
+  protect_from_gc(box_dt);
 
   // Register the type
   if(!is_parametric)
   {
-    set_julia_type<T>(base_dt);
-    add_null_constructor<T>();
+    set_julia_type<T>(box_dt);
     add_default_constructor<T>(DefaultConstructible<T>(), base_dt);
     add_copy_constructor<T>(CopyConstructible<T>(), base_dt);
-    static_type_mapping<T>::set_reference_type(ref_dt);
-    static_type_mapping<T>::set_allocated_type(alloc_dt);
   }
 
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 6
-  m_jl_constants[name] = (jl_value_t*)base_dt;
-  m_jl_constants[refname] = (jl_value_t*)ref_dt;
-  m_jl_constants[allocname] = (jl_value_t*)alloc_dt;
-#else
   m_jl_constants[name] = is_parametric ? base_dt->name->wrapper : (jl_value_t*)base_dt;
-  m_jl_constants[refname] = is_parametric ? ref_dt->name->wrapper : (jl_value_t*)ref_dt;
-  m_jl_constants[allocname] = is_parametric ? alloc_dt->name->wrapper : (jl_value_t*)alloc_dt;
-#endif
+  m_jl_constants[boxname] = is_parametric ? box_dt->name->wrapper : (jl_value_t*)box_dt;
 
   if(!is_parametric)
   {
-    this->register_type_pair(ref_dt, alloc_dt);
+    this->register_type(box_dt);
   }
 
   if(!is_parametric && !std::is_same<supertype<T>,T>::value)
@@ -1029,7 +982,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   }
 
   JL_GC_POP();
-  return TypeWrapper<T>(*this, base_dt, ref_dt, alloc_dt);
+  return TypeWrapper<T>(*this, base_dt, box_dt);
 }
 
 /// Add a composite type

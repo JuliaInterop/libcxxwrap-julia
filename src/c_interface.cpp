@@ -120,14 +120,9 @@ jl_array_t* convert_type_vector(const std::vector<jl_datatype_t*> types_vec)
   return datatypes.wrapped();
 }
 
-JLCXX_API jl_array_t* get_reference_types(jl_module_t* jlmod)
+JLCXX_API jl_array_t* get_box_types(jl_module_t* jlmod)
 {
-  return convert_type_vector(registry().get_module(jlmod).reference_types());
-}
-
-JLCXX_API jl_array_t* get_allocated_types(jl_module_t* jlmod)
-{
-  return convert_type_vector(registry().get_module(jlmod).allocated_types());
+  return convert_type_vector(registry().get_module(jlmod).box_types());
 }
 
 JLCXX_API const char* version_string()

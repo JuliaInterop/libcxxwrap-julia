@@ -225,12 +225,25 @@ namespace detail
   template<typename T1, typename T2> using define_if_different = typename DefineIfDifferent<T1,T2>::type;
 }
 
-struct NoMappingTrait {};
+// By default, fundamental and "POD" types are mapped directly
+template<typename T>
+struct IsMirroredType : std::bool_constant<!std::is_class<T>::value || (std::is_standard_layout<T>::value && std::is_trivial<T>::value)>
+{
+};
+
+struct NoMappingTrait {}; // no mapping, C++ type = Julia type by default
+struct CxxWrappedTrait {}; // types added using add_type
 
 template<typename T, typename Enable=void>
 struct MappingTrait
 {
   using type = NoMappingTrait;
+};
+
+template<typename T>
+struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value>::type>
+{
+  using type = CxxWrappedTrait;
 };
 
 template<typename T> using mapping_trait = typename MappingTrait<T>::type;
@@ -242,14 +255,18 @@ struct static_type_mapping
   typedef SourceT type;
 };
 
+template<typename SourceT>
+struct static_type_mapping<SourceT, CxxWrappedTrait>
+{
+  typedef WrappedCppPtr type;
+};
+
 /// References are pointers
 template<typename SourceT>
 struct static_type_mapping<SourceT&>
 {
   typedef SourceT* type;
 };
-
-struct WrappedClassTrait {};
 
 template<typename T> using static_julia_type = typename static_type_mapping<T>::type;
 
@@ -368,6 +385,15 @@ struct dynamic_type_mapping<jl_datatype_t*>
   }
 };
 
+template<>
+struct dynamic_type_mapping<jl_value_t*>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return jl_any_type;
+  }
+};
+
 template<typename T, typename Enable = void>
 struct NeedsStorage
 {
@@ -432,12 +458,7 @@ inline CppT convert_to_cpp(JuliaT julia_val)
 template<typename T>
 void set_julia_type(jl_datatype_t* dt)
 {
-  static_type_mapping<T>::set_julia_type(dt);
-  if(!IsImmutable<T>::value && !IsBits<T>::value)
-  {
-    static_type_mapping<T*>::set_julia_type(dt);
-    static_type_mapping<const T*>::set_julia_type(dt);
-  }
+  dynamic_type_mapping<T>::set_julia_type(dt);
 }
 
 /// Helper for Singleton types (Type{T} in Julia)
@@ -694,18 +715,11 @@ template<> struct static_type_mapping<jl_function_t*>
 // Helper for ObjectIdDict
 struct ObjectIdDict {};
 
-template<> struct IsValueType<ObjectIdDict> : std::true_type {};
-/*
 template<> struct static_type_mapping<ObjectIdDict>
 {
   typedef jl_value_t* type;
-  #if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 7
-  static jl_datatype_t* julia_type() { return (jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("ObjectIdDict")); }
-  #else
-  static jl_datatype_t* julia_type() { return (jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("IdDict")); }
-  #endif
 };
-*/
+
 /// Wrap a C++ pointer in a Julia type that contains a single void pointer field, returning the result as an any
 template<typename T>
 jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
@@ -1009,6 +1023,15 @@ struct ConvertToCpp<CppT&, NoMappingTrait>
   inline CppT& operator()(CppT* julia_val) const
   {
     return *julia_val;
+  }
+};
+
+template<typename CppT>
+struct ConvertToCpp<CppT, CxxWrappedTrait>
+{
+  inline CppT operator()(WrappedCppPtr julia_val) const
+  {
+    return *reinterpret_cast<CppT*>(julia_val.voidptr);
   }
 };
 
