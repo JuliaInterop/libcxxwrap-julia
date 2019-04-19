@@ -41,59 +41,19 @@ namespace detail
   };
 }
 
-JLCXX_API jl_array_t* gc_protected();
-JLCXX_API std::stack<std::size_t>& gc_free_stack();
-JLCXX_API std::map<jl_value_t*, std::pair<std::size_t,std::size_t>>& gc_index_map();
+JLCXX_API void protect_from_gc(jl_value_t* v);
+JLCXX_API void unprotect_from_gc(jl_value_t* v);
 
 template<typename T>
 inline void protect_from_gc(T* x)
 {
-  jl_value_t* val = (jl_value_t*)x;
-  JL_GC_PUSH1(&val);
-
-  // Increase count if already protected
-  auto map_it = gc_index_map().find(val);
-  if(map_it != gc_index_map().end())
-  {
-    map_it->second.second += 1;
-    JL_GC_POP();
-    return;
-  }
-
-  std::size_t pos = 0;
-  if(gc_free_stack().empty())
-  {
-    pos = jl_array_len(gc_protected());
-    jl_array_grow_end(gc_protected(), 1);
-  }
-  else
-  {
-    pos = gc_free_stack().top();
-    gc_free_stack().pop();
-  }
-  jl_arrayset(gc_protected(), val, pos);
-  gc_index_map()[val] = std::make_pair(pos,1);
-  JL_GC_POP();
+  protect_from_gc((jl_value_t*)x);
 }
 
 template<typename T>
-inline void unprotect_from_gc(T* val)
+inline void unprotect_from_gc(T* x)
 {
-  const auto found = gc_index_map().find((jl_value_t*)val);
-  if(found == gc_index_map().end())
-  {
-    std::cout << "WARNING: attempt to unprotect a jl_value_t* that was never protected" << std::endl;
-    return;
-  }
-  // Decrement use count
-  found->second.second -= 1;
-  if(found->second.second > 0)
-  {
-    return;
-  }
-  gc_free_stack().push(found->second.first);
-  jl_arrayset(gc_protected(), jl_nothing, found->second.first);
-  gc_index_map().erase(found);
+  unprotect_from_gc((jl_value_t*)x);
 }
 
 /// Get the symbol name correctly depending on Julia version
