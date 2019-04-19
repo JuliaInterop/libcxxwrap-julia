@@ -1,5 +1,6 @@
 #include <julia.h>
 #include <jlcxx/jlcxx.hpp>
+#include <jlcxx/functions.hpp>
 
 namespace test_module
 {
@@ -32,7 +33,7 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 
 extern "C"
 {
-extern void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type);
+extern void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f);
 extern void* create_registry();
 extern void bind_module_constants(jl_value_t* module_any);
 }
@@ -55,15 +56,16 @@ int main()
       const __cxxwrap_pointers = Ptr{Cvoid}[]
     end
   )");
+  JL_GC_PUSH1(&mod);
+
   if (jlcxx::julia_type_name(jl_typeof(mod)) != "Module")
   {
     std::cout << "TestModule creation failed" << std::endl;
     return 1;
   }
 
-  initialize(jl_eval_string("CxxWrap"), jl_eval_string("CxxWrap.CppFunctionInfo"));
-
-  JL_GC_PUSH1(&mod);
+  jlcxx::JuliaFunction initialize_cxx_lib("initialize_cxx_lib", "CxxWrap");
+  initialize_cxx_lib((void*)initialize);
 
   register_julia_module((jl_module_t*)mod, register_test_module);
 

@@ -14,32 +14,25 @@ namespace jlcxx
 jl_module_t* g_cxxwrap_module;
 jl_datatype_t* g_cppfunctioninfo_type;
 
-JLCXX_API jl_array_t* gc_protected()
+void (*g_protect_from_gc)(jl_value_t*);
+void (*g_unprotect_from_gc)(jl_value_t*);
+
+JLCXX_API void protect_from_gc(jl_value_t* v)
 {
-  static jl_array_t* m_arr = nullptr;
-  if (m_arr == nullptr)
-  {
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4 || JULIA_VERSION_MAJOR > 0
-    jl_value_t* array_type = apply_array_type(jl_any_type, 1);
-    m_arr = jl_alloc_array_1d(array_type, 0);
-#else
-    m_arr = jl_alloc_cell_1d(0);
-#endif
-    jl_set_const(g_cxxwrap_module, jl_symbol("_gc_protected"), (jl_value_t*)m_arr);
-  }
-  return m_arr;
+  JL_GC_PUSH1(&v);
+  g_protect_from_gc(v);
+  JL_GC_POP();
+}
+
+JLCXX_API void unprotect_from_gc(jl_value_t* v)
+{
+  g_unprotect_from_gc(v);
 }
 
 JLCXX_API std::stack<std::size_t>& gc_free_stack()
 {
   static std::stack<std::size_t> m_stack;
   return m_stack;
-}
-
-JLCXX_API std::map<jl_value_t*, std::pair<std::size_t,std::size_t>>& gc_index_map()
-{
-  static std::map<jl_value_t*, std::pair<std::size_t,std::size_t>> m_map;
-  return m_map;
 }
 
 Module::Module(jl_module_t* jmod) :
