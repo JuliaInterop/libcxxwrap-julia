@@ -37,6 +37,16 @@ int strlen_cchar(const char* str)
   return std::string(str).size();
 }
 
+int strlen_strref(std::string& s)
+{
+  return s.size();
+}
+
+int strlen_strptr(std::string* s)
+{
+  return s->size();
+}
+
 }
 
 extern "C"
@@ -85,5 +95,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 
   mod.add_type<std::string>("CppString")
     .constructor<const char*>();
-  mod.method("print_str", [] (std::string s) { std::cout << s << std::endl; });
+  mod.method("strlen_str", [] (std::string s) { return s.size(); });
+  mod.method("strlen_strcref", [] (const std::string& s) { return s.size(); });
+  mod.method("strlen_strref", strlen_strref);
+  mod.method("strlen_strptr", strlen_strptr);
+  mod.method("strlen_strcptr", [] (const std::string* s) { return s->size(); });
 }

@@ -184,6 +184,12 @@ struct WrappedCppPtr {
   void* voidptr;
 };
 
+template<typename CppT>
+inline CppT* extract_pointer(const WrappedCppPtr& p)
+{
+  return reinterpret_cast<CppT*>(p.voidptr);
+}
+
 template<typename T>
 T* unbox_wrapped_ptr(jl_value_t* v)
 {
@@ -261,11 +267,24 @@ struct static_type_mapping<SourceT, CxxWrappedTrait>
   typedef WrappedCppPtr type;
 };
 
+template<>
+struct static_type_mapping<jl_value_t*>
+{
+  typedef jl_value_t* type;
+};
+
+/// Pointers are a pointer to the equivalent C type
+template<typename SourceT>
+struct static_type_mapping<SourceT*>
+{
+  typedef typename static_type_mapping<SourceT>::type* type;
+};
+
 /// References are pointers
 template<typename SourceT>
 struct static_type_mapping<SourceT&>
 {
-  typedef SourceT* type;
+  typedef typename static_type_mapping<SourceT>::type* type;
 };
 
 template<typename T> using static_julia_type = typename static_type_mapping<T>::type;
@@ -476,42 +495,6 @@ template<typename T> struct IsValueType<SingletonType<T>> : std::true_type {};
 //   static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jl_type_type, jl_svec1(static_type_mapping<T>::julia_type())); }
 // };
 
-namespace detail
-{
-  // Helper to deal with references
-  template<typename T>
-  struct JuliaReferenceMapping
-  {
-    typedef T type;
-  };
-
-  template<typename T>
-  struct JuliaReferenceMapping<T&>
-  {
-    typedef typename StaticIf<IsFundamental<T>::value, T&, T>::type type;
-  };
-
-  template<typename T>
-  struct JuliaReferenceMapping<T*&>
-  {
-    typedef T*& type;
-  };
-
-  template<typename T>
-  struct JuliaReferenceMapping<const T&>
-  {
-    typedef T type;
-  };
-
-  template<typename T>
-  struct JuliaReferenceMapping<const T>
-  {
-    typedef T type;
-  };
-}
-
-template<typename SourceT> using dereference_for_mapping = typename detail::JuliaReferenceMapping<SourceT>::type;
-template<typename SourceT> using dereferenced_type_mapping = static_type_mapping<dereference_for_mapping<SourceT>>;
 template<typename SourceT> using mapped_julia_type = typename static_type_mapping<SourceT>::type;
 
 template<typename T>
@@ -1004,15 +987,27 @@ struct ConvertToCpp<CppT, NoMappingTrait>
 {
   inline CppT operator()(CppT julia_val) const
   {
-    //std::cout << "got julia_val " << julia_val.a << julia_val.b << std::endl;
-    //std::cout << "Converting from type " << typeid(static_julia_type<CppT>).name() << " to type " << typeid(CppT).name() << std::endl;
     return julia_val;
   }
 
   CppT operator()(jl_value_t* julia_val) const
   {
-    std::cout << "unboxing julia value" << std::endl;
     return unbox<CppT>(julia_val);
+  }
+};
+
+/// Conversion of pointer types
+template<typename CppT>
+struct ConvertToCpp<CppT*, NoMappingTrait>
+{
+  inline CppT* operator()(CppT* julia_val) const
+  {
+    return julia_val;
+  }
+
+  inline CppT* operator()(WrappedCppPtr* julia_val) const
+  {
+    return extract_pointer<CppT>(*julia_val);
   }
 };
 
@@ -1024,6 +1019,11 @@ struct ConvertToCpp<CppT&, NoMappingTrait>
   {
     return *julia_val;
   }
+
+  inline CppT& operator()(WrappedCppPtr* julia_val) const
+  {
+    return *extract_pointer<CppT>(*julia_val);
+  }
 };
 
 template<typename CppT>
@@ -1031,7 +1031,7 @@ struct ConvertToCpp<CppT, CxxWrappedTrait>
 {
   inline CppT operator()(WrappedCppPtr julia_val) const
   {
-    return *reinterpret_cast<CppT*>(julia_val.voidptr);
+    return *extract_pointer<CppT>(julia_val);
   }
 };
 
