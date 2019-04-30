@@ -246,6 +246,12 @@ struct MappingTrait
   using type = NoMappingTrait;
 };
 
+template<>
+struct MappingTrait<jl_value_t>
+{
+  using type = NoMappingTrait;
+};
+
 template<typename T>
 struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value>::type>
 {
@@ -497,10 +503,28 @@ template<typename T> struct IsValueType<SingletonType<T>> : std::true_type {};
 
 template<typename SourceT> using mapped_julia_type = typename static_type_mapping<SourceT>::type;
 
+template<typename T, typename TraitT=mapping_trait<T>>
+struct JuliaReturnType
+{
+  inline static jl_datatype_t* value()
+  {
+    return julia_type<T>();
+  }
+};
+
+template<typename T>
+struct JuliaReturnType<T, CxxWrappedTrait>
+{
+  inline static jl_datatype_t* value()
+  {
+    return jl_any_type;
+  }
+};
+
 template<typename T>
 inline jl_datatype_t* julia_return_type()
 {
-  return julia_type<T>();
+  return JuliaReturnType<T>::value();
 }
 
 /// Specializations
@@ -733,14 +757,15 @@ jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
 template<typename T>
 jl_value_t* julia_owned(T* cpp_ptr)
 {
-  typedef typename std::remove_const<T>::type NCT;
-  static_assert(!IsFundamental<NCT>::value, "Ownership can't be transferred for fundamental types");
+  static_assert(!std::is_fundamental<T>::value, "Ownership can't be transferred for fundamental types");
   const bool finalize = true;
-  return boxed_cpp_pointer(cpp_ptr, static_type_mapping<NCT>::julia_allocated_type(), finalize);
+  return boxed_cpp_pointer(cpp_ptr, julia_type<T>(), finalize);
 }
 
 /// Base class to specialize for conversion to Julia
-template<typename T, typename TraitT=mapping_trait<T>>
+// C++ wrapped types are in fact always returned as a pointer wrapped in a struct, so to avoid memory management issues with the wrapper itself
+// we always return the wrapping struct by value
+template<typename T, typename TraitT=mapping_trait<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>>
 struct ConvertToJulia
 {
   template<typename CppT>
@@ -748,9 +773,17 @@ struct ConvertToJulia
   {
     static_assert(std::is_same<mapped_julia_type<T>, WrappedCppPtr>::value, "No appropriate specialization for ConvertToJulia");
     static_assert(std::is_class<T>::value, "Need class type for conversion");
-    jl_datatype_t* dt = static_type_mapping<T>::julia_allocated_type();
     T* cpp_obj = new T(cpp_val);
-    return boxed_cpp_pointer(cpp_obj, dt, true);
+    return julia_owned(cpp_obj);
+  }
+};
+
+template<typename T>
+struct ConvertToJulia<T&, CxxWrappedTrait>
+{
+  WrappedCppPtr operator()(T& cpp_val) const
+  {
+    return {reinterpret_cast<void*>(const_cast<typename std::remove_const<T>::type*>(&cpp_val))};
   }
 };
 

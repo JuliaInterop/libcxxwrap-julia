@@ -123,7 +123,6 @@ template<typename T, bool finalize=true, typename... ArgsT>
 jl_value_t* create(ArgsT&&... args)
 {
   jl_datatype_t* dt = julia_type<T>();
-  std::cout << "obtained type " << julia_type_name(dt) << std::endl;
   assert(jl_is_mutable_datatype(dt));
   
 

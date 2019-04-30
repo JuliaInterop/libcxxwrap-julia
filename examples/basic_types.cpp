@@ -47,6 +47,37 @@ int strlen_strptr(std::string* s)
   return s->size();
 }
 
+struct StringHolder
+{
+  StringHolder(const char* s) : m_str(s) {}
+  std::string m_str;
+};
+
+std::string str_return_val(const StringHolder& strholder)
+{
+  return strholder.m_str;
+}
+
+const std::string& str_return_cref(const StringHolder& strholder)
+{
+  return strholder.m_str;
+}
+
+std::string& str_return_ref(StringHolder& strholder)
+{
+  return strholder.m_str;
+}
+
+const std::string* str_return_cptr(const StringHolder& strholder)
+{
+  return &strholder.m_str;
+}
+
+std::string* str_return_ptr(StringHolder& strholder)
+{
+  return &strholder.m_str;
+}
+
 }
 
 extern "C"
@@ -94,10 +125,22 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("strlen_char", [] (char* str) { return std::string(str).size(); });
 
   mod.add_type<std::string>("CppString")
-    .constructor<const char*>();
+    .constructor<const char*>()
+    .method("c_str", [] (const std::string& s) { return s.c_str(); });
   mod.method("strlen_str", [] (std::string s) { return s.size(); });
   mod.method("strlen_strcref", [] (const std::string& s) { return s.size(); });
   mod.method("strlen_strref", strlen_strref);
   mod.method("strlen_strptr", strlen_strptr);
   mod.method("strlen_strcptr", [] (const std::string* s) { return s->size(); });
+  mod.method("print_str", [] (const std::string& s) { std::cout << s << std::endl; });
+
+  mod.add_type<StringHolder>("StringHolder")
+    .constructor<const char*>();
+  
+  mod.method("str_return_val", str_return_val);
+  mod.method("str_return_cref", str_return_cref);
+  // mod.method("str_return_ref", str_return_ref);
+  // mod.method("str_return_cptr", str_return_cptr);
+  // mod.method("str_return_ptr", str_return_ptr);
+
 }
