@@ -139,8 +139,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   
   mod.method("str_return_val", str_return_val);
   mod.method("str_return_cref", str_return_cref);
-  // mod.method("str_return_ref", str_return_ref);
-  // mod.method("str_return_cptr", str_return_cptr);
-  // mod.method("str_return_ptr", str_return_ptr);
+  mod.method("str_return_ref", str_return_ref);
+  mod.method("str_return_cptr", str_return_cptr);
+  mod.method("str_return_ptr", str_return_ptr);
 
+  mod.method("replace_str_val!", [] (std::string& oldstring, const char* newstring) { oldstring = newstring; });
 }

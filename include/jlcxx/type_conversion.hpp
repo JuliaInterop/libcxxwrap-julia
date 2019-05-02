@@ -239,6 +239,8 @@ struct IsMirroredType : std::bool_constant<!std::is_class<T>::value || (std::is_
 
 struct NoMappingTrait {}; // no mapping, C++ type = Julia type by default
 struct CxxWrappedTrait {}; // types added using add_type
+struct WrappedPtrTrait {}; // By default pointers are wrapped
+struct DirectPtrTrait {}; // Some pointers are returned directly, e.g. jl_value_t*
 
 template<typename T, typename Enable=void>
 struct MappingTrait
@@ -246,10 +248,22 @@ struct MappingTrait
   using type = NoMappingTrait;
 };
 
-template<>
-struct MappingTrait<jl_value_t>
+template<typename T>
+struct MappingTrait<T&>
 {
-  using type = NoMappingTrait;
+  using type = WrappedPtrTrait;
+};
+
+template<typename T>
+struct MappingTrait<T*>
+{
+  using type = WrappedPtrTrait;
+};
+
+template<>
+struct MappingTrait<jl_value_t*>
+{
+  using type = DirectPtrTrait;
 };
 
 template<typename T>
@@ -264,33 +278,33 @@ template<typename T> using mapping_trait = typename MappingTrait<T>::type;
 template<typename SourceT, typename TraitT=mapping_trait<SourceT>>
 struct static_type_mapping
 {
-  typedef SourceT type;
+  using type = SourceT;
 };
 
 template<typename SourceT>
 struct static_type_mapping<SourceT, CxxWrappedTrait>
 {
-  typedef WrappedCppPtr type;
+  using type = WrappedCppPtr;
 };
 
-template<>
-struct static_type_mapping<jl_value_t*>
+template<typename SourceT>
+struct static_type_mapping<SourceT*, DirectPtrTrait>
 {
-  typedef jl_value_t* type;
+  using type = SourceT*;
 };
 
 /// Pointers are a pointer to the equivalent C type
 template<typename SourceT>
-struct static_type_mapping<SourceT*>
+struct static_type_mapping<SourceT*, WrappedPtrTrait>
 {
-  typedef typename static_type_mapping<SourceT>::type* type;
+  using type = WrappedCppPtr;
 };
 
 /// References are pointers
 template<typename SourceT>
 struct static_type_mapping<SourceT&>
 {
-  typedef typename static_type_mapping<SourceT>::type* type;
+  using type = WrappedCppPtr;
 };
 
 template<typename T> using static_julia_type = typename static_type_mapping<T>::type;
@@ -352,13 +366,35 @@ private:
   static inline CachedDatatype m_dt;
 };
 
+namespace detail
+{
+  // Gets the dynamic type to put inside a pointer, which is the normal dynamic type for normal types, or the base type for wrapped types
+  template<typename T, typename TraitT=mapping_trait<T>>
+  struct GetDynamicPtrT
+  {
+    static inline jl_datatype_t* type()
+    {
+      return dynamic_type_mapping<T>::julia_type();
+    }
+  };
+
+  template<typename T>
+  struct GetDynamicPtrT<T,CxxWrappedTrait>
+  {
+    static inline jl_datatype_t* type()
+    {
+      return dynamic_type_mapping<T>::julia_type()->super;
+    }
+  };
+}
+
 // Mapping for const references
 template<typename SourceT>
 struct dynamic_type_mapping<const SourceT&>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstRef"), jl_svec1(dynamic_type_mapping<SourceT>::julia_type()));
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstCxxRef"), jl_svec1(detail::GetDynamicPtrT<SourceT>::type()));
   }
 };
 
@@ -368,7 +404,7 @@ struct dynamic_type_mapping<SourceT&>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Ref"), jl_svec1(dynamic_type_mapping<SourceT>::julia_type()));
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("CxxRef"), jl_svec1(detail::GetDynamicPtrT<SourceT>::type()));
   }
 };
 
@@ -378,7 +414,7 @@ struct dynamic_type_mapping<const SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstPtr"), jl_svec1(dynamic_type_mapping<SourceT>::julia_type()));
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstCxxPtr"), jl_svec1(detail::GetDynamicPtrT<SourceT>::type()));
   }
 };
 
@@ -388,7 +424,7 @@ struct dynamic_type_mapping<SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Ptr"), jl_svec1(dynamic_type_mapping<SourceT>::julia_type()));
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("CxxPtr"), jl_svec1(detail::GetDynamicPtrT<SourceT>::type()));
   }
 };
 
@@ -683,7 +719,7 @@ template<typename T>
 struct static_type_mapping<const T*, typename std::enable_if<IsFundamental<T>::value>::type>
 {
   typedef T* type;
-  static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstPtr"), jl_svec1(static_type_mapping<T>::julia_type())); }
+  static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstCxxPtr"), jl_svec1(static_type_mapping<T>::julia_type())); }
 };
 
 template<>
@@ -765,7 +801,8 @@ jl_value_t* julia_owned(T* cpp_ptr)
 /// Base class to specialize for conversion to Julia
 // C++ wrapped types are in fact always returned as a pointer wrapped in a struct, so to avoid memory management issues with the wrapper itself
 // we always return the wrapping struct by value
-template<typename T, typename TraitT=mapping_trait<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>>
+//template<typename T, typename TraitT=mapping_trait<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>>
+template<typename T, typename TraitT=mapping_trait<T>>
 struct ConvertToJulia
 {
   template<typename CppT>
@@ -779,11 +816,29 @@ struct ConvertToJulia
 };
 
 template<typename T>
-struct ConvertToJulia<T&, CxxWrappedTrait>
+struct ConvertToJulia<T&, WrappedPtrTrait>
 {
   WrappedCppPtr operator()(T& cpp_val) const
   {
     return {reinterpret_cast<void*>(const_cast<typename std::remove_const<T>::type*>(&cpp_val))};
+  }
+};
+
+template<typename T>
+struct ConvertToJulia<T*, WrappedPtrTrait>
+{
+  WrappedCppPtr operator()(T* cpp_val) const
+  {
+    return {reinterpret_cast<void*>(const_cast<typename std::remove_const<T>::type*>(cpp_val))};
+  }
+};
+
+template<typename T>
+struct ConvertToJulia<T*, DirectPtrTrait>
+{
+  T* operator()(T* cpp_val) const
+  {
+    return cpp_val;
   }
 };
 
@@ -794,16 +849,6 @@ struct ConvertToJulia<T, NoMappingTrait>
   T operator()(const T& cpp_val) const
   {
     return cpp_val;
-  }
-};
-
-// Turn references into pointers when returing them
-template<typename T>
-struct ConvertToJulia<T&, NoMappingTrait>
-{
-  T* operator()(T& cpp_val) const
-  {
-    return &cpp_val;
   }
 };
 
@@ -1031,31 +1076,30 @@ struct ConvertToCpp<CppT, NoMappingTrait>
 
 /// Conversion of pointer types
 template<typename CppT>
-struct ConvertToCpp<CppT*, NoMappingTrait>
+struct ConvertToCpp<CppT*, WrappedPtrTrait>
+{
+  inline CppT* operator()(WrappedCppPtr julia_val) const
+  {
+    return extract_pointer<CppT>(julia_val);
+  }
+};
+
+template<typename CppT>
+struct ConvertToCpp<CppT*, DirectPtrTrait>
 {
   inline CppT* operator()(CppT* julia_val) const
   {
     return julia_val;
   }
-
-  inline CppT* operator()(WrappedCppPtr* julia_val) const
-  {
-    return extract_pointer<CppT>(*julia_val);
-  }
 };
 
-/// References are pointers for Julia
+/// Conversion of reference types
 template<typename CppT>
-struct ConvertToCpp<CppT&, NoMappingTrait>
+struct ConvertToCpp<CppT&, WrappedPtrTrait>
 {
-  inline CppT& operator()(CppT* julia_val) const
+  inline CppT& operator()(WrappedCppPtr julia_val) const
   {
-    return *julia_val;
-  }
-
-  inline CppT& operator()(WrappedCppPtr* julia_val) const
-  {
-    return *extract_pointer<CppT>(*julia_val);
+    return *extract_pointer<CppT>(julia_val);
   }
 };
 

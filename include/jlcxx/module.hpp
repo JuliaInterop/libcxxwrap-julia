@@ -86,12 +86,6 @@ std::vector<jl_datatype_t*> argtype_vector()
 {
   return {julia_type<Args>()...};
 }
-template<typename... Args>
-std::vector<jl_datatype_t*> reference_argtype_vector()
-{
-  return {julia_type<Args>()...};
-}
-
 
 template<typename... Args>
 struct NeedConvertHelper
@@ -162,9 +156,6 @@ public:
   /// Types of the arguments (used in the wrapper signature)
   virtual std::vector<jl_datatype_t*> argument_types() const = 0;
 
-  /// Reference type for the arguments (used in the ccall type list)
-  virtual std::vector<jl_datatype_t*> reference_argument_types() const = 0;
-
   /// Return type
   jl_datatype_t* return_type() const { return m_return_type; }
 
@@ -220,11 +211,6 @@ public:
     return detail::argtype_vector<Args...>();
   }
 
-  virtual std::vector<jl_datatype_t*> reference_argument_types() const
-  {
-    return detail::reference_argtype_vector<Args...>();
-  }
-
 protected:
   virtual void* pointer()
   {
@@ -255,11 +241,6 @@ public:
   virtual std::vector<jl_datatype_t*> argument_types() const
   {
     return detail::argtype_vector<Args...>();
-  }
-
-  virtual std::vector<jl_datatype_t*> reference_argument_types() const
-  {
-    return detail::reference_argtype_vector<Args...>();
   }
 
 protected:

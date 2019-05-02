@@ -25,8 +25,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
   using namespace jlcxx;
 
   containers.method("test_tuple", []() { return std::make_tuple(1, 2., 3.f); });
-  containers.method("const_ptr", []() { return ConstPtr<double>({const_vector()}); });
-  containers.method("const_ptr_arg", [](ConstPtr<double> p) { return std::make_tuple(p.ptr[0], p.ptr[1], p.ptr[2]); });
+  containers.method("const_ptr", []() { return ConstCxxPtr<double>({const_vector()}); });
+  containers.method("const_ptr_arg", [](ConstCxxPtr<double> p) { return std::make_tuple(p.ptr[0], p.ptr[1], p.ptr[2]); });
   containers.method("const_vector", []() { return jlcxx::make_const_array(const_vector(), 3); });
   // Note the column-major order for matrices
   containers.method("const_matrix", []() { return jlcxx::make_const_array(const_matrix(), 3, 2); });

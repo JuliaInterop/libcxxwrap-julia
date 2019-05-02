@@ -27,23 +27,23 @@ namespace detail
 
 /// Wrap a const pointer
 template<typename T>
-struct ConstPtr
+struct ConstCxxPtr
 {
   const T* ptr;
 };
 
-template<typename T> struct IsBits<ConstPtr<T>> : std::true_type {};
+template<typename T> struct IsBits<ConstCxxPtr<T>> : std::true_type {};
 
 template<typename T>
-struct InstantiateParametricType<ConstPtr<T>>
+struct InstantiateParametricType<ConstCxxPtr<T>>
 {
   int operator()(Module&) const
   {
     // Register the Julia type if not already instantiated
-    if(!static_type_mapping<ConstPtr<T>>::has_julia_type())
+    if(!static_type_mapping<ConstCxxPtr<T>>::has_julia_type())
     {
-      jl_datatype_t* dt = (jl_datatype_t*)apply_type((jl_value_t*)julia_type("ConstPtr"), jl_svec1(static_type_mapping<T>::julia_type()));
-      set_julia_type<ConstPtr<T>>(dt);
+      jl_datatype_t* dt = (jl_datatype_t*)apply_type((jl_value_t*)julia_type("ConstCxxPtr"), jl_svec1(static_type_mapping<T>::julia_type()));
+      set_julia_type<ConstCxxPtr<T>>(dt);
       protect_from_gc(dt);
     }
     return 0;
@@ -86,7 +86,7 @@ private:
 };
 
 template<typename T, index_t N>
-struct InstantiateParametricType<ConstArray<T,N>> : InstantiateParametricType<ConstPtr<T>>
+struct InstantiateParametricType<ConstArray<T,N>> : InstantiateParametricType<ConstCxxPtr<T>>
 {
 };
 
@@ -107,7 +107,7 @@ struct ConvertToJulia<ConstArray<T,N>, false, true, false>
     jl_value_t* ptr = nullptr;
     jl_value_t* size = nullptr;
     JL_GC_PUSH3(&result, &ptr, &size);
-    ptr = box(ConstPtr<T>({arr.ptr()}));
+    ptr = box(ConstCxxPtr<T>({arr.ptr()}));
     size = convert_to_julia(arr.size());
     result = jl_new_struct(julia_type<ConstArray<T,N>>(), ptr, size);
     JL_GC_POP();

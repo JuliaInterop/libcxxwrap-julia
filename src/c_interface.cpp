@@ -82,13 +82,12 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
   const jlcxx::Module& module = registry().get_module(jlmod);
   module.for_each_function([&](FunctionWrapperBase& f)
   {
-    Array<jl_datatype_t*> arg_types_array, ref_arg_types_array;
+    Array<jl_datatype_t*> arg_types_array;
     jl_value_t* boxed_f = nullptr;
     jl_value_t* boxed_thunk = nullptr;
-    JL_GC_PUSH4(arg_types_array.gc_pointer(), ref_arg_types_array.gc_pointer(), &boxed_f, &boxed_thunk);
+    JL_GC_PUSH3(arg_types_array.gc_pointer(), &boxed_f, &boxed_thunk);
 
     fill_types_vec(arg_types_array, f.argument_types());
-    fill_types_vec(ref_arg_types_array, f.reference_argument_types());
 
     boxed_f = jlcxx::box(f.pointer_index());
     boxed_thunk = jlcxx::box(f.thunk_index());
@@ -96,7 +95,6 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
     function_array.push_back(jl_new_struct(g_cppfunctioninfo_type,
       f.name(),
       arg_types_array.wrapped(),
-      ref_arg_types_array.wrapped(),
       f.return_type(),
       boxed_f,
       boxed_thunk
