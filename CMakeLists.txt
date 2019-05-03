@@ -72,6 +72,7 @@ set(JLCXX_HEADERS
     ${JLCXX_INCLUDE_DIR}/jlcxx/functions.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/module.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/smart_pointers.hpp
+    ${JLCXX_INCLUDE_DIR}/jlcxx/stl.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/tuple.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/type_conversion.hpp
 )
@@ -109,6 +110,16 @@ target_include_directories(${JLCXX_TARGET} PUBLIC
 )
 
 target_link_libraries(${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
+
+set(JLCXX_STL_TARGET cxxwrap_julia_stl)
+add_library(${JLCXX_STL_TARGET} SHARED ${JLCXX_SOURCE_DIR}/stl.cpp)
+target_include_directories(${JLCXX_STL_TARGET} PUBLIC
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+  $<BUILD_INTERFACE:${JLCXX_INCLUDE_DIR}>
+  "$<BUILD_INTERFACE:${Julia_INCLUDE_DIRS}>"
+)
+target_link_libraries(${JLCXX_STL_TARGET} ${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
+
 link_directories(${Julia_LIBRARY_DIR} ${Julia_LIBRARY_DIR}/julia)
 set_target_properties(${JLCXX_TARGET} PROPERTIES
                       PUBLIC_HEADER "${JLCXX_HEADERS}"
@@ -148,7 +159,7 @@ endif()
 set(JLCXX_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE STRING "install path for jlcxxConfig.cmake")
 
 
-install(TARGETS ${JLCXX_TARGET} EXPORT JlCxxTargets
+install(TARGETS ${JLCXX_TARGET} cxxwrap_julia_stl EXPORT JlCxxTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

@@ -132,7 +132,7 @@ struct IndexedArrayRef
 
   CppT operator[](const std::size_t i) const
   {
-    return convert_to_cpp<CppT>(jl_arrayref(m_array, i));
+    return unbox<CppT>(jl_arrayref(m_array, i));
   }
 
   jl_array_t* m_array;
