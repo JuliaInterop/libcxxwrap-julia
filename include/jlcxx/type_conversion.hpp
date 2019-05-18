@@ -1059,12 +1059,6 @@ inline void* unbox(jl_value_t* v)
   return jl_unbox_voidpointer(v);
 }
 
-template<>
-inline std::string unbox(jl_value_t* v)
-{
-  return convert_to_cpp<std::string>(v);
-}
-
 // Fundamental type conversion
 template<typename CppT>
 struct ConvertToCpp<CppT, NoMappingTrait>

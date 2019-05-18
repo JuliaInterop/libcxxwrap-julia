@@ -275,8 +275,23 @@ JLCXX_API void register_core_types()
 {
   set_julia_type<void>(jl_void_type);
   set_julia_type<float>(jl_float32_type);
-  set_julia_type<int>(jl_int32_type);
+  set_julia_type<double>(jl_float64_type);
+  set_julia_type<bool>(jl_uint8_type);
   set_julia_type<char>(jl_uint8_type);
+  set_julia_type<unsigned char>(jl_uint8_type);
+  set_julia_type<wchar_t>((jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("Cwchar_t")));
+  set_julia_type<short>(jl_int16_type);
+  set_julia_type<int>(jl_int32_type);
+  set_julia_type<unsigned int>(jl_uint32_type);
+  if(sizeof(long) == 8)
+  {
+    set_julia_type<long>(jl_int64_type);
+  }
+  else
+  {
+    assert(sizeof(long) == 4);
+    set_julia_type<long>(jl_int64_type);
+  }
   if(sizeof(unsigned long) == 8)
   {
     set_julia_type<unsigned long>(jl_uint64_type);
@@ -285,6 +300,17 @@ JLCXX_API void register_core_types()
   {
     assert(sizeof(unsigned long) == 4);
     set_julia_type<unsigned long>(jl_uint32_type);
+  }
+  assert(sizeof(long long) == 8);
+  set_julia_type<long long>(jl_int64_type);
+  if(!std::is_same<long long, int64_t>::value)
+  {
+    set_julia_type<int64_t>(jl_int64_type);
+  }
+  set_julia_type<unsigned long long>(jl_uint64_type);
+  if(!std::is_same<unsigned long long, uint64_t>::value)
+  {
+    set_julia_type<uint64_t>(jl_uint64_type);
   }
   set_julia_type<ObjectIdDict>((jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("IdDict")));
 }

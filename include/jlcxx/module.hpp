@@ -361,7 +361,8 @@ struct ParameterList
     {
       if(jl_svecref(result,i) == nullptr)
       {
-        throw std::runtime_error("Attempt to use unmapped type in parameter list");
+        std::vector<std::string> typenames({(typeid(ParametersT).name())...});        
+        throw std::runtime_error("Attempt to use unmapped type " + typenames[i] + " in parameter list");
       }
     }
     return result;
@@ -416,7 +417,7 @@ public:
 
   /// Define a new function. Overload for lambda
   template<typename LambdaT>
-  FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda)
+  FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda, typename std::enable_if<!std::is_member_function_pointer<LambdaT>::value, bool>::type = true)
   {
     return add_lambda(name, std::forward<LambdaT>(lambda), &LambdaT::operator());
   }
@@ -789,7 +790,7 @@ public:
 
   /// Define a "member" function using a lambda
   template<typename LambdaT>
-  TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda)
+  TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda, typename std::enable_if<!std::is_member_function_pointer<LambdaT>::value, bool>::type = true)
   {
     m_module.method(name, std::forward<LambdaT>(lambda));
     return *this;

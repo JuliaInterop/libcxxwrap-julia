@@ -49,32 +49,85 @@ private:
 
 StlWrappers& wrappers();
 
-// using stltypes = filter_parameterlist<detail::UnusedT, ParameterList
-// <
-//   bool,
-//   int,
-//   double,
-//   float,
-//   short,
-//   unsigned int,
-//   unsigned char,
-//   int64_t,
-//   uint64_t,
-//   detail::skip_if_same<long, int64_t>,
-//   detail::skip_if_same<long long, int64_t>,
-//   detail::skip_if_same<unsigned long, uint64_t>,
-//   wchar_t,
-//   void*
-// >>;
+namespace detail
+{
 
-using stltypes = filter_parameterlist<detail::UnusedT, ParameterList
+template<typename... T>
+constexpr bool has_type = false;
+
+template<typename T1, typename T2, typename... ParametersT>
+constexpr bool has_type<T1, ParameterList<T2, ParametersT...>> = has_type<T1, ParameterList<ParametersT...>>;
+
+template<typename T, typename... ParametersT>
+constexpr bool has_type<T, ParameterList<T, ParametersT...>> = true;
+
+template<typename T1, typename T2>
+constexpr bool has_type<T1, T2, ParameterList<>> = false;
+
+template<bool, typename T1, typename T2>
+struct ConditionalAppend
+{
+};
+
+template<typename T, typename... ParametersT>
+struct ConditionalAppend<true, T, ParameterList<ParametersT...>>
+{
+  using type = ParameterList<ParametersT..., T>;
+};
+
+template<typename T, typename... ParametersT>
+struct ConditionalAppend<false, T, ParameterList<ParametersT...>>
+{
+  using type = ParameterList<ParametersT...>;
+};
+
+template<typename... T>
+struct RemoveDuplicates
+{
+  using type = ParameterList<>;
+};
+
+template<typename T1, typename... ParametersT>
+struct RemoveDuplicates<ParameterList<T1,ParametersT...>>
+{
+  using type = typename RemoveDuplicates<ParameterList<T1>, ParameterList<ParametersT...>>::type;
+};
+
+template<typename ResultT, typename T1, typename... ParametersT>
+struct RemoveDuplicates<ResultT, ParameterList<T1,ParametersT...>>
+{
+  using type = typename RemoveDuplicates<typename ConditionalAppend<!has_type<T1,ResultT>,T1,ResultT>::type, ParameterList<ParametersT...>>::type;
+};
+
+template<typename ResultT>
+struct RemoveDuplicates<ResultT, ParameterList<>>
+{
+  using type = ResultT;
+};
+
+template<typename T> using remove_duplicates = typename RemoveDuplicates<T>::type;
+
+}
+
+using stltypes = detail::remove_duplicates<ParameterList
 <
   bool,
   int,
   double,
   float,
+  short,
+  unsigned int,
+  unsigned char,
   int64_t,
-  std::string
+  uint64_t,
+  long,
+  long long,
+  unsigned long,
+  wchar_t,
+  void*,
+  char,
+  std::string,
+  std::wstring
 >>;
 
 template<typename TypeWrapperT>
@@ -150,42 +203,6 @@ inline void register_vector_type()
 }
 
 }
-
-template<typename T>
-struct static_type_mapping<std::vector<T>> : static_type_mapping_base<std::vector<T>>
-{
-  using base = static_type_mapping_base<std::vector<T>>;
-
-  static void create_on_demand()
-  {
-    if(base::type_pointer() == nullptr)
-    {
-      stl::register_vector_type<T>();
-    }
-  }
-
-  static jl_datatype_t* julia_type()
-  {
-    create_on_demand();
-    return base::type_pointer();
-  }
-
-  // Immutable (stack-allocated) reference to existing C++ pointers
-  static jl_datatype_t* julia_reference_type()
-  {
-    create_on_demand();
-    assert(base::reference_type_pointer());
-    return base::reference_type_pointer();
-  }
-
-  // Type holding a pointer allocated using new. Stack allocated and instances are created with a finalizer that calls delete.
-  static jl_datatype_t* julia_allocated_type()
-  {
-    create_on_demand();
-    assert(base::allocated_type_pointer());
-    return base::allocated_type_pointer();
-  }
-};
 
 }
 

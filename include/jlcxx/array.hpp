@@ -233,14 +233,21 @@ public:
   }
 };
 
-template<typename T, int Dim> struct IsValueType<ArrayRef<T,Dim>> : std::true_type {};
-
 // Conversions
-template<typename T, int Dim> struct static_type_mapping<ArrayRef<T, Dim>>
+template<typename T, int Dim>
+struct static_type_mapping<ArrayRef<T, Dim>, CxxWrappedTrait>
 {
   typedef jl_array_t* type;
 };
 
+template<typename T, int Dim>
+struct dynamic_type_mapping<ArrayRef<T, Dim>>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return (jl_datatype_t*)apply_array_type(dynamic_type_mapping<T>::julia_type(), Dim);
+  }
+};
 
 template<typename ValueT, typename... SizesT>
 jl_array_t* wrap_array(const bool julia_owned, ValueT* c_ptr, const SizesT... sizes)
@@ -294,7 +301,7 @@ struct ConvertToJulia<Array<T>>
 };
 
 template<typename T, int Dim>
-struct ConvertToCpp<ArrayRef<T,Dim>>
+struct ConvertToCpp<ArrayRef<T,Dim>, CxxWrappedTrait>
 {
   ArrayRef<T,Dim> operator()(jl_array_t* arr) const
   {

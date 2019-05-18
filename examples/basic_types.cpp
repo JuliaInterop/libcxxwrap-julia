@@ -123,10 +123,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   // String tests
   mod.method("strlen_cchar", strlen_cchar);
   mod.method("strlen_char", [] (char* str) { return std::string(str).size(); });
-
-  mod.add_type<std::string>("CppString")
-    .constructor<const char*>()
-    .method("c_str", [] (const std::string& s) { return s.c_str(); });
   mod.method("strlen_str", [] (std::string s) { return s.size(); });
   mod.method("strlen_strcref", [] (const std::string& s) { return s.size(); });
   mod.method("strlen_strref", strlen_strref);

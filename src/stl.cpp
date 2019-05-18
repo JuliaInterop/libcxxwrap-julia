@@ -1,3 +1,4 @@
+#include <string>
 #include <vector>
 
 #include "jlcxx/jlcxx.hpp"
@@ -40,6 +41,14 @@ StlWrappers::StlWrappers(Module& stl) :
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& stl)
 {
+  stl.add_type<std::string>("StdString")
+    .constructor<const char*>()
+    .method("c_str", [] (const std::string& s) { return s.c_str(); });
+  
+  stl.add_type<std::wstring>("StdWString")
+    .constructor<const wchar_t*>()
+    .method("c_str", [] (const std::wstring& s) { return s.c_str(); });
+
   jlcxx::stl::StlWrappers::instantiate(stl);
 }
 
