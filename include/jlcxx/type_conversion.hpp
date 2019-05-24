@@ -362,6 +362,11 @@ public:
     m_dt.set_dt(dt);
   }
 
+  static inline bool has_julia_type()
+  {
+    return m_dt.get_dt() != nullptr;
+  }
+
 private:
   static inline CachedDatatype m_dt;
 };
@@ -474,7 +479,6 @@ struct CachedTypeMapping
   static jl_datatype_t* julia_type()
   {
     static CachedDatatype dt(dynamic_type_mapping<T>::julia_type());
-    std::cout << "used a cached map for " << julia_type_name(dt.get_dt()) << std::endl;
     return dt.get_dt();
   }
 };
@@ -520,6 +524,13 @@ template<typename T>
 void set_julia_type(jl_datatype_t* dt)
 {
   dynamic_type_mapping<T>::set_julia_type(dt);
+}
+
+/// Check if a type is registered
+template <typename T>
+bool has_julia_type()
+{
+  return dynamic_type_mapping<T>::has_julia_type();
 }
 
 /// Helper for Singleton types (Type{T} in Julia)

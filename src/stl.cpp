@@ -37,17 +37,24 @@ StlWrappers::StlWrappers(Module& stl) :
   vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
 }
 
+template<typename string_t>
+void wrap_string(TypeWrapper<string_t>&& wrapper)
+{
+  using char_t = typename string_t::value_type;
+  wrapper
+    .template constructor<const char_t*>()
+    .template constructor<const char_t*, std::size_t>()
+    .method("c_str", [] (const string_t& s) { return s.c_str(); })
+    .method("cppsize", &string_t::size)
+    .method("getindex", [] (const string_t& s, int_t i) { return s[i-1]; });
+}
+
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& stl)
 {
-  stl.add_type<std::string>("StdString")
-    .constructor<const char*>()
-    .method("c_str", [] (const std::string& s) { return s.c_str(); });
-  
-  stl.add_type<std::wstring>("StdWString")
-    .constructor<const wchar_t*>()
-    .method("c_str", [] (const std::wstring& s) { return s.c_str(); });
+  jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
+  jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
 
   jlcxx::stl::StlWrappers::instantiate(stl);
 }

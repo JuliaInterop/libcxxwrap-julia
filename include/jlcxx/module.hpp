@@ -564,7 +564,7 @@ void Module::add_default_constructor(std::true_type, jl_datatype_t* dt)
 }
 
 // Specialize this to build the correct parameter list, wrapping non-types in integral constants
-// There is no way to provide a template here that matchs all possible combinations of type and non-type arguments
+// There is no way to provide a template here that matches all possible combinations of type and non-type arguments
 template<typename T>
 struct BuildParameterList
 {

@@ -249,6 +249,27 @@ JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
     return dt;
   }
 
+  // std::stringstream dt_def;
+  // if(mutabl)
+  // {
+  //   dt_def << "mutable ";
+  // }
+  // dt_def << "struct " << symbol_name(name);
+  // const size_t nparams = jl_svec_len(parameters);
+  // if(nparams != 0)
+  // {
+  //   dt_def << "{";
+  //   for(size_t i = 0; i != nparams; ++i)
+  //   {
+  //     dt_def << julia_type_name(jl_svecref(parameters,i)) << ",";
+  //   }
+  //   dt_def << "}";
+  // }
+
+  // dt_def << " <: " << julia_type_name(super);
+
+  // std::cout << "adding type " << dt_def.str() << std::endl;
+
   dt = jl_new_datatype(name, module, super, parameters, fnames, ftypes, abstract, mutabl, ninitialized);
   set_internal_constant(module, dt, dt_prefix + symbol_name(name));
   return dt;
@@ -290,7 +311,7 @@ JLCXX_API void register_core_types()
   else
   {
     assert(sizeof(long) == 4);
-    set_julia_type<long>(jl_int64_type);
+    set_julia_type<long>(jl_int32_type);
   }
   if(sizeof(unsigned long) == 8)
   {
@@ -302,13 +323,19 @@ JLCXX_API void register_core_types()
     set_julia_type<unsigned long>(jl_uint32_type);
   }
   assert(sizeof(long long) == 8);
-  set_julia_type<long long>(jl_int64_type);
-  if(!std::is_same<long long, int64_t>::value)
+  if(!has_julia_type<long long>())
+  {
+    set_julia_type<long long>(jl_int64_type);
+  }
+  if (!has_julia_type<int64_t>())
   {
     set_julia_type<int64_t>(jl_int64_type);
   }
-  set_julia_type<unsigned long long>(jl_uint64_type);
-  if(!std::is_same<unsigned long long, uint64_t>::value)
+  if(!has_julia_type<unsigned long long>())
+  {
+    set_julia_type<unsigned long long>(jl_uint64_type);
+  }
+  if(!has_julia_type<uint64_t>())
   {
     set_julia_type<uint64_t>(jl_uint64_type);
   }
