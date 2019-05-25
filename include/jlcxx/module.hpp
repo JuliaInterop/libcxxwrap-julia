@@ -930,7 +930,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
     super = (jl_datatype_t*)apply_type((jl_value_t*)super_generic, super_parameters);
   }
 
-  const std::string boxname = name+"Box";
+  const std::string allocname = name+"Allocated";
 
   // Create the datatypes
   jl_datatype_t* base_dt = new_datatype(jl_symbol(name.c_str()), m_jl_mod, super, parameters, jl_emptysvec, jl_emptysvec, 1, 0, 0);
@@ -938,7 +938,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
 
   super = is_parametric ? (jl_datatype_t*)apply_type((jl_value_t*)base_dt, parameters) : base_dt;
 
-  jl_datatype_t* box_dt = new_datatype(jl_symbol(boxname.c_str()), m_jl_mod, super, parameters, fnames, ftypes, 0, 1, 1);
+  jl_datatype_t* box_dt = new_datatype(jl_symbol(allocname.c_str()), m_jl_mod, super, parameters, fnames, ftypes, 0, 1, 1);
   protect_from_gc(box_dt);
 
   // Register the type
@@ -950,7 +950,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   }
 
   m_jl_constants[name] = is_parametric ? base_dt->name->wrapper : (jl_value_t*)base_dt;
-  m_jl_constants[boxname] = is_parametric ? box_dt->name->wrapper : (jl_value_t*)box_dt;
+  m_jl_constants[allocname] = is_parametric ? box_dt->name->wrapper : (jl_value_t*)box_dt;
 
   if(!is_parametric)
   {

@@ -128,9 +128,4 @@ JLCXX_API const char* version_string()
   return JLCXX_VERSION_STRING;
 }
 
-JLCXX_API WrappedCppPtr wrap_pointer(void* p)
-{
-  return {p};
-}
-
 }
