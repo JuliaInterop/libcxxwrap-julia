@@ -361,13 +361,101 @@ struct ParameterList
     {
       if(jl_svecref(result,i) == nullptr)
       {
-        std::vector<std::string> typenames({(typeid(ParametersT).name())...});        
+        std::vector<std::string> typenames({(typeid(ParametersT).name())...}); 
         throw std::runtime_error("Attempt to use unmapped type " + typenames[i] + " in parameter list");
       }
     }
     return result;
   }
 };
+
+namespace detail
+{
+  template<typename... T>
+  constexpr bool has_type = false;
+
+  template<typename T1, typename T2, typename... ParametersT>
+  constexpr bool has_type<T1, ParameterList<T2, ParametersT...>> = has_type<T1, ParameterList<ParametersT...>>;
+
+  template<typename T, typename... ParametersT>
+  constexpr bool has_type<T, ParameterList<T, ParametersT...>> = true;
+
+  template<typename T1, typename T2>
+  constexpr bool has_type<T1, T2, ParameterList<>> = false;
+
+  template<bool, typename T1, typename T2>
+  struct ConditionalAppend
+  {
+  };
+
+  template<typename T, typename... ParametersT>
+  struct ConditionalAppend<true, T, ParameterList<ParametersT...>>
+  {
+    using type = ParameterList<ParametersT..., T>;
+  };
+
+  template<typename T, typename... ParametersT>
+  struct ConditionalAppend<false, T, ParameterList<ParametersT...>>
+  {
+    using type = ParameterList<ParametersT...>;
+  };
+
+  template<typename... T>
+  struct RemoveDuplicates
+  {
+    using type = ParameterList<>;
+  };
+
+  template<typename T1, typename... ParametersT>
+  struct RemoveDuplicates<ParameterList<T1,ParametersT...>>
+  {
+    using type = typename RemoveDuplicates<ParameterList<T1>, ParameterList<ParametersT...>>::type;
+  };
+
+  template<typename ResultT, typename T1, typename... ParametersT>
+  struct RemoveDuplicates<ResultT, ParameterList<T1,ParametersT...>>
+  {
+    using type = typename RemoveDuplicates<typename ConditionalAppend<!has_type<T1,ResultT>,T1,ResultT>::type, ParameterList<ParametersT...>>::type;
+  };
+
+  template<typename ResultT>
+  struct RemoveDuplicates<ResultT, ParameterList<>>
+  {
+    using type = ResultT;
+  };
+
+  template<typename T1, typename T2>
+  struct CombineParameterLists
+  {
+  };
+
+  template<typename... Params1, typename... Params2>
+  struct CombineParameterLists<ParameterList<Params1...>, ParameterList<Params2...>>
+  {
+    using type = ParameterList<Params1..., Params2...>;
+  };
+}
+
+template<typename T> using remove_duplicates = typename detail::RemoveDuplicates<T>::type;
+template<typename T1, typename T2> using combine_parameterlists = typename detail::CombineParameterLists<T1,T2>::type;
+
+using fundamental_int_types = remove_duplicates<ParameterList
+<
+  short int,
+  unsigned short int,
+  int,
+  unsigned int,
+  long long int,
+  unsigned long long int
+>>;
+
+using fixed_int_types = remove_duplicates<ParameterList
+<
+  int8_t,uint8_t,
+  int16_t,uint16_t,
+  int32_t,uint32_t,
+  int64_t,uint64_t
+>>;
 
 /// Store all exposed C++ functions associated with a module
 class JLCXX_API Module

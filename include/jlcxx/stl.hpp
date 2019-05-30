@@ -52,83 +52,22 @@ StlWrappers& wrappers();
 namespace detail
 {
 
-template<typename... T>
-constexpr bool has_type = false;
 
-template<typename T1, typename T2, typename... ParametersT>
-constexpr bool has_type<T1, ParameterList<T2, ParametersT...>> = has_type<T1, ParameterList<ParametersT...>>;
-
-template<typename T, typename... ParametersT>
-constexpr bool has_type<T, ParameterList<T, ParametersT...>> = true;
-
-template<typename T1, typename T2>
-constexpr bool has_type<T1, T2, ParameterList<>> = false;
-
-template<bool, typename T1, typename T2>
-struct ConditionalAppend
-{
-};
-
-template<typename T, typename... ParametersT>
-struct ConditionalAppend<true, T, ParameterList<ParametersT...>>
-{
-  using type = ParameterList<ParametersT..., T>;
-};
-
-template<typename T, typename... ParametersT>
-struct ConditionalAppend<false, T, ParameterList<ParametersT...>>
-{
-  using type = ParameterList<ParametersT...>;
-};
-
-template<typename... T>
-struct RemoveDuplicates
-{
-  using type = ParameterList<>;
-};
-
-template<typename T1, typename... ParametersT>
-struct RemoveDuplicates<ParameterList<T1,ParametersT...>>
-{
-  using type = typename RemoveDuplicates<ParameterList<T1>, ParameterList<ParametersT...>>::type;
-};
-
-template<typename ResultT, typename T1, typename... ParametersT>
-struct RemoveDuplicates<ResultT, ParameterList<T1,ParametersT...>>
-{
-  using type = typename RemoveDuplicates<typename ConditionalAppend<!has_type<T1,ResultT>,T1,ResultT>::type, ParameterList<ParametersT...>>::type;
-};
-
-template<typename ResultT>
-struct RemoveDuplicates<ResultT, ParameterList<>>
-{
-  using type = ResultT;
-};
-
-template<typename T> using remove_duplicates = typename RemoveDuplicates<T>::type;
 
 }
 
-using stltypes = detail::remove_duplicates<ParameterList
+using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists<ParameterList
 <
   bool,
-  int,
   double,
   float,
-  short,
-  unsigned int,
+  char,
   unsigned char,
-  //int64_t,
-  //uint64_t,
-  long,
-  long long,
-  unsigned long,
   wchar_t,
   void*,
-  char,
   std::string,
   std::wstring
->>;
+>, fundamental_int_types>, fixed_int_types>>;
 
 template<typename TypeWrapperT>
 void wrap_common(TypeWrapperT& wrapped)

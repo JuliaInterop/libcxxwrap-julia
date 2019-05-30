@@ -292,54 +292,56 @@ JLCXX_API jl_datatype_t* new_bitstype(jl_sym_t *name,
   return dt;
 }
 
+namespace detail
+{
+  template<typename T>
+  struct AddIntegerTypes
+  {
+  };
+
+  template<typename T, typename... OtherTypesT>
+  struct AddIntegerTypes<ParameterList<T, OtherTypesT...>>
+  {
+    void operator()(const std::string& basename, const std::string& prefix)
+    {
+      if(has_julia_type<T>())
+      {
+        return;
+      }
+      std::stringstream tname;
+      tname << prefix << (std::is_unsigned<T>::value ? "U" : "") << basename;
+      tname << sizeof(T)*8;
+      jl_module_t* mod = prefix.empty() ? jl_base_module : g_cxxwrap_module;
+      set_julia_type<T>((jl_datatype_t*)julia_type(tname.str(), mod));
+      AddIntegerTypes<ParameterList<OtherTypesT...>>()(basename, prefix);
+    }
+  };
+
+  template<>
+  struct AddIntegerTypes<ParameterList<>>
+  {
+    void operator()(const std::string&, const std::string&)
+    {
+    }
+  };
+}
+
 JLCXX_API void register_core_types()
 {
   set_julia_type<void>(jl_void_type);
   set_julia_type<float>(jl_float32_type);
   set_julia_type<double>(jl_float64_type);
-  set_julia_type<bool>(jl_uint8_type);
-  set_julia_type<char>(jl_uint8_type);
-  set_julia_type<unsigned char>(jl_uint8_type);
-  set_julia_type<wchar_t>((jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("Cwchar_t")));
-  set_julia_type<short>(jl_int16_type);
-  set_julia_type<int>(jl_int32_type);
-  set_julia_type<unsigned int>(jl_uint32_type);
-  if(sizeof(long) == 8)
-  {
-    set_julia_type<long>(jl_int64_type);
-  }
-  else
-  {
-    assert(sizeof(long) == 4);
-    set_julia_type<long>(jl_int32_type);
-  }
-  if(sizeof(unsigned long) == 8)
-  {
-    set_julia_type<unsigned long>(jl_uint64_type);
-  }
-  else
-  {
-    assert(sizeof(unsigned long) == 4);
-    set_julia_type<unsigned long>(jl_uint32_type);
-  }
-  assert(sizeof(long long) == 8);
-  if(!has_julia_type<long long>())
-  {
-    set_julia_type<long long>(jl_int64_type);
-  }
-  if (!has_julia_type<int64_t>())
-  {
-    set_julia_type<int64_t>(jl_int64_type);
-  }
-  if(!has_julia_type<unsigned long long>())
-  {
-    set_julia_type<unsigned long long>(jl_uint64_type);
-  }
-  if(!has_julia_type<uint64_t>())
-  {
-    set_julia_type<uint64_t>(jl_uint64_type);
-  }
-  set_julia_type<ObjectIdDict>((jl_datatype_t*)jl_get_global(jl_base_module, jl_symbol("IdDict")));
+  set_julia_type<bool>((jl_datatype_t*)julia_type("CxxBool", g_cxxwrap_module));
+  set_julia_type<char>((jl_datatype_t*)julia_type("CxxChar", g_cxxwrap_module));
+  set_julia_type<unsigned char>((jl_datatype_t*)julia_type("CxxUChar", g_cxxwrap_module));
+  set_julia_type<wchar_t>((jl_datatype_t*)julia_type("CxxWchar", g_cxxwrap_module));
+  
+  jlcxx::detail::AddIntegerTypes<fundamental_int_types>()("Int", "");
+  jlcxx::detail::AddIntegerTypes<fixed_int_types>()("Int", "Cxx");
+  set_julia_type<long>((jl_datatype_t*)julia_type("CxxLong", g_cxxwrap_module));
+  set_julia_type<unsigned long>((jl_datatype_t*)julia_type("CxxULong", g_cxxwrap_module));
+
+  set_julia_type<ObjectIdDict>((jl_datatype_t*)julia_type("IdDict", jl_base_module));
 }
 
 }
