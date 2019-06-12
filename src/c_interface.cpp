@@ -97,7 +97,8 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
       arg_types_array.wrapped(),
       f.return_type(),
       boxed_f,
-      boxed_thunk
+      boxed_thunk,
+      f.override_module()
     ));
 
     JL_GC_POP();

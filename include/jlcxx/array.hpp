@@ -122,68 +122,56 @@ private:
   jl_array_t* m_array;
 };
 
-/// Only provide read/write operator[] if the array contains non-boxed values
-template<typename PointedT, typename CppT>
-struct IndexedArrayRef
+namespace detail
 {
-  IndexedArrayRef(jl_array_t* arr) : m_array(arr)
-  {
-  }
 
-  CppT operator[](const std::size_t i) const
+template<typename JuliaT, typename TargetT>
+struct ExtractArrayElement
+{
+  inline TargetT& operator()(JuliaT* arr, const std::size_t i)
   {
-    return unbox<CppT>(jl_arrayref(m_array, i));
+    return *extract_pointer_nonull<TargetT>(arr[i]);
   }
-
-  jl_array_t* m_array;
 };
 
-template<typename ValueT>
-struct IndexedArrayRef<ValueT,ValueT>
+template<typename T>
+struct ExtractArrayElement<T,T>
 {
-  IndexedArrayRef(jl_array_t* arr) : m_array(arr)
+  inline T& operator()(T* arr, const std::size_t i)
   {
+    return arr[i];
   }
-
-  ValueT& operator[](const std::size_t i)
-  {
-    return ((ValueT*)jl_array_data(m_array))[i];
-  }
-
-  ValueT operator[](const std::size_t i) const
-  {
-    return ((ValueT*)jl_array_data(m_array))[i];
-  }
-
-  jl_array_t* m_array;
 };
+
+}
 
 /// Reference a Julia array in an STL-compatible wrapper
 template<typename ValueT, int Dim = 1>
-class ArrayRef : public IndexedArrayRef<mapped_julia_type<ValueT>, ValueT>
+class ArrayRef
 {
 public:
-  ArrayRef(jl_array_t* arr) : IndexedArrayRef<mapped_julia_type<ValueT>, ValueT>(arr)
+
+  typedef static_julia_type<ValueT> julia_t;
+
+  ArrayRef(jl_array_t* arr) : m_array(arr)
   {
     assert(wrapped() != nullptr);
   }
 
   /// Convert from existing C-array (memory owned by C++)
   template<typename... SizesT>
-  ArrayRef(ValueT* ptr, const SizesT... sizes);
+  ArrayRef(julia_t* ptr, const SizesT... sizes);
 
   /// Convert from existing C-array, explicitly setting Julia ownership
   template<typename... SizesT>
-  ArrayRef(const bool julia_owned, ValueT* ptr, const SizesT... sizes);
-
-  typedef mapped_julia_type<ValueT> julia_t;
+  ArrayRef(const bool julia_owned, julia_t* ptr, const SizesT... sizes);
 
   typedef array_iterator_base<julia_t, ValueT> iterator;
   typedef array_iterator_base<julia_t const, ValueT const> const_iterator;
 
   inline jl_array_t* wrapped() const
   {
-    return IndexedArrayRef<julia_t, ValueT>::m_array;
+    return m_array;
   }
 
   iterator begin()
@@ -208,7 +196,8 @@ public:
 
   void push_back(const ValueT& val)
   {
-    static_assert(Dim == 1, "push_back is only for 1D ArrayRef");
+    static_assert(Dim == 1, "ArrayRef::push_back is only for 1D ArrayRef");
+    static_assert(std::is_same<julia_t,ValueT>::value, "ArrayRef::push_back is only for arrays of fundamental types");
     jl_array_t* arr_ptr = wrapped();
     JL_GC_PUSH1(&arr_ptr);
     const size_t pos = size();
@@ -217,20 +206,32 @@ public:
     JL_GC_POP();
   }
 
-  const ValueT* data() const
+  const julia_t* data() const
   {
-    return (ValueT*)jl_array_data(wrapped());
+    return (julia_t*)jl_array_data(wrapped());
   }
 
-  ValueT* data()
+  julia_t* data()
   {
-    return (ValueT*)jl_array_data(wrapped());
+    return (julia_t*)jl_array_data(wrapped());
   }
 
   std::size_t size() const
   {
     return jl_array_len(wrapped());
   }
+
+  ValueT& operator[](const std::size_t i)
+  {
+    return detail::ExtractArrayElement<julia_t,ValueT>()(data(), i);
+  }
+
+  const ValueT& operator[](const std::size_t i) const
+  {
+    return detail::ExtractArrayElement<const julia_t,const ValueT>()(data(), i);
+  }
+
+  jl_array_t* m_array;
 };
 
 // Conversions
@@ -240,19 +241,42 @@ struct static_type_mapping<ArrayRef<T, Dim>, CxxWrappedTrait>
   typedef jl_array_t* type;
 };
 
+namespace detail
+{
+
+template<typename T, typename TraitT=mapping_trait<T>>
+struct PackedArrayType
+{
+  static jl_datatype_t* type()
+  {
+    return julia_type<T>();
+  }
+};
+
+template<typename T>
+struct PackedArrayType<T,CxxWrappedTrait>
+{
+  static jl_datatype_t* type()
+  {
+    return julia_type<T&>();
+  }
+};
+
+}
+
 template<typename T, int Dim>
 struct dynamic_type_mapping<ArrayRef<T, Dim>>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_array_type(dynamic_type_mapping<T>::julia_type(), Dim);
+    return (jl_datatype_t*)apply_array_type(detail::PackedArrayType<T>::type(), Dim);
   }
 };
 
 template<typename ValueT, typename... SizesT>
 jl_array_t* wrap_array(const bool julia_owned, ValueT* c_ptr, const SizesT... sizes)
 {
-  jl_datatype_t* dt = static_type_mapping<ArrayRef<ValueT, sizeof...(SizesT)>>::julia_type();
+  jl_datatype_t* dt = julia_type<ArrayRef<ValueT, sizeof...(SizesT)>>();
   jl_value_t *dims = nullptr;
   JL_GC_PUSH1(&dims);
   dims = convert_to_julia(std::make_tuple(static_cast<int_t>(sizes)...));
@@ -263,16 +287,14 @@ jl_array_t* wrap_array(const bool julia_owned, ValueT* c_ptr, const SizesT... si
 
 template<typename ValueT, int Dim>
 template<typename... SizesT>
-ArrayRef<ValueT, Dim>::ArrayRef(ValueT* c_ptr, const SizesT... sizes) : IndexedArrayRef<julia_t, ValueT>(nullptr)
+ArrayRef<ValueT, Dim>::ArrayRef(julia_t* c_ptr, const SizesT... sizes) : m_array(wrap_array(false, c_ptr, sizes...))
 {
-  IndexedArrayRef<julia_t, ValueT>::m_array = wrap_array(false, c_ptr, sizes...);
 }
 
 template<typename ValueT, int Dim>
 template<typename... SizesT>
-ArrayRef<ValueT, Dim>::ArrayRef(const bool julia_owned, ValueT* c_ptr, const SizesT... sizes) : IndexedArrayRef<julia_t, ValueT>(nullptr)
+ArrayRef<ValueT, Dim>::ArrayRef(const bool julia_owned, julia_t* c_ptr, const SizesT... sizes) : m_array(wrap_array(julia_owned, c_ptr, sizes...))
 {
-  IndexedArrayRef<julia_t, ValueT>::m_array = wrap_array(julia_owned, c_ptr, sizes...);
 }
 
 template<typename ValueT, typename... SizesT>

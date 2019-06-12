@@ -103,7 +103,7 @@ struct static_type_mapping<NTuple<N,T>>
     jl_datatype_t* dt = nullptr;
     if(dt == nullptr)
     {
-      dt = (jl_datatype_t*)jl_apply_tuple_type(jl_svec1(apply_type((jl_value_t*)jl_vararg_type, jl_svec2(static_type_mapping<T>::julia_type(), static_type_mapping<N>::julia_type()))));
+      dt = (jl_datatype_t*)jl_apply_tuple_type(jl_svec1(apply_type((jl_value_t*)jl_vararg_type, jl_svec2(::jlcxx::julia_type<T>(), ::jlcxx::julia_type<N>()))));
       protect_from_gc(dt);
     }
     return dt;

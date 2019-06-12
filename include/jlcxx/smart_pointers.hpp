@@ -126,7 +126,7 @@ inline jl_datatype_t* smart_julia_type()
   static jl_datatype_t* wrapped_dt = nullptr;
   static jl_datatype_t* result = nullptr;
 
-  jl_datatype_t* current_dt = static_type_mapping<remove_const_ref<T>>::julia_type();
+  jl_datatype_t* current_dt = dynamic_type_mapping<remove_const_ref<T>>::julia_type();
   if(current_dt != wrapped_dt)
   {
     wrapped_dt = current_dt;
@@ -135,7 +135,7 @@ inline jl_datatype_t* smart_julia_type()
 
   if(result == nullptr)
   {
-    result = (jl_datatype_t*)apply_type(julia_smartpointer_type(), jl_svec2(wrapped_dt, jl_symbol(typeid(DefaultPtrT).name())));
+    jl_datatype_t* result = (jl_datatype_t*)apply_type(julia_smartpointer_type(), jl_svec2(wrapped_dt, jl_symbol(typeid(DefaultPtrT).name())));
     protect_from_gc(result);
 
     BaseMapping<PtrT, typename ConstructorPointerType<PtrT>::type>::instantiate();
@@ -179,57 +179,62 @@ struct SmartJuliaType<std::unique_ptr<const T>>
 
 struct SmartPointerTrait {};
 
-template<typename T>
-struct MappingTrait<T, typename std::enable_if<IsSmartPointerType<T>::value>::type>
-{
-  using type = SmartPointerTrait;
-};
+// template<typename T>
+// struct MappingTrait<T, typename std::enable_if<IsSmartPointerType<T>::value>::type>
+// {
+//   using type = SmartPointerTrait;
+// };
 
-template<typename T>
-struct static_type_mapping<T, SmartPointerTrait>
-{
-  typedef jl_value_t* type;
-  static jl_datatype_t* julia_type()
-  {
-    return detail::SmartJuliaType<T>::apply();
-  }
-};
+// template<typename T>
+// struct static_type_mapping<T, SmartPointerTrait>
+// {
+//   typedef jl_value_t* type;
+// };
 
-template<typename T>
-struct ConvertToJulia<T, SmartPointerTrait>
-{
-  jl_value_t* operator()(T cpp_val) const
-  {
-    return boxed_cpp_pointer(new T(std::move(cpp_val)), static_type_mapping<T>::julia_type(), true);
-  }
-};
+// template<typename T>
+// struct dynamic_type_mapping<T, SmartPointerTrait>
+// {
+//   static inline jl_datatype_t* julia_type()
+//   {
+//     return detail::SmartJuliaType<T>::apply();
+//   }
+// };
 
-template<typename T>
-struct ConvertToCpp<T, SmartPointerTrait>
-{
-  T operator()(jl_value_t* julia_val) const
-  {
-    return *unbox_wrapped_ptr<T>(julia_val);
-  }
-};
+// template<typename T>
+// struct ConvertToJulia<T, SmartPointerTrait>
+// {
+//   jl_value_t* operator()(T cpp_val) const
+//   {
+//     return boxed_cpp_pointer(new T(std::move(cpp_val)), static_type_mapping<T>::julia_type(), true);
+//   }
+// };
 
-template<typename T>
-struct ConvertToJulia<T&, SmartPointerTrait>
-{
-  jl_value_t* operator()(T& cpp_val) const
-  {
-    return boxed_cpp_pointer(&cpp_val, static_type_mapping<T>::julia_type(), false);
-  }
-};
+// template<typename T>
+// struct ConvertToCpp<T, SmartPointerTrait>
+// {
+//   T operator()(jl_value_t* julia_val) const
+//   {
+//     return *unbox_wrapped_ptr<T>(julia_val);
+//   }
+// };
 
-template<typename T>
-struct ConvertToCpp<T&, SmartPointerTrait>
-{
-  T& operator()(jl_value_t* julia_val) const
-  {
-    return *unbox_wrapped_ptr<T>(julia_val);
-  }
-};
+// template<typename T>
+// struct ConvertToJulia<T&, SmartPointerTrait>
+// {
+//   jl_value_t* operator()(T& cpp_val) const
+//   {
+//     return boxed_cpp_pointer(&cpp_val, static_type_mapping<T>::julia_type(), false);
+//   }
+// };
+
+// template<typename T>
+// struct ConvertToCpp<T&, SmartPointerTrait>
+// {
+//   T& operator()(jl_value_t* julia_val) const
+//   {
+//     return *unbox_wrapped_ptr<T>(julia_val);
+//   }
+// };
 
 }
 

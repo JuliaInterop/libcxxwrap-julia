@@ -126,7 +126,6 @@ struct NullableStruct {};
 
 namespace jlcxx
 {
-  template<> struct IsBits<cpp_types::MyEnum> : std::true_type {};
   template<typename T> struct IsSmartPointerType<cpp_types::MySmartPointer<T>> : std::true_type { };
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
 }
@@ -143,7 +142,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .constructor<const std::string&>()
     .constructor<int_t>(false) // no finalizer
     .method("set", &World::set)
-    .method("greet", &World::greet)
+    .method("greet_cref", &World::greet)
     .method("greet_lambda", [] (const World& w) { return w.greet(); } );
 
   types.add_type<Array>("Array");
@@ -152,7 +151,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return new World("factory hello");
   });
-
+/*
   types.method("shared_world_factory", []() -> const std::shared_ptr<World>
   {
     return std::shared_ptr<World>(new World("shared factory hello"));
@@ -198,7 +197,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return std::unique_ptr<const World>(new World("unique factory hello"));
   });
-
+*/
   types.method("world_by_value", [] () -> World
   {
     return World("world by value hello");
@@ -232,7 +231,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   types.add_type<ConstPtrConstruct>("ConstPtrConstruct")
     .constructor<const World*>()
-    .method("greet", &ConstPtrConstruct::greet);
+    .method("greet_cref", &ConstPtrConstruct::greet);
 
   // Enum
   types.add_bits<MyEnum>("MyEnum", jlcxx::julia_type("CppEnum"));
@@ -263,4 +262,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_type<NullableStruct>("NullableStruct");
   types.method("return_ptr", [] () { return new NullableStruct; });
   types.method("return_null", [] () { return static_cast<NullableStruct*>(nullptr); });
+
+  jlcxx::stl::apply_stl<World>(types);
 }

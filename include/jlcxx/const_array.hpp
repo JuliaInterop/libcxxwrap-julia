@@ -42,7 +42,7 @@ struct InstantiateParametricType<ConstCxxPtr<T>>
     // Register the Julia type if not already instantiated
     if(!static_type_mapping<ConstCxxPtr<T>>::has_julia_type())
     {
-      jl_datatype_t* dt = (jl_datatype_t*)apply_type((jl_value_t*)julia_type("ConstCxxPtr"), jl_svec1(static_type_mapping<T>::julia_type()));
+      jl_datatype_t* dt = (jl_datatype_t*)apply_type((jl_value_t*)julia_type("ConstCxxPtr"), jl_svec1(julia_type<T>()));
       set_julia_type<ConstCxxPtr<T>>(dt);
       protect_from_gc(dt);
     }

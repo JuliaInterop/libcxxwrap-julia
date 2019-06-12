@@ -40,7 +40,7 @@ struct ReturnTypeAdapter
 {
   using return_type = decltype(convert_to_julia(std::declval<R>()));
 
-  inline return_type operator()(const void* functor, mapped_julia_type<Args>... args)
+  inline return_type operator()(const void* functor, static_julia_type<Args>... args)
   {
     auto std_func = reinterpret_cast<const std::function<R(Args...)>*>(functor);
     assert(std_func != nullptr);
@@ -51,7 +51,7 @@ struct ReturnTypeAdapter
 template<typename... Args>
 struct ReturnTypeAdapter<void, Args...>
 {
-  inline void operator()(const void* functor, mapped_julia_type<Args>... args)
+  inline void operator()(const void* functor, static_julia_type<Args>... args)
   {
     auto std_func = reinterpret_cast<const std::function<void(Args...)>*>(functor);
     assert(std_func != nullptr);
@@ -63,9 +63,9 @@ struct ReturnTypeAdapter<void, Args...>
 template<typename R, typename... Args>
 struct CallFunctor
 {
-  using return_type = decltype(ReturnTypeAdapter<R, Args...>()(std::declval<const void*>(), std::declval<mapped_julia_type<Args>>()...));
+  using return_type = decltype(ReturnTypeAdapter<R, Args...>()(std::declval<const void*>(), std::declval<static_julia_type<Args>>()...));
 
-  static return_type apply(const void* functor, mapped_julia_type<Args>... args)
+  static return_type apply(const void* functor, static_julia_type<Args>... args)
   {
     try
     {
@@ -92,7 +92,7 @@ struct NeedConvertHelper
 {
   bool operator()()
   {
-    for(const bool b : {std::is_same<mapped_julia_type<Args>,Args>::value...})
+    for(const bool b : {std::is_same<static_julia_type<Args>,Args>::value...})
     {
       if(!b)
         return true;
@@ -177,6 +177,9 @@ public:
   inline int_t pointer_index() { return m_pointer_index; }
   inline int_t thunk_index() { return m_thunk_index; }
 
+  inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
+  inline jl_value_t* override_module() const { return m_override_module; }
+
 protected:
   /// Function pointer as void*, since that's what Julia expects
   virtual void* pointer() = 0;
@@ -192,6 +195,9 @@ private:
 
   int_t m_pointer_index = 0;
   int_t m_thunk_index = 0;
+
+  // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
+  jl_value_t* m_override_module = jl_nothing;
 };
 
 /// Implementation of function storage, case of std::function
@@ -294,7 +300,7 @@ struct GetJlType
   {
     try
     {
-      return julia_type<remove_const_ref<T>>();
+      return julia_base_type<remove_const_ref<T>>();
     }
     catch(...)
     {
@@ -540,6 +546,11 @@ public:
         f(*funcs_copy[i]);
       }
     }
+  }
+
+  inline jlcxx::FunctionWrapperBase& last_function()
+  {
+    return *m_functions.back();
   }
 
   /// Add a composite type
@@ -852,6 +863,13 @@ public:
   {
   }
 
+  TypeWrapper(Module& mod, TypeWrapper<T>& other) :
+    m_module(mod),
+    m_dt(other.m_dt),
+    m_box_dt(other.m_box_dt)
+  {
+  }
+
   /// Add a constructor with the given argument types
   template<typename... ArgsT>
   TypeWrapper<T>& constructor(bool finalize=true)
@@ -989,7 +1007,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
 {
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
   static_assert(!IsImmutable<T>::value, "Immutable types (marked with IsImmutable) can't be added using add_type, map them directly to a struct instead and use map_type");
-  static_assert(!IsBits<T>::value, "Bits types must be added using add_bits");
+  static_assert(!std::is_scalar<T>::value, "Scalar types must be added using add_bits");
 
   if(m_jl_constants.count(name) > 0)
   {
@@ -1092,7 +1110,6 @@ void Module::add_bits(const std::string& name, JLSuperT* super)
 {
   assert(jl_is_datatype(super));
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
-  static_assert(IsBits<T>::value || is_parametric, "Bits types must be marked as such by specializing the IsBits template");
   static_assert(std::is_scalar<T>::value, "Bits types must be a scalar type");
   jl_svec_t* params = is_parametric ? parameter_list<T>()() : jl_emptysvec;
   JL_GC_PUSH1(&params);

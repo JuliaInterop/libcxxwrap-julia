@@ -15,6 +15,7 @@ std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr<StlWrappe
 void StlWrappers::instantiate(Module& mod)
 {
   m_instance.reset(new StlWrappers(mod));
+  m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
 }
 
 StlWrappers& StlWrappers::instance()
@@ -32,9 +33,9 @@ StlWrappers& wrappers()
 }
 
 StlWrappers::StlWrappers(Module& stl) :
+  m_stl_mod(stl),
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector")))
 {
-  vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
 }
 
 template<typename string_t>
