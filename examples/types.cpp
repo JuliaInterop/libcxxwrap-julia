@@ -263,5 +263,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.method("return_ptr", [] () { return new NullableStruct; });
   types.method("return_null", [] () { return static_cast<NullableStruct*>(nullptr); });
 
-  jlcxx::stl::apply_stl<World>(types);
+  types.method("greet_vector", [] (const std::vector<World>& v)
+  {
+    std::stringstream messages;
+    for(const World& w : v)
+    {
+      messages << w.greet() << " ";
+    }
+    const std::string result = messages.str();
+    return result.substr(0,result.size()-1);
+  });
 }

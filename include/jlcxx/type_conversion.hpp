@@ -344,12 +344,10 @@ private:
 };
 
 /// Store the Julia datatype linked to SourceT
-template<typename SourceT, typename TraitT=mapping_trait<SourceT>>
-class dynamic_type_mapping
+template<typename SourceT>
+class JuliaTypeCache
 {
 public:
-
-  static constexpr bool storing_dt = true;
 
   static inline jl_datatype_t* julia_type()
   {
@@ -376,6 +374,20 @@ public:
 
 private:
   static inline CachedDatatype m_dt;
+};
+
+/// Store the Julia datatype linked to SourceT
+template<typename SourceT, typename TraitT=mapping_trait<SourceT>>
+class dynamic_type_mapping
+{
+public:
+
+  static constexpr bool storing_dt = true;
+
+  static inline jl_datatype_t* julia_type()
+  {
+    return JuliaTypeCache<SourceT>::julia_type();
+  }
 };
 
 
@@ -538,14 +550,14 @@ inline CppT convert_to_cpp(JuliaT julia_val)
 template<typename T>
 void set_julia_type(jl_datatype_t* dt)
 {
-  dynamic_type_mapping<T>::set_julia_type(dt);
+  JuliaTypeCache<T>::set_julia_type(dt);
 }
 
 /// Check if a type is registered
 template <typename T>
 bool has_julia_type()
 {
-  return dynamic_type_mapping<T>::has_julia_type();
+  return JuliaTypeCache<T>::has_julia_type();
 }
 
 /// Helper for Singleton types (Type{T} in Julia)

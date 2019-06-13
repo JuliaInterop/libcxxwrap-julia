@@ -138,6 +138,32 @@ inline void apply_stl(jlcxx::Module& mod)
 
 }
 
+template<typename T>
+struct dynamic_type_mapping<std::vector<T>>
+{
+  static constexpr bool storing_dt = true;
+  using MappedT = std::vector<T>;
+
+  static inline jl_datatype_t* julia_type()
+  {
+    if(!has_julia_type<MappedT>())
+    {
+      assert(registry().has_current_module());
+      jl_datatype_t* jltype = ::jlcxx::julia_type<T>();
+      Module& curmod = registry().current_module();
+      if(jltype->name->module != curmod.julia_module())
+      {
+        const std::string tname = julia_type_name(jltype);
+        throw std::runtime_error("Type for std::vector<" + tname + "> must be defined in the same module as " + tname);
+      }
+      stl::apply_stl<T>(curmod);
+    }
+    assert(has_julia_type<MappedT>());
+    return JuliaTypeCache<MappedT>::julia_type();
+  }
+};
+
+
 }
 
 #endif
