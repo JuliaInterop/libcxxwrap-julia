@@ -239,9 +239,12 @@ struct IsMirroredType : std::bool_constant<!std::is_class<T>::value || (std::is_
 };
 
 struct NoMappingTrait {}; // no mapping, C++ type = Julia type by default
-struct CxxWrappedTrait {}; // types added using add_type
+template<typename T> struct CxxWrappedTrait {}; // types added using add_type. T is a "sub-trait" to allow further specialization for e.g. smart pointers
 struct WrappedPtrTrait {}; // By default pointers are wrapped
 struct DirectPtrTrait {}; // Some pointers are returned directly, e.g. jl_value_t*
+
+struct NoCxxWrappedSubtrait {};
+
 
 template<typename T, typename Enable=void>
 struct MappingTrait
@@ -274,9 +277,9 @@ struct MappingTrait<void*>
 };
 
 template<typename T>
-struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value && !IsSmartPointerType<T>::value>::type>
+struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value>::type>
 {
-  using type = CxxWrappedTrait;
+  using type = CxxWrappedTrait<NoCxxWrappedSubtrait>;
 };
 
 template<typename T> using mapping_trait = typename MappingTrait<T>::type;
@@ -288,8 +291,8 @@ struct static_type_mapping
   using type = SourceT;
 };
 
-template<typename SourceT>
-struct static_type_mapping<SourceT, CxxWrappedTrait>
+template<typename SourceT, typename SubTraitT>
+struct static_type_mapping<SourceT, CxxWrappedTrait<SubTraitT>>
 {
   using type = WrappedCppPtr;
 };
@@ -443,8 +446,8 @@ namespace detail
     }
   };
 
-  template<typename T>
-  struct GetBaseT<T,CxxWrappedTrait>
+  template<typename T, typename SubTraitT>
+  struct GetBaseT<T,CxxWrappedTrait<SubTraitT>>
   {
     static inline jl_datatype_t* type()
     {
@@ -582,8 +585,8 @@ struct JuliaReturnType
   }
 };
 
-template<typename T>
-struct JuliaReturnType<T, CxxWrappedTrait>
+template<typename T, typename SubTraitT>
+struct JuliaReturnType<T, CxxWrappedTrait<SubTraitT>>
 {
   inline static jl_datatype_t* value()
   {
@@ -1128,8 +1131,8 @@ struct ConvertToCpp<CppT&, WrappedPtrTrait>
   }
 };
 
-template<typename CppT>
-struct ConvertToCpp<CppT, CxxWrappedTrait>
+template<typename CppT, typename SubTraitT>
+struct ConvertToCpp<CppT, CxxWrappedTrait<SubTraitT>>
 {
   inline CppT operator()(WrappedCppPtr julia_val) const
   {

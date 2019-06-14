@@ -235,8 +235,8 @@ public:
 };
 
 // Conversions
-template<typename T, int Dim>
-struct static_type_mapping<ArrayRef<T, Dim>, CxxWrappedTrait>
+template<typename T, int Dim, typename SubTraitT>
+struct static_type_mapping<ArrayRef<T, Dim>, CxxWrappedTrait<SubTraitT>>
 {
   typedef jl_array_t* type;
 };
@@ -253,8 +253,8 @@ struct PackedArrayType
   }
 };
 
-template<typename T>
-struct PackedArrayType<T,CxxWrappedTrait>
+template<typename T, typename SubTraitT>
+struct PackedArrayType<T,CxxWrappedTrait<SubTraitT>>
 {
   static jl_datatype_t* type()
   {
@@ -322,8 +322,8 @@ struct ConvertToJulia<Array<T>>
   }
 };
 
-template<typename T, int Dim>
-struct ConvertToCpp<ArrayRef<T,Dim>, CxxWrappedTrait>
+template<typename T, int Dim, typename SubTraitT>
+struct ConvertToCpp<ArrayRef<T,Dim>, CxxWrappedTrait<SubTraitT>>
 {
   ArrayRef<T,Dim> operator()(jl_array_t* arr) const
   {
