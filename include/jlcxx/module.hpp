@@ -63,7 +63,7 @@ struct ReturnTypeAdapter<void, Args...>
 template<typename R, typename... Args>
 struct CallFunctor
 {
-  using return_type = decltype(ReturnTypeAdapter<R, Args...>()(std::declval<const void*>(), std::declval<static_julia_type<Args>>()...));
+  using return_type = typename std::remove_const<decltype(ReturnTypeAdapter<R, Args...>()(std::declval<const void*>(), std::declval<static_julia_type<Args>>()...))>::type;
 
   static return_type apply(const void* functor, static_julia_type<Args>... args)
   {
@@ -984,6 +984,8 @@ private:
   jl_datatype_t* m_dt;
   jl_datatype_t* m_box_dt;
 };
+
+using TypeWrapper1 = TypeWrapper<Parametric<TypeVar<1>>>;
 
 template<typename ApplyT, typename... TypeLists> using combine_types = typename CombineTypes<ApplyT, TypeLists...>::type;
 

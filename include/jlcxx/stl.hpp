@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "module.hpp"
+#include "smart_pointers.hpp"
 #include "type_conversion.hpp"
 
 namespace jlcxx
@@ -41,7 +42,7 @@ private:
   static std::unique_ptr<StlWrappers> m_instance;
   Module& m_stl_mod;
 public:
-  TypeWrapper<Parametric<TypeVar<1>>> vector;
+  TypeWrapper1 vector;
 
   static void instantiate(Module& mod);
   static StlWrappers& instance();
@@ -133,7 +134,7 @@ struct WrapVector
 template<typename T>
 inline void apply_stl(jlcxx::Module& mod)
 {
-  TypeWrapper<Parametric<TypeVar<1>>>(mod, StlWrappers::instance().vector).apply<std::vector<T>>(WrapVector());
+  TypeWrapper1(mod, StlWrappers::instance().vector).apply<std::vector<T>>(WrapVector());
 }
 
 }

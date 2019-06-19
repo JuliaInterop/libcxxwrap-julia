@@ -16,6 +16,9 @@ void StlWrappers::instantiate(Module& mod)
 {
   m_instance.reset(new StlWrappers(mod));
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
+  smartptr::apply_smart_combination<std::shared_ptr, stltypes>(mod);
+  smartptr::apply_smart_combination<std::weak_ptr, stltypes>(mod);
+  smartptr::apply_smart_combination<std::unique_ptr, stltypes>(mod);
 }
 
 StlWrappers& StlWrappers::instance()
@@ -56,6 +59,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& stl)
 {
   jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
   jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
+
+  jlcxx::add_smart_pointer<std::shared_ptr>(stl, "SharedPtr");
+  jlcxx::add_smart_pointer<std::weak_ptr>(stl, "WeakPtr");
+  jlcxx::add_smart_pointer<std::unique_ptr>(stl, "UniquePtr");
 
   jlcxx::stl::StlWrappers::instantiate(stl);
 }

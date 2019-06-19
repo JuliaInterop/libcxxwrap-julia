@@ -151,7 +151,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return new World("factory hello");
   });
-/*
+  
   types.method("shared_world_factory", []() -> const std::shared_ptr<World>
   {
     return std::shared_ptr<World>(new World("shared factory hello"));
@@ -161,6 +161,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return w->greet();
   });
+
   types.method("greet_shared_const", [](const std::shared_ptr<const World>& w)
   {
     return w->greet();
@@ -176,6 +177,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     target.reset(new World(message));
   });
+
+  jlcxx::add_smart_pointer<MySmartPointer>(types, "MySmartPointer");
 
   types.method("smart_world_factory", []()
   {
@@ -197,7 +200,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return std::unique_ptr<const World>(new World("unique factory hello"));
   });
-*/
+
   types.method("world_by_value", [] () -> World
   {
     return World("world by value hello");

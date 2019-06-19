@@ -245,7 +245,6 @@ struct DirectPtrTrait {}; // Some pointers are returned directly, e.g. jl_value_
 
 struct NoCxxWrappedSubtrait {};
 
-
 template<typename T, typename Enable=void>
 struct MappingTrait
 {
@@ -277,7 +276,7 @@ struct MappingTrait<void*>
 };
 
 template<typename T>
-struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value>::type>
+struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value && !IsSmartPointerType<T>::value>::type>
 {
   using type = CxxWrappedTrait<NoCxxWrappedSubtrait>;
 };
@@ -431,7 +430,7 @@ struct CachedTypeMapping<T, false>
 template<typename T>
 inline jl_datatype_t* julia_type()
 {
-  return CachedTypeMapping<T>::julia_type();
+  return CachedTypeMapping<typename std::remove_const<T>::type>::julia_type();
 }
 
 namespace detail
@@ -553,7 +552,7 @@ inline CppT convert_to_cpp(JuliaT julia_val)
 template<typename T>
 void set_julia_type(jl_datatype_t* dt)
 {
-  JuliaTypeCache<T>::set_julia_type(dt);
+  JuliaTypeCache<typename std::remove_const<T>::type>::set_julia_type(dt);
 }
 
 /// Check if a type is registered
@@ -569,12 +568,29 @@ struct SingletonType
 {
 };
 
-// template<typename T>
-// struct static_type_mapping<SingletonType<T>>
-// {
-//   typedef jl_datatype_t* type;
-//   static jl_datatype_t* julia_type() { return (jl_datatype_t*)apply_type((jl_value_t*)jl_type_type, jl_svec1(static_type_mapping<T>::julia_type())); }
-// };
+template<typename T>
+struct static_type_mapping<SingletonType<T>>
+{
+  using type = jl_datatype_t*;
+};
+
+template<typename T>
+struct dynamic_type_mapping<SingletonType<T>>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return (jl_datatype_t*)apply_type((jl_value_t*)jl_type_type, jl_svec1(::jlcxx::julia_base_type<T>()));
+  }
+};
+
+template<typename T>
+struct ConvertToCpp<SingletonType<T>, NoMappingTrait>
+{
+  SingletonType<T> operator()(jl_datatype_t*) const
+  {
+    return SingletonType<T>();
+  }
+};
 
 template<typename T, typename TraitT=mapping_trait<T>>
 struct JuliaReturnType
@@ -590,7 +606,10 @@ struct JuliaReturnType<T, CxxWrappedTrait<SubTraitT>>
 {
   inline static jl_datatype_t* value()
   {
-    return jl_any_type;
+    if(julia_type<T>() != nullptr) // This will trigger automatic type creation if needed
+      return jl_any_type;
+
+    return nullptr; // Never reached
   }
 };
 
@@ -875,6 +894,15 @@ struct ConvertToJulia<T, NoMappingTrait>
   T operator()(const T& cpp_val) const
   {
     return cpp_val;
+  }
+};
+
+template<typename T>
+struct ConvertToJulia<SingletonType<T>, NoMappingTrait>
+{
+  jl_datatype_t* operator()(SingletonType<T>) const
+  {
+    return julia_base_type<T>();
   }
 };
 
@@ -1184,15 +1212,6 @@ struct ConvertToCpp<CppT, CxxWrappedTrait<SubTraitT>>
 // struct JLCXX_API ConvertToCpp<std::wstring, false, false, false>
 // {
 //   std::wstring operator()(jl_value_t* jstr) const;
-// };
-
-// template<typename T>
-// struct ConvertToCpp<SingletonType<T>, false, false, false>
-// {
-//   SingletonType<T> operator()(jl_datatype_t*) const
-//   {
-//     return SingletonType<T>();
-//   }
 // };
 
 // Used for deepcopy_internal overloading
