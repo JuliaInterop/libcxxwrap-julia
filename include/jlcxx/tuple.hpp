@@ -59,28 +59,35 @@ namespace detail
   }
 }
 
-template<typename... TypesT> struct static_type_mapping<std::tuple<TypesT...>>
-{
-  typedef jl_value_t* type;
+struct TupleTrait {};
 
+template<typename... TypesT>
+struct TraitSelector<std::tuple<TypesT...>>
+{
+  using type = TupleTrait;
+};
+
+template<typename... TypesT>
+struct MappingTrait<std::tuple<TypesT...>, TupleTrait>
+{
+  using type = TupleTrait;
+};
+
+template<typename... TypesT> struct static_type_mapping<std::tuple<TypesT...>, TupleTrait>
+{
+  using type = jl_value_t*;
+};
+
+template<typename... TypesT> struct dynamic_type_mapping<std::tuple<TypesT...>, TupleTrait>
+{
   static jl_datatype_t* julia_type()
   {
-    static jl_datatype_t* tuple_type = nullptr;
-    if(tuple_type == nullptr)
-    {
-      jl_svec_t* params = nullptr;
-      JL_GC_PUSH2(&tuple_type, &params);
-      params = jl_svec(sizeof...(TypesT), jlcxx::julia_type<TypesT>()...);
-      tuple_type = jl_apply_tuple_type(params);
-      protect_from_gc(tuple_type);
-      JL_GC_POP();
-    }
-    return tuple_type;
+    return jl_apply_tuple_type(jl_svec(sizeof...(TypesT), jlcxx::julia_type<TypesT>()...));
   }
 };
 
 template<typename... TypesT>
-struct ConvertToJulia<std::tuple<TypesT...>>
+struct ConvertToJulia<std::tuple<TypesT...>, TupleTrait>
 {
   jl_value_t* operator()(const std::tuple<TypesT...>& tp)
   {
@@ -95,18 +102,29 @@ struct NTuple
 };
 
 template<typename N, typename T>
-struct static_type_mapping<NTuple<N,T>>
+struct TraitSelector<NTuple<N,T>>
+{
+  using type = TupleTrait;
+};
+
+template<typename N, typename T>
+struct MappingTrait<NTuple<N,T>, TupleTrait>
+{
+  using type = TupleTrait;
+};
+
+template<typename N, typename T>
+struct static_type_mapping<NTuple<N,T>, TupleTrait>
 {
   typedef jl_datatype_t* type;
+};
+
+template<typename N, typename T>
+struct dynamic_type_mapping<NTuple<N,T>>
+{
   static jl_datatype_t* julia_type()
   {
-    jl_datatype_t* dt = nullptr;
-    if(dt == nullptr)
-    {
-      dt = (jl_datatype_t*)jl_apply_tuple_type(jl_svec1(apply_type((jl_value_t*)jl_vararg_type, jl_svec2(::jlcxx::julia_type<T>(), ::jlcxx::julia_type<N>()))));
-      protect_from_gc(dt);
-    }
-    return dt;
+    return (jl_datatype_t*)jl_apply_tuple_type(jl_svec1(apply_type((jl_value_t*)jl_vararg_type, jl_svec2(::jlcxx::julia_type<T>(), ::jlcxx::julia_type<N>()))));
   }
 };
 

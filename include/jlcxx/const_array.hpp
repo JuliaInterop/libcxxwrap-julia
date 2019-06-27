@@ -25,13 +25,6 @@ namespace detail
   };
 }
 
-/// Wrap a const pointer
-template<typename T>
-struct ConstCxxPtr
-{
-  const T* ptr;
-};
-
 /// Wrap a pointer, providing the Julia array interface for it
 /// The parameter N represents the number of dimensions
 template<typename T, index_t N>
@@ -73,8 +66,22 @@ ConstArray<T, sizeof...(SizesT)> make_const_array(const T* p, const SizesT... si
   return ConstArray<T, sizeof...(SizesT)>(p, sizes...);
 }
 
+struct ConstArrayTrait {};
+
 template<typename T, index_t N>
-struct ConvertToJulia<ConstArray<T,N>, false, true, false>
+struct TraitSelector<ConstArray<T,N>>
+{
+  using type = ConstArrayTrait;
+};
+
+template<typename T, index_t N>
+struct MappingTrait<ConstArray<T,N>, ConstArrayTrait>
+{
+  using type = ConstArrayTrait;
+};
+
+template<typename T, index_t N>
+struct ConvertToJulia<ConstArray<T,N>, ConstArrayTrait>
 {
   jl_value_t* operator()(const ConstArray<T,N>& arr)
   {
@@ -82,7 +89,7 @@ struct ConvertToJulia<ConstArray<T,N>, false, true, false>
     jl_value_t* ptr = nullptr;
     jl_value_t* size = nullptr;
     JL_GC_PUSH3(&result, &ptr, &size);
-    ptr = box(ConstCxxPtr<T>({arr.ptr()}));
+    ptr = box<const T*>(arr.ptr());
     size = convert_to_julia(arr.size());
     result = jl_new_struct(julia_type<ConstArray<T,N>>(), ptr, size);
     JL_GC_POP();
@@ -91,22 +98,18 @@ struct ConvertToJulia<ConstArray<T,N>, false, true, false>
 };
 
 template<typename T, index_t N>
-struct static_type_mapping<ConstArray<T,N>>
+struct static_type_mapping<ConstArray<T,N>, ConstArrayTrait>
 {
   typedef jl_value_t* type;
+};
+
+template<typename T, index_t N>
+struct dynamic_type_mapping<ConstArray<T,N>, ConstArrayTrait>
+{
   static jl_datatype_t* julia_type()
   {
-    static jl_datatype_t* app_dt = nullptr;
-    if(app_dt == nullptr)
-    {
-      jl_datatype_t* pdt = (jl_datatype_t*)::jlcxx::julia_type("ConstArray");
-      jl_value_t* boxed_n = box(N);
-      JL_GC_PUSH1(&boxed_n);
-      app_dt = (jl_datatype_t*)apply_type((jl_value_t*)pdt, jl_svec2(::jlcxx::julia_type<T>(), boxed_n));
-      protect_from_gc(app_dt);
-      JL_GC_POP();
-    }
-    return app_dt;
+    jl_datatype_t* pdt = (jl_datatype_t*)::jlcxx::julia_type("ConstArray");
+    return  (jl_datatype_t*)apply_type((jl_value_t*)pdt, jl_svec2(::jlcxx::julia_type<T>(), box<index_t>(N)));
   }
 };
 

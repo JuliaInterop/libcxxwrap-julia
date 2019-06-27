@@ -303,6 +303,21 @@ auto make_julia_array(ValueT* c_ptr, const SizesT... sizes) -> ArrayRef<ValueT, 
   return ArrayRef<ValueT, sizeof...(SizesT)>(true, c_ptr, sizes...);
 }
 
+template<typename T, typename SubTraitT>
+struct static_type_mapping<Array<T>, CxxWrappedTrait<SubTraitT>>
+{
+  typedef jl_array_t* type;
+};
+
+template<typename T>
+struct dynamic_type_mapping<Array<T>>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return (jl_datatype_t*)apply_array_type(detail::PackedArrayType<T>::type(), 1);
+  }
+};
+
 template<typename T, int Dim>
 struct ConvertToJulia<ArrayRef<T,Dim>>
 {

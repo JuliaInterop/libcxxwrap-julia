@@ -206,7 +206,13 @@ struct DirectPtrTrait {}; // Some pointers are returned directly, e.g. jl_value_
 
 struct NoCxxWrappedSubtrait {};
 
-template<typename T, typename Enable=void>
+// Helper to avoid ambiguous specializations
+template<typename T> struct TraitSelector
+{
+  using type = void;
+};
+
+template<typename T, typename Enable=typename TraitSelector<T>::type>
 struct MappingTrait
 {
   using type = NoMappingTrait;
