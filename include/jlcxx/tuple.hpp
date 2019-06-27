@@ -16,7 +16,7 @@ namespace detail
     template<typename TupleT>
     static void apply(jl_value_t** boxed, const TupleT& tup)
     {
-      boxed[I] = box(std::get<I>(tup));
+      boxed[I] = box<std::tuple_element_t<I,TupleT>>(std::get<I>(tup));
       AppendTupleValues<I+1, std::tuple_size<TupleT>::value>::apply(boxed, tup);
     }
   };

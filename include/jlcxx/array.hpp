@@ -102,7 +102,7 @@ public:
     JL_GC_PUSH1(&m_array);
     const size_t pos = jl_array_len(m_array);
     jl_array_grow_end(m_array, 1);
-    jl_arrayset(m_array, box(std::forward<VT>(val)), pos);
+    jl_arrayset(m_array, box<ValueT>(val), pos);
     JL_GC_POP();
   }
 
@@ -202,7 +202,7 @@ public:
     JL_GC_PUSH1(&arr_ptr);
     const size_t pos = size();
     jl_array_grow_end(arr_ptr, 1);
-    jl_arrayset(arr_ptr, box(val), pos);
+    jl_arrayset(arr_ptr, box<ValueT>(val), pos);
     JL_GC_POP();
   }
 

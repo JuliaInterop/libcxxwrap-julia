@@ -120,7 +120,7 @@ JLCXX_MODULE init_half_module(jlcxx::Module& mod)
     jlcxx::JuliaFunction f("half_julia");
     std::transform(in.begin(), in.end(), out.begin(), [=](const double d)
     {
-      return jl_unbox_float64(f(d));
+      return jl_unbox_float64(f(static_cast<double>(d)));
     });
   });
 
@@ -161,8 +161,45 @@ double get_test_double()
   return g_test_double;
 }
 
+struct BoxedNumber
+{
+  BoxedNumber(int n = 0) : m_number(n)
+  {
+    ++BoxedNumber::m_nb_created;
+  }
+
+  BoxedNumber(const BoxedNumber& other) : m_number(other.m_number)
+  {
+    ++BoxedNumber::m_nb_created;
+  }
+
+  ~BoxedNumber()
+  {
+    ++BoxedNumber::m_nb_deleted;
+  }
+
+  int getnumber() const
+  {
+    return m_number;
+  }
+
+  int m_number = 0;
+
+  static int m_nb_created;
+  static int m_nb_deleted;
+};
+
+int BoxedNumber::m_nb_created = 0;
+int BoxedNumber::m_nb_deleted = 0;
+
 JLCXX_MODULE init_test_module(jlcxx::Module& mod)
 {
+  mod.add_type<BoxedNumber>("BoxedNumber")
+    .method("getnumber", &BoxedNumber::getnumber);
+
+  mod.method("boxednumber_nb_created", [] () { return BoxedNumber::m_nb_created; });
+  mod.method("boxednumber_nb_deleted", [] () { return BoxedNumber::m_nb_deleted; });
+
   mod.method("concatenate_numbers", &concatenate_numbers);
   mod.method("concatenate_strings", &concatenate_strings);
   mod.method("test_int32_array", test_int32_array);
@@ -179,7 +216,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.method("test_julia_call", [](double a, double b)
   {
     jlcxx::JuliaFunction julia_max("max");
-    return julia_max(a, b);
+    return julia_max(static_cast<double>(a), static_cast<double>(b)); // static_cast here ensures a and b are passed by value
   });
   mod.method("test_string_array", [](jlcxx::ArrayRef<std::string> arr)
   {
@@ -214,17 +251,42 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
     f(arr,2);
   });
 
-  mod.method("fn_clb", [](double (*fnClb)(jl_value_t*, jl_value_t*)) {
+  mod.method("fn_clb", [](double (*fnClb)(jl_value_t*, jl_value_t*))
+  {
     std::vector<double> v{1., 2.};
     auto ar = jlcxx::ArrayRef<double, 1>(v.data(), v.size());
-    fnClb((jl_value_t *)ar.wrapped(), jlcxx::box(std::wstring(L"calledFromCPP"))); // ???
+    jl_value_t* boxed_str = jlcxx::box<std::wstring>(std::wstring(L"calledFromCPP"));
+    JL_GC_PUSH1(&boxed_str);
+    fnClb((jl_value_t *)ar.wrapped(), boxed_str);
+    JL_GC_POP();
   });
 
-  mod.method("fn_clb2", [] (jl_function_t* f) {
+  mod.method("fn_clb2", [] (jl_function_t* f)
+  {
     std::vector<double> v{1., 2.};
     auto ar = jlcxx::ArrayRef<double, 1>(v.data(), v.size());
     jlcxx::JuliaFunction fnClb(f);
     fnClb((jl_value_t*)ar.wrapped(), std::wstring(L"calledFromCPP"));
+  });
+
+  mod.method("callback_byval", [] (jl_function_t* f, int& result)
+  {
+    jlcxx::JuliaFunction juliafunc(f);
+    juliafunc(BoxedNumber(1), result);
+  });
+
+  mod.method("callback_byref", [] (jl_function_t* f, int& result)
+  {
+    jlcxx::JuliaFunction juliafunc(f);
+    BoxedNumber n(2);
+    juliafunc(n, result);
+  });
+
+  mod.method("callback_byptr", [] (jl_function_t* f, int& result)
+  {
+    jlcxx::JuliaFunction juliafunc(f);
+    BoxedNumber n(3);
+    juliafunc(&n, result);
   });
 
   // Write to reference

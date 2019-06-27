@@ -3,7 +3,7 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 add_library(functions SHARED functions.cpp)
 set_target_properties(functions PROPERTIES COMPILE_DEFINITIONS "JLCXX_EXAMPLES_EXPORTS")
 
-target_link_libraries(functions ${JLCXX_TARGET} ${Julia_LIBRARY})
+target_link_libraries(functions ${JLCXX_TARGET} ${JLCXX_STL_TARGET} ${Julia_LIBRARY})
 
 add_library(hello SHARED hello.cpp)
 target_link_libraries(hello ${JLCXX_TARGET} ${Julia_LIBRARY})

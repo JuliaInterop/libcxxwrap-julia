@@ -39,16 +39,16 @@ private:
     }
 
     template<typename ArgT, typename... ArgsT>
-    void push(ArgT&& a, ArgsT... args)
+    void push(ArgT&& a, ArgsT&&... args)
     {
-      push(a);
-      push(args...);
+      push(std::forward<ArgT>(a));
+      push(std::forward<ArgsT>(args)...);
     }
 
     template<typename ArgT>
     void push(ArgT&& a)
     {
-      m_arg_array[m_i++] = box(a);
+      m_arg_array[m_i++] = box<ArgT>(a);
     }
 
     void push() {}
@@ -64,19 +64,16 @@ jl_value_t* JuliaFunction::operator()(ArgumentsT&&... args) const
 {
   const int nb_args = sizeof...(args);
 
-  jl_value_t* result = nullptr;
   jl_value_t** julia_args;
-  JL_GC_PUSH1(&result);
-  JL_GC_PUSHARGS(julia_args, nb_args);
+  JL_GC_PUSHARGS(julia_args, nb_args+1); // The last element is the result
 
   // Process arguments
   StoreArgs store_args(julia_args);
-  store_args.push(args...);
+  store_args.push(std::forward<ArgumentsT>(args)...);
   for(int i = 0; i != nb_args; ++i)
   {
     if(julia_args[i] == nullptr)
     {
-      JL_GC_POP();
       JL_GC_POP();
       std::stringstream sstr;
       sstr << "Unsupported Julia function argument type at position " << i;
@@ -85,20 +82,18 @@ jl_value_t* JuliaFunction::operator()(ArgumentsT&&... args) const
   }
 
   // Do the call
-  result = jl_call(m_function, julia_args, nb_args);
+  julia_args[nb_args] = jl_call(m_function, julia_args, nb_args);
   if (jl_exception_occurred())
   {
     jl_call2(jl_get_function(jl_base_module, "show"), jl_stderr_obj(), jl_exception_occurred());
     jl_printf(jl_stderr_stream(), "\n");
     jlbacktrace();
     JL_GC_POP();
-    JL_GC_POP();
     return nullptr;
   }
 
   JL_GC_POP();
-  JL_GC_POP();
-  return result;
+  return julia_args[nb_args];
 }
 
 /// Data corresponds to immutable with the same name on the Julia side
@@ -109,12 +104,14 @@ struct SafeCFunction
   jl_array_t* argtypes;
 };
 
-template<> struct IsImmutable<SafeCFunction> : std::true_type {};
-
 // Direct conversion
 template<> struct static_type_mapping<SafeCFunction>
 {
   typedef SafeCFunction type;
+};
+
+template<> struct dynamic_type_mapping<SafeCFunction>
+{
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)jlcxx::julia_type("SafeCFunction"); }
 };
 
@@ -196,15 +193,27 @@ typename detail::SplitSignature<SignatureT>::fptr_t make_function_pointer(SafeCF
   return SplitterT().cast_ptr(data.fptr);
 }
 
+struct FunctionPtrTrait {};
+
+template<typename R, typename...ArgsT>
+struct MappingTrait<R(*)(ArgsT...)>
+{
+  using type = FunctionPtrTrait;
+};
+
 /// Implicit conversion to pointer type
 template<typename R, typename...ArgsT> struct static_type_mapping<R(*)(ArgsT...)>
 {
   typedef SafeCFunction type;
+};
+
+template<typename R, typename...ArgsT> struct dynamic_type_mapping<R(*)(ArgsT...)>
+{
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)jlcxx::julia_type("SafeCFunction"); }
 };
 
 template<typename R, typename...ArgsT>
-struct ConvertToCpp<R(*)(ArgsT...)>
+struct ConvertToCpp<R(*)(ArgsT...), FunctionPtrTrait>
 {
   typedef R(*fptr_t)(ArgsT...);
   fptr_t operator()(const SafeCFunction& julia_value) const

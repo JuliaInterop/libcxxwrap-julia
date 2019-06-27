@@ -45,7 +45,7 @@ struct World
   ~World() { std::cout << "Destroying World with message " << msg << std::endl; }
 };
 
-struct Array {};
+struct Array { Array() {} };
 
 struct NonCopyable
 {
@@ -56,6 +56,7 @@ struct NonCopyable
 
 struct AConstRef
 {
+  AConstRef() {}
   int value() const
   {
     return 42;
@@ -74,6 +75,8 @@ struct ReturnConstRef
 
 struct CallOperator
 {
+  CallOperator() {}
+
   int operator()() const
   {
     return 43;
@@ -120,12 +123,13 @@ struct Foo
   std::vector<double> data;
 };
 
-struct NullableStruct {};
+struct NullableStruct { NullableStruct() {} };
 
 } // namespace cpp_types
 
 namespace jlcxx
 {
+  template<> struct IsMirroredType<cpp_types::DoubleData> : std::false_type { };
   template<typename T> struct IsSmartPointerType<cpp_types::MySmartPointer<T>> : std::true_type { };
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
 }
@@ -209,13 +213,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.method("boxed_world_factory", []()
   {
     static World w("boxed world");
-    return jlcxx::box(w);
+    return jlcxx::box<World&>(w);
   });
 
   types.method("boxed_world_pointer_factory", []()
   {
     static World w("boxed world pointer");
-    return jlcxx::box(&w);
+    return jlcxx::box<World*>(&w);
   });
 
   types.method("world_ref_factory", []() -> World&

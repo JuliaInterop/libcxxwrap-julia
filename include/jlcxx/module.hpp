@@ -270,6 +270,8 @@ struct Parametric
 {
 };
 
+template<typename... T> struct IsMirroredType<Parametric<T...>> : std::false_type {};
+
 template<typename T>
 class TypeWrapper;
 
@@ -324,7 +326,7 @@ struct GetJlType<std::integral_constant<T, Val>>
 {
   jl_value_t* operator()() const
    {
-    return box(convert_to_julia(Val));
+    return box<T>(convert_to_julia(Val));
   }
 };
 
@@ -575,7 +577,7 @@ public:
     {
       throw std::runtime_error("Duplicate registration of constant " + name);
     }
-    jl_value_t* boxed_const = box(std::forward<T>(value));
+    jl_value_t* boxed_const = box<T>(value);
     protect_from_gc(boxed_const);
     m_jl_constants[name] = boxed_const;
   }
@@ -1008,7 +1010,7 @@ template<typename T, typename SuperParametersT, typename JLSuperT>
 TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* super_generic)
 {
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
-  static_assert(!IsImmutable<T>::value, "Immutable types (marked with IsImmutable) can't be added using add_type, map them directly to a struct instead and use map_type");
+  static_assert(!IsMirroredType<T>::value, "Mirrored types (marked with IsMirroredType) can't be added using add_type, map them directly to a struct instead and use map_type");
   static_assert(!std::is_scalar<T>::value, "Scalar types must be added using add_bits");
 
   if(m_jl_constants.count(name) > 0)

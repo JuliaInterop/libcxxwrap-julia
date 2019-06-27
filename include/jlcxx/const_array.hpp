@@ -96,8 +96,6 @@ ConstArray<T, sizeof...(SizesT)> make_const_array(const T* p, const SizesT... si
   return ConstArray<T, sizeof...(SizesT)>(p, sizes...);
 }
 
-template<typename T, index_t N> struct IsImmutable<ConstArray<T,N>> : std::true_type {};
-
 template<typename T, index_t N>
 struct ConvertToJulia<ConstArray<T,N>, false, true, false>
 {
