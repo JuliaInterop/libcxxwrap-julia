@@ -32,24 +32,6 @@ struct ConstCxxPtr
   const T* ptr;
 };
 
-template<typename T> struct IsBits<ConstCxxPtr<T>> : std::true_type {};
-
-template<typename T>
-struct InstantiateParametricType<ConstCxxPtr<T>>
-{
-  int operator()(Module&) const
-  {
-    // Register the Julia type if not already instantiated
-    if(!static_type_mapping<ConstCxxPtr<T>>::has_julia_type())
-    {
-      jl_datatype_t* dt = (jl_datatype_t*)apply_type((jl_value_t*)julia_type("ConstCxxPtr"), jl_svec1(julia_type<T>()));
-      set_julia_type<ConstCxxPtr<T>>(dt);
-      protect_from_gc(dt);
-    }
-    return 0;
-  }
-};
-
 /// Wrap a pointer, providing the Julia array interface for it
 /// The parameter N represents the number of dimensions
 template<typename T, index_t N>
@@ -83,11 +65,6 @@ public:
 private:
   const T* m_arr;
   const size_t m_sizes;
-};
-
-template<typename T, index_t N>
-struct InstantiateParametricType<ConstArray<T,N>> : InstantiateParametricType<ConstCxxPtr<T>>
-{
 };
 
 template<typename T, typename... SizesT>

@@ -275,23 +275,6 @@ template<typename... T> struct IsMirroredType<Parametric<T...>> : std::false_typ
 template<typename T>
 class TypeWrapper;
 
-/// Specialise this to instantiate parametric types when first used in a wrapper
-template<typename T>
-struct InstantiateParametricType
-{
-  // Returns int to expand parameter packs into an initialization list
-  int operator()(Module&) const
-  {
-    return 0;
-  }
-};
-
-template<typename... TypesT>
-void instantiate_parametric_types(Module& m)
-{
-  auto unused = {InstantiateParametricType<remove_const_ref<TypesT>>()(m)...};
-}
-
 namespace detail
 {
 
@@ -483,7 +466,6 @@ public:
   template<typename R, typename... Args>
   FunctionWrapperBase& method(const std::string& name,  std::function<R(Args...)> f)
   {
-    instantiate_parametric_types<R, Args...>(*this);
     auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     append_function(new_wrapper);
@@ -501,8 +483,6 @@ public:
     {
       return method(name, std::function<R(Args...)>(f));
     }
-
-    instantiate_parametric_types<R, Args...>(*this);
 
     // No conversion needed -> call can be through a naked function pointer
     auto* new_wrapper = new FunctionPtrWrapper<R, Args...>(this, f);
