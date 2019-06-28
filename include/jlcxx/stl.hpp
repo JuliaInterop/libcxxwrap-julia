@@ -99,9 +99,9 @@ struct WrapVectorImpl
     
     wrap_common(wrapped);
     wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&)>(&WrappedT::push_back));
-    wrapped.method("getindex", [] (const WrappedT& v, int_t i) -> typename WrappedT::const_reference { return v[i-1]; });
-    wrapped.method("getindex", [] (WrappedT& v, int_t i) -> typename WrappedT::reference { return v[i-1]; });
-    wrapped.method("setindex!", [] (WrappedT& v, const T& val, int_t i) { v[i-1] = val; });
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, int_t i) -> typename WrappedT::const_reference { return v[i-1]; });
+    wrapped.method("cxxgetindex", [] (WrappedT& v, int_t i) -> typename WrappedT::reference { return v[i-1]; });
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, int_t i) { v[i-1] = val; });
   }
 };
 
@@ -115,8 +115,8 @@ struct WrapVectorImpl<bool>
 
     wrap_common(wrapped);
     wrapped.method("push_back", [] (WrappedT& v, const bool val) { v.push_back(val); });
-    wrapped.method("getindex", [] (const WrappedT& v, int_t i) { return bool(v[i-1]); });
-    wrapped.method("setindex!", [] (WrappedT& v, const bool val, int_t i) { v[i-1] = val; });
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, int_t i) { return bool(v[i-1]); });
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const bool val, int_t i) { v[i-1] = val; });
   }
 };
 
