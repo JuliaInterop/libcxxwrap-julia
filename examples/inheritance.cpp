@@ -4,6 +4,15 @@
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
 
+// Dummy base class to test multiple inheritance.
+// See https://stackoverflow.com/questions/5445105/conversion-from-void-to-the-pointer-of-the-base-class
+struct FirstBase
+{
+  int allyourbasebelongtous;
+
+  virtual ~FirstBase() {}
+};
+
 struct A
 {
   virtual std::string message() const = 0;
@@ -11,7 +20,7 @@ struct A
   std::string data = "mydata";
 };
 
-struct B : A
+struct B : FirstBase, A
 {
   virtual std::string message() const
   {
@@ -29,7 +38,7 @@ struct C : B
   }
 };
 
-struct D : A
+struct D : FirstBase, A
 {
   virtual std::string message() const
   {
@@ -39,10 +48,10 @@ struct D : A
 
 B b;
 
-A* create_abstract()
+A& create_abstract()
 {
   b = B();
-  return &b;
+  return b;
 }
 
 std::string take_ref(A& a)
@@ -84,7 +93,7 @@ namespace virtualsolver
 
 namespace jlcxx
 {
-  // Needed for shared pointer downcasting
+  // Needed for upcasting
   template<> struct SuperType<D> { typedef A type; };
   template<> struct SuperType<C> { typedef B type; };
   template<> struct SuperType<B> { typedef A type; };
@@ -109,7 +118,7 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
   types.method("weak_ptr_message_a", [](const std::weak_ptr<A>& x) { return x.lock()->message(); });
   types.method("weak_ptr_message_b", [](const std::weak_ptr<B>& x) { return x.lock()->message(); });
 
-  types.method("dynamic_message_c", [](const A* c) { return dynamic_cast<const C*>(c)->data; });
+  types.method("dynamic_message_c", [](const A& c) { return dynamic_cast<const C*>(&c)->data; });
 
   types.method("take_ref", take_ref);
 }

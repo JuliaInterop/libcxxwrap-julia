@@ -1,11 +1,18 @@
 ﻿#include <algorithm>
 
 #include "jlcxx/jlcxx.hpp"
+#include "jlcxx/functions.hpp"
 
 namespace basic
 {
 
 struct ImmutableBits
+{
+  double a;
+  double b;
+};
+
+struct MutableBits
 {
   double a;
   double b;
@@ -98,6 +105,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   using namespace basic;
 
   mod.map_type<ImmutableBits>("ImmutableBits");
+  mod.map_type<MutableBits>("MutableBits");
   mod.method("increment_immutable", [] (const ImmutableBits& x)
   {
     return ImmutableBits({x.a+1.0, x.b+1.0});
@@ -140,4 +148,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("str_return_ptr", str_return_ptr);
 
   mod.method("replace_str_val!", [] (std::string& oldstring, const char* newstring) { oldstring = newstring; });
+
+
+  mod.method("boxed_mirrored_type", [] (void (*f)(jl_value_t*))
+  {
+    f(jlcxx::box<ImmutableBits>(ImmutableBits({1,2})));
+  });
+  mod.method("boxed_mutable_mirrored_type", [] (void (*f)(jl_value_t*))
+  {
+    f(jlcxx::box<MutableBits>(MutableBits({2,3})));
+  });
 }

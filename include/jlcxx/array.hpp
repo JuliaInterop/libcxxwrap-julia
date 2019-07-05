@@ -279,7 +279,7 @@ jl_array_t* wrap_array(const bool julia_owned, ValueT* c_ptr, const SizesT... si
   jl_datatype_t* dt = julia_type<ArrayRef<ValueT, sizeof...(SizesT)>>();
   jl_value_t *dims = nullptr;
   JL_GC_PUSH1(&dims);
-  dims = convert_to_julia(std::make_tuple(static_cast<int_t>(sizes)...));
+  dims = convert_to_julia(std::make_tuple(static_cast<cxxint_t>(sizes)...));
   jl_array_t* result = jl_ptr_to_array((jl_value_t*)dt, c_ptr, dims, julia_owned);
   JL_GC_POP();
   return result;

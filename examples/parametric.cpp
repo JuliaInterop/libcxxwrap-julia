@@ -219,6 +219,21 @@ namespace jlcxx
   {
     typedef ParameterList<T, std::integral_constant<T, Val>> type;
   };
+
+  using namespace parametric;
+
+  template<> struct IsMirroredType<P1> : std::false_type { };
+  template<> struct IsMirroredType<P2> : std::false_type { };
+  template<typename T1, typename T2> struct IsMirroredType<TemplateType<T1,T2>> : std::false_type { };
+  template<typename T1, typename T2> struct IsMirroredType<TemplateDefaultType<T1,T2>> : std::false_type { };
+  template<typename T, T I> struct IsMirroredType<NonTypeParam<T,I>> : std::false_type { };
+  template<typename T1> struct IsMirroredType<AbstractTemplate<T1>> : std::false_type { };
+  template<typename T1> struct IsMirroredType<ConcreteTemplate<T1>> : std::false_type { };
+  template<typename T1, typename T2, typename T3> struct IsMirroredType<Foo3<T1,T2,T3>> : std::false_type { };
+  template<typename T1, bool B> struct IsMirroredType<Foo2<T1,B>> : std::false_type { };
+  template<typename T1> struct IsMirroredType<CppVector<T1>> : std::false_type { };
+  template<typename T1, typename T2> struct IsMirroredType<CppVector2<T1,T2>> : std::false_type { };
+
 } // namespace jlcxx
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& types)

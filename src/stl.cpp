@@ -50,7 +50,7 @@ void wrap_string(TypeWrapper<string_t>&& wrapper)
     .template constructor<const char_t*, std::size_t>()
     .method("c_str", [] (const string_t& s) { return s.c_str(); })
     .method("cppsize", &string_t::size)
-    .method("getindex", [] (const string_t& s, int_t i) { return s[i-1]; });
+    .method("getindex", [] (const string_t& s, cxxint_t i) { return s[i-1]; });
 }
 
 }

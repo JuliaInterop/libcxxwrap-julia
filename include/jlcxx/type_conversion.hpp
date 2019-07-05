@@ -23,6 +23,23 @@ namespace jlcxx
 
 namespace detail
 {
+  template<std::size_t N>
+  struct IndexT
+  {
+    using type = int_t;
+  };
+
+  template<>
+  struct IndexT<8>
+  {
+    using type = long long int; // make sure index_t maps to Int64 and not CxxInt64
+  };
+}
+
+using cxxint_t = typename detail::IndexT<sizeof(long)>::type;
+
+namespace detail
+{
   template<bool, typename T1, typename T2>
   struct StaticIf;
 
@@ -337,7 +354,8 @@ public:
   {
     if(m_dt.get_dt() != nullptr)
     {
-      throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " already had a mapped type set");
+      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(m_dt.get_dt()) << std::endl;
+      return;
     }
     m_dt.set_dt(dt);
   }
@@ -678,6 +696,11 @@ struct BoxValue<T,T>
   {
     return jl_new_bits((jl_value_t*)julia_type<T>(), &cppval);
   }
+
+  inline jl_value_t* operator()(T cppval, jl_value_t* dt)
+  {
+    return jl_new_bits(dt, &cppval);
+  }
 };
 
 // Already boxed types
@@ -739,6 +762,12 @@ template<typename CppT, typename ArgT>
 inline jl_value_t* box(ArgT&& cppval)
 {
   return BoxValue<CppT, static_julia_type<CppT>>()(std::forward<ArgT>(cppval));
+}
+
+template<typename CppT, typename ArgT>
+inline jl_value_t* box(ArgT&& cppval, jl_value_t* dt)
+{
+  return BoxValue<CppT, static_julia_type<CppT>>()(std::forward<ArgT>(cppval), dt);
 }
 
 template<>

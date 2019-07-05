@@ -245,7 +245,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
       throw std::runtime_error("Incorrect callback result, expected 3");
     }
   });
-  mod.method("test_safe_cfunction3", [](void (*f) (const double* const, int_t))
+  mod.method("test_safe_cfunction3", [](void (*f) (const double* const, jlcxx::cxxint_t))
   {
     static const double arr[] = {1.0, 2.0};
     f(arr,2);

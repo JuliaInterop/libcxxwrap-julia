@@ -75,7 +75,7 @@ void wrap_common(TypeWrapperT& wrapped)
   using T = typename WrappedT::value_type;
   wrapped.method("cppsize", &WrappedT::size);
   wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
-  wrapped.method("resize", [] (WrappedT& v, const int_t s) { v.resize(s); });
+  wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
   wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
   wrapped.method("append", [] (WrappedT& v, jlcxx::ArrayRef<T> arr)
   {
@@ -99,9 +99,13 @@ struct WrapVectorImpl
     
     wrap_common(wrapped);
     wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&)>(&WrappedT::push_back));
-    wrapped.method("cxxgetindex", [] (const WrappedT& v, int_t i) -> typename WrappedT::const_reference { return v[i-1]; });
-    wrapped.method("cxxgetindex", [] (WrappedT& v, int_t i) -> typename WrappedT::reference { return v[i-1]; });
-    wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, int_t i) { v[i-1] = val; });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> typename WrappedT::const_reference { return v[i-1]; });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) -> typename WrappedT::reference { return v[i-1]; });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, cxxint_t i) { v[i-1] = val; });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
   }
 };
 
@@ -115,8 +119,11 @@ struct WrapVectorImpl<bool>
 
     wrap_common(wrapped);
     wrapped.method("push_back", [] (WrappedT& v, const bool val) { v.push_back(val); });
-    wrapped.method("cxxgetindex", [] (const WrappedT& v, int_t i) { return bool(v[i-1]); });
-    wrapped.method("cxxsetindex!", [] (WrappedT& v, const bool val, int_t i) { v[i-1] = val; });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) { return bool(v[i-1]); });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const bool val, cxxint_t i) { v[i-1] = val; });
+    wrapped.module().last_function().set_override_module(StlWrappers::instance().module());
   }
 };
 

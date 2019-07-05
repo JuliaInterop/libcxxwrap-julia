@@ -7,7 +7,7 @@
 namespace jlcxx
 {
 
-typedef int_t index_t;
+using index_t = cxxint_t;
 
 namespace detail
 {
@@ -40,7 +40,7 @@ public:
   {
   }
 
-  T getindex(const int_t i) const
+  T getindex(const cxxint_t i) const
   {
     return m_arr[i-1];
   }

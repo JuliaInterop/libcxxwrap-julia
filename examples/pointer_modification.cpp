@@ -13,6 +13,7 @@ struct MyData
 
   ~MyData()
   {
+    assert(alive_count > 0);
     --alive_count;
   }
 
@@ -49,8 +50,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     .method("setvalue!", [] (MyData& d, const int v) { d.value = v; });
   mod.method("readpointerptr", [] (MyData** ptrref) { return (*ptrref)->value; });
   mod.method("readpointerref", [] (MyData*& ptrref) { return ptrref->value; });
-  mod.method("writepointerref!", [] (MyData*& ptrref) { delete ptrref; ptrref = new MyData(30); } );
+  mod.method("writepointerref!", [] (MyData*& ptrref) { ptrref = new MyData(30); } );
   mod.method("alive_count", [] () { return MyData::alive_count; });
+  mod.method("delete", [] (MyData* ptr) { delete ptr; } );
 
   mod.method("divrem", divrem);
   mod.method("prettydivrem", [] (MyData* a, MyData* b)

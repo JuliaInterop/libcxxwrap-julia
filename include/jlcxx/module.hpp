@@ -125,9 +125,9 @@ jl_value_t* create(ArgsT&&... args)
   return boxed_cpp_pointer(cpp_obj, dt, finalize);
 }
 
-/// Safe downcast to base type
+/// Safe upcast to base type
 template<typename T>
-struct DownCast
+struct UpCast
 {
   static inline supertype<T>& apply(T& base)
   {
@@ -174,8 +174,8 @@ public:
     return m_name;
   }
 
-  inline int_t pointer_index() { return m_pointer_index; }
-  inline int_t thunk_index() { return m_thunk_index; }
+  inline cxxint_t pointer_index() { return m_pointer_index; }
+  inline cxxint_t thunk_index() { return m_thunk_index; }
 
   inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
   inline jl_value_t* override_module() const { return m_override_module; }
@@ -193,8 +193,8 @@ private:
   Module* m_module;
   jl_datatype_t* m_return_type = nullptr;
 
-  int_t m_pointer_index = 0;
-  int_t m_thunk_index = 0;
+  cxxint_t m_pointer_index = 0;
+  cxxint_t m_thunk_index = 0;
 
   // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
   jl_value_t* m_override_module = jl_nothing;
@@ -543,7 +543,12 @@ public:
   template<typename T>
   void map_type(const std::string& name)
   {
-    set_julia_type<T>((jl_datatype_t*)julia_type(name, m_jl_mod));
+    jl_datatype_t* dt = (jl_datatype_t*)julia_type(name, m_jl_mod);
+    if(dt == nullptr)
+    {
+      throw std::runtime_error("Type for " + name + " was not found when mapping it.");
+    }
+    set_julia_type<T>(dt);
   }
 
   template<typename T, typename JLSuperT=jl_datatype_t>
@@ -594,7 +599,7 @@ public:
     return m_jl_mod;
   }
 
-  int_t store_pointer(void* ptr);
+  cxxint_t store_pointer(void* ptr);
 
 private:
 
@@ -957,7 +962,8 @@ private:
 
     if(!std::is_same<supertype<AppliedT>,AppliedT>::value)
     {
-      m_module.method("cxxdowncast", DownCast<AppliedT>::apply);
+      m_module.method("cxxupcast", UpCast<AppliedT>::apply);
+      m_module.last_function().set_override_module(get_cxxwrap_module());
     }
 
     return 0;
@@ -990,7 +996,7 @@ template<typename T, typename SuperParametersT, typename JLSuperT>
 TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* super_generic)
 {
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
-  static_assert(!IsMirroredType<T>::value, "Mirrored types (marked with IsMirroredType) can't be added using add_type, map them directly to a struct instead and use map_type");
+  static_assert(!IsMirroredType<T>::value, "Mirrored types (marked with IsMirroredType) can't be added using add_type, map them directly to a struct instead and use map_type or explicitly disable mirroring for this type, e.g. define template<> struct IsMirroredType<Foo> : std::false_type { };");
   static_assert(!std::is_scalar<T>::value, "Scalar types must be added using add_bits");
 
   if(m_jl_constants.count(name) > 0)
@@ -1049,7 +1055,8 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
 
   if(!is_parametric && !std::is_same<supertype<T>,T>::value)
   {
-    method("cxxdowncast", DownCast<T>::apply);
+    method("cxxupcast", UpCast<T>::apply);
+    last_function().set_override_module(get_cxxwrap_module());
   }
 
   JL_GC_POP();

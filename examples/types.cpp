@@ -38,7 +38,7 @@ struct DoubleData
 struct World
 {
   World(const std::string& message = "default hello") : msg(message){}
-  World(int_t) : msg("NumberedWorld") {}
+  World(jlcxx::cxxint_t) : msg("NumberedWorld") {}
   void set(const std::string& msg) { this->msg = msg; }
   const std::string& greet() const { return msg; }
   std::string msg;
@@ -99,12 +99,9 @@ struct JuliaTestType {
   double a;
   double b;
 };
-void call_testype_function()
+void call_testtype_function()
 {
-  JuliaTestType A = {2., 3.};
-  jl_value_t* result = jl_new_struct_uninit((jl_datatype_t*)jlcxx::julia_type("JuliaTestType"));
-  *reinterpret_cast<JuliaTestType*>(result) = A;
-  jlcxx::JuliaFunction("julia_test_func")(result);
+  jlcxx::JuliaFunction("julia_test_func")(jlcxx::box<JuliaTestType>(JuliaTestType({2.0, 3.0}), jlcxx::julia_type("JuliaTestType")));
 }
 
 enum MyEnum
@@ -138,13 +135,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 {
   using namespace cpp_types;
 
-  types.method("call_testype_function", call_testype_function);
+  types.method("call_testtype_function", call_testtype_function);
 
   types.add_type<DoubleData>("DoubleData");
 
   types.add_type<World>("World")
     .constructor<const std::string&>()
-    .constructor<int_t>(false) // no finalizer
+    .constructor<jlcxx::cxxint_t>(false) // no finalizer
     .method("set", &World::set)
     .method("greet_cref", &World::greet)
     .method("greet_lambda", [] (const World& w) { return w.greet(); } );
