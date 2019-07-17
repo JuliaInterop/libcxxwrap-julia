@@ -85,6 +85,14 @@ std::string* str_return_ptr(StringHolder& strholder)
   return &strholder.m_str;
 }
 
+struct TypeFtor
+{
+  template<typename T>
+  void apply() { m_count += sizeof(T); }
+
+  int m_count = 0;
+};
+
 }
 
 extern "C"
@@ -157,5 +165,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   mod.method("boxed_mutable_mirrored_type", [] (void (*f)(jl_value_t*))
   {
     f(jlcxx::box<MutableBits>(MutableBits({2,3})));
+  });
+
+  mod.method("test_for_each_type", [] ()
+  {
+    TypeFtor f;
+    jlcxx::for_each_parameter_type<jlcxx::ParameterList<float, double>>(f);
+    return f.m_count;
   });
 }

@@ -177,19 +177,6 @@ T* unbox_wrapped_ptr(jl_value_t* v)
 
 namespace detail
 {
-  /// Finalizer function for type T
-  template<typename T>
-  void finalizer(jl_value_t* to_delete)
-  {
-    T* stored_obj = unbox_wrapped_ptr<T>(to_delete);
-    if(stored_obj != nullptr)
-    {
-      delete stored_obj;
-    }
-
-    reinterpret_cast<WrappedCppPtr*>(to_delete)->voidptr = nullptr;
-  }
-
   template<typename T>
   struct unused_type
   {
@@ -583,27 +570,29 @@ inline jl_datatype_t* julia_return_type()
 // Needed for Visual C++, static members are different in each DLL
 extern "C" JLCXX_API jl_module_t* get_cxxwrap_module();
 
+namespace detail
+{
+  inline jl_value_t* get_finalizer()
+  {
+    static jl_value_t* finalizer = jl_get_function(get_cxxwrap_module(), "delete");
+    return finalizer;
+  }
+}
+
 /// Wrap a C++ pointer in a Julia type that contains a single void pointer field, returning the result as an any
 template<typename T>
 jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
 {
   assert(jl_datatype_nfields(dt) == 1);
   assert(jl_is_cpointer_type(jl_field_type(dt,0)));
-  jl_value_t* void_ptr = nullptr;
-  jl_value_t* result = nullptr;
-  jl_value_t* finalizer = nullptr;
-  JL_GC_PUSH3(&void_ptr, &result, &finalizer);
-  void_ptr = jl_box_voidpointer((void*)cpp_ptr);
-  result = jl_new_struct(dt, void_ptr);
+
+  jl_value_t *result = jl_new_struct_uninit(dt);
+  JL_GC_PUSH1(&result);
+  ((WrappedCppPtr*)result)->voidptr = (void*)cpp_ptr;
+
   if(add_finalizer)
   {
-    finalizer = jl_box_voidpointer((void*)detail::finalizer<T>);
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 5
-    jl_gc_add_finalizer(result, (jl_function_t*)finalizer);
-#else
-    jl_gc_add_finalizer(result, finalizer);
-#endif
-
+    jl_gc_add_finalizer(result, detail::get_finalizer());//jl_box_voidpointer((void*)detail::finalizer<T>));//
   }
   JL_GC_POP();
   return result;

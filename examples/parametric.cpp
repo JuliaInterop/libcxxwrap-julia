@@ -251,7 +251,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .apply<TemplateDefaultType<P1>, TemplateDefaultType<P2>>(WrapTemplateDefaultType());
 
   types.add_type<Parametric<jlcxx::TypeVar<1>, jlcxx::TypeVar<2>>>("NonTypeParam")
-    .apply<NonTypeParam<int, 1>, NonTypeParam<unsigned int, 2>, NonTypeParam<int64_t, 64>>(WrapNonTypeParam());
+    .apply<NonTypeParam<int, 1>, NonTypeParam<unsigned int, 2>, NonTypeParam<long, 64>>(WrapNonTypeParam());
 
   auto abstract_template = types.add_type<Parametric<jlcxx::TypeVar<1>>>("AbstractTemplate");
   abstract_template.apply<AbstractTemplate<double>>(WrapAbstractTemplate());

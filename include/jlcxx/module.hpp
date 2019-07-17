@@ -362,6 +362,20 @@ struct ParameterList
 
 namespace detail
 {
+  template<typename F, typename PL>
+  struct ForEachParameterType
+  {
+  };
+
+  template<typename F, typename... ParametersT>
+  struct ForEachParameterType<F,ParameterList<ParametersT...>>
+  {
+    void operator()(F&& f)
+    {
+      (f.template apply<ParametersT>(),...);
+    }
+  };
+
   template<typename... T>
   constexpr bool has_type = false;
 
@@ -425,6 +439,12 @@ namespace detail
   {
     using type = ParameterList<Params1..., Params2...>;
   };
+}
+
+template<typename ParametersT, typename F>
+void for_each_parameter_type(F&& f)
+{
+  detail::ForEachParameterType<F,ParametersT>()(std::forward<F>(f));
 }
 
 template<typename T> using remove_duplicates = typename detail::RemoveDuplicates<T>::type;
@@ -836,6 +856,27 @@ struct ApplyType
   template<typename... Types> using apply = TemplateT<Types...>;
 };
 
+namespace detail
+{
+  template<typename T>
+  void finalize(T* to_delete)
+  {
+    delete to_delete;
+  }
+}
+
+template<typename T>
+inline void add_default_methods(Module& mod)
+{
+  if (!std::is_same<supertype<T>, T>::value)
+  {
+    mod.method("cxxupcast", UpCast<T>::apply);
+    mod.last_function().set_override_module(get_cxxwrap_module());
+  }
+  mod.method("__delete", detail::finalize<T>);
+  mod.last_function().set_override_module(get_cxxwrap_module());
+}
+
 /// Helper class to wrap type methods
 template<typename T>
 class TypeWrapper
@@ -960,11 +1001,7 @@ private:
 
     m_module.register_type(app_box_dt);
 
-    if(!std::is_same<supertype<AppliedT>,AppliedT>::value)
-    {
-      m_module.method("cxxupcast", UpCast<AppliedT>::apply);
-      m_module.last_function().set_override_module(get_cxxwrap_module());
-    }
+    add_default_methods<AppliedT>(m_module);
 
     return 0;
   }
@@ -1053,10 +1090,9 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
     this->register_type(box_dt);
   }
 
-  if(!is_parametric && !std::is_same<supertype<T>,T>::value)
+  if(!is_parametric)
   {
-    method("cxxupcast", UpCast<T>::apply);
-    last_function().set_override_module(get_cxxwrap_module());
+    add_default_methods<T>(*this);
   }
 
   JL_GC_POP();
