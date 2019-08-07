@@ -38,8 +38,12 @@ extern void* create_registry();
 extern void bind_module_constants(jl_value_t* module_any);
 }
 
+void __dummy_protect(jl_value_t*) {}
+
 int main()
 {
+  jlcxx::g_protect_from_gc = __dummy_protect;
+  jlcxx::g_unprotect_from_gc = __dummy_protect;
   jl_init();
 
   jl_eval_string("Base.include(@__MODULE__, \"cxxwrap_testmod.jl\")");
