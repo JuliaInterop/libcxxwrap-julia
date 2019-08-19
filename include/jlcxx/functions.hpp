@@ -51,6 +51,11 @@ private:
       m_arg_array[m_i++] = box<ArgT>(a);
     }
 
+    void push(jl_value_t* a)
+    {
+      m_arg_array[m_i++] = a;
+    }
+
     void push() {}
 
     jl_value_t** m_arg_array;

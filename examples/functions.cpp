@@ -218,6 +218,11 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
     jlcxx::JuliaFunction julia_max("max");
     return julia_max(static_cast<double>(a), static_cast<double>(b)); // static_cast here ensures a and b are passed by value
   });
+  mod.method("test_julia_call_any", [](jl_value_t* x)
+  {
+    jlcxx::JuliaFunction identity("identity");
+    return identity(x);
+  });
   mod.method("test_string_array", [](jlcxx::ArrayRef<std::string> arr)
   {
     return arr[0] == "first" && arr[1] == "second" && *(arr.begin()) == "first" && *(++arr.begin()) == "second";
