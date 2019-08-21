@@ -1053,7 +1053,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   fnames = jl_svec1(jl_symbol("cpp_object"));
   ftypes = jl_svec1(jl_voidpointer_type);
 
-  if(jl_is_datatype(super_generic) && jl_nparams((jl_datatype_t*)super_generic) == 0)
+  if(jl_is_datatype(super_generic) && !jl_is_unionall(super_generic))
   {
     super = (jl_datatype_t*)super_generic;
   }
