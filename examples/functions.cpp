@@ -120,7 +120,7 @@ JLCXX_MODULE init_half_module(jlcxx::Module& mod)
     jlcxx::JuliaFunction f("half_julia");
     std::transform(in.begin(), in.end(), out.begin(), [=](const double d)
     {
-      return jl_unbox_float64(f(static_cast<double>(d)));
+      return jlcxx::unbox<double>(f(static_cast<double>(d)));
     });
   });
 

@@ -146,6 +146,19 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .method("greet_cref", &World::greet)
     .method("greet_lambda", [] (const World& w) { return w.greet(); } );
 
+  types.method("test_unbox", [] ()
+  {
+    std::vector<bool> results;
+    results.push_back(jlcxx::unbox<int>(jlcxx::JuliaFunction("return_int")()) == 3);
+    results.push_back(*jlcxx::unbox<double*>(jlcxx::JuliaFunction("return_ptr_double")()) == 4.0);
+    results.push_back(jlcxx::unbox<World>(jlcxx::JuliaFunction("return_world")()).greet() == "returned_world");
+    results.push_back(jlcxx::unbox<World*>(jlcxx::JuliaFunction("return_world")())->greet() == "returned_world");
+    results.push_back(jlcxx::unbox<World&>(jlcxx::JuliaFunction("return_world")()).greet() == "returned_world");
+    results.push_back(jlcxx::unbox<World*>(jlcxx::JuliaFunction("return_world_ptr")())->greet() == "returned_world_ptr");
+    results.push_back(jlcxx::unbox<World&>(jlcxx::JuliaFunction("return_world_ref")()).greet() == "returned_world_ref");
+    return results;
+  });
+
   types.add_type<Array>("Array");
 
   types.method("world_factory", []()
@@ -253,7 +266,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     for(jl_value_t* v : farr)
     {
-      const Foo& f = *jlcxx::unbox_wrapped_ptr<Foo>(v);
+      const Foo& f = jlcxx::unbox<Foo&>(v);
       std::wcout << f.name << ":";
       for(const double d : f.data)
       {

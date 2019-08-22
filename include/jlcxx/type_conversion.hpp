@@ -141,13 +141,6 @@ template<typename T> struct IsSmartPointerType
   static constexpr bool value = false;
 };
 
-// Unbox boxed type
-template<typename CppT>
-inline CppT unbox(jl_value_t* v)
-{
-  return *reinterpret_cast<CppT*>(jl_data_ptr(v));
-}
-
 /// Equivalent of the basic C++ type layout in Julia
 struct WrappedCppPtr {
   void* voidptr;
@@ -167,12 +160,6 @@ inline CppT* extract_pointer_nonull(const WrappedCppPtr& p)
     throw std::runtime_error("C++ object was deleted");
   }
   return extract_pointer<CppT>(p);
-}
-
-template<typename T>
-T* unbox_wrapped_ptr(jl_value_t* v)
-{
-  return reinterpret_cast<T*>(unbox<WrappedCppPtr>(v).voidptr);
 }
 
 namespace detail
@@ -672,7 +659,7 @@ struct BoxValue
 {
   inline jl_value_t* operator()(CppT)
   {
-    static_assert(sizeof(CppT) == 0, "Unimplemented box in jlcxx");
+    static_assert(sizeof(CppT) == 0, "Unimplemented BoxValue in jlcxx");
     return nullptr;
   }
 };
@@ -759,52 +746,71 @@ inline jl_value_t* box(ArgT&& cppval, jl_value_t* dt)
   return BoxValue<CppT, static_julia_type<CppT>>()(std::forward<ArgT>(cppval), dt);
 }
 
-template<>
-inline bool unbox(jl_value_t* v)
+template<typename CppT, typename JuliaT>
+struct UnboxValue
 {
-  return jl_unbox_bool(v);
+  inline CppT operator()(jl_value_t*)
+  {
+    static_assert(sizeof(CppT) == 0, "Unimplemented UnboxValue in jlcxx");
+    return CppT();
+  }
+};
+
+namespace detail
+{
+  template<typename CppT>
+  CppT* unbox_any(jl_value_t* juliaval)
+  {
+    return reinterpret_cast<CppT*>(jl_data_ptr(juliaval));
+  }
+
+  template<typename CppT>
+  CppT* unboxed_wrapped_pointer(jl_value_t* juliaval)
+  {
+    return reinterpret_cast<CppT*>(unbox_any<WrappedCppPtr>(juliaval)->voidptr);
+  }
 }
 
-template<>
-inline float unbox(jl_value_t* v)
+template<typename CppT>
+struct UnboxValue<CppT,WrappedCppPtr>
 {
-  return jl_unbox_float32(v);
-}
+  inline CppT operator()(jl_value_t* juliaval)
+  {
+    return *detail::unboxed_wrapped_pointer<CppT>(juliaval);
+  }
+};
 
-template<>
-inline double unbox(jl_value_t* v)
+template<typename CppT>
+struct UnboxValue<CppT*,WrappedCppPtr>
 {
-  return jl_unbox_float64(v);
-}
+  inline CppT* operator()(jl_value_t* juliaval)
+  {
+    return detail::unboxed_wrapped_pointer<CppT>(juliaval);
+  }
+};
 
-template<>
-inline int32_t unbox(jl_value_t* v)
+template<typename CppT>
+struct UnboxValue<CppT&,WrappedCppPtr>
 {
-  return jl_unbox_int32(v);
-}
+  inline CppT& operator()(jl_value_t* juliaval)
+  {
+    return *detail::unboxed_wrapped_pointer<CppT>(juliaval);
+  }
+};
 
-template<>
-inline int64_t unbox(jl_value_t* v)
+template<typename CppT>
+struct UnboxValue<CppT,CppT>
 {
-  return jl_unbox_int64(v);
-}
+  inline CppT operator()(jl_value_t* juliaval)
+  {
+    return *detail::unbox_any<CppT>(juliaval);
+  }
+};
 
-template<>
-inline uint32_t unbox(jl_value_t* v)
+template<typename CppT>
+inline CppT unbox(jl_value_t* juliaval)
 {
-  return jl_unbox_uint32(v);
-}
-
-template<>
-inline uint64_t unbox(jl_value_t* v)
-{
-  return jl_unbox_uint64(v);
-}
-
-template<>
-inline void* unbox(jl_value_t* v)
-{
-  return jl_unbox_voidpointer(v);
+  return UnboxValue<CppT, static_julia_type<CppT>>()(juliaval);
 }
 
 // Fundamental type conversion
@@ -814,11 +820,6 @@ struct ConvertToCpp<CppT, NoMappingTrait>
   inline CppT operator()(CppT julia_val) const
   {
     return julia_val;
-  }
-
-  CppT operator()(jl_value_t* julia_val) const
-  {
-    return unbox<CppT>(julia_val);
   }
 };
 
