@@ -1,3 +1,7 @@
+if VERSION >= v"1.1"
+    exit()
+end
+
 using BinaryBuilder
 
 # Collection of sources required to build Ogg
