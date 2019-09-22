@@ -77,6 +77,14 @@ set(JLCXX_HEADERS
     ${JLCXX_INCLUDE_DIR}/jlcxx/type_conversion.hpp
 )
 
+set(JLCXX_STL_HEADERS
+    ${JLCXX_INCLUDE_DIR}/jlcxx/stl.hpp
+)
+
+set(JLCXX_STL_SOURCES
+    ${JLCXX_SOURCE_DIR}/stl.cpp
+)
+
 set(JLCXX_SOURCES
   ${JLCXX_SOURCE_DIR}/c_interface.cpp
   ${JLCXX_SOURCE_DIR}/jlcxx.cpp
@@ -112,7 +120,7 @@ target_include_directories(${JLCXX_TARGET} PUBLIC
 target_link_libraries(${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
 
 set(JLCXX_STL_TARGET cxxwrap_julia_stl)
-add_library(${JLCXX_STL_TARGET} SHARED ${JLCXX_SOURCE_DIR}/stl.cpp)
+add_library(${JLCXX_STL_TARGET} SHARED ${JLCXX_STL_SOURCES} ${JLCXX_STL_HEADERS})
 target_include_directories(${JLCXX_STL_TARGET} PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${JLCXX_INCLUDE_DIR}>
@@ -124,6 +132,9 @@ link_directories(${Julia_LIBRARY_DIR} ${Julia_LIBRARY_DIR}/julia)
 set_target_properties(${JLCXX_TARGET} PROPERTIES
                       PUBLIC_HEADER "${JLCXX_HEADERS}"
                       COMPILE_DEFINITIONS "JLCXX_EXPORTS")
+set_target_properties(${JLCXX_STL_TARGET} PROPERTIES
+                      PUBLIC_HEADER "${JLCXX_STL_HEADERS}"
+                      COMPILE_DEFINITIONS "JLCXX_EXPORTS")
 set_property(TARGET ${JLCXX_TARGET} PROPERTY VERSION ${${PROJECT_NAME}_VERSION})
 set_property(TARGET ${JLCXX_TARGET} PROPERTY SOVERSION ${JLCXX_VERSION_MAJOR})
 set_property(TARGET ${JLCXX_TARGET} PROPERTY
@@ -133,6 +144,7 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
 target_compile_options(${JLCXX_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
+target_compile_options(${JLCXX_STL_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
 
 generate_export_header(${JLCXX_TARGET})
 
@@ -148,6 +160,7 @@ if(WIN32)
 else()
     if(APPLE)
         target_link_libraries(${JLCXX_TARGET} "-framework CoreFoundation")
+        target_link_libraries(${JLCXX_STL_TARGET} "-framework CoreFoundation")
     endif()
     set(JLCXX_LINK_FILE lib${JLCXX_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
     set(JLCXX_RUNTIME_FILE lib${JLCXX_NAME}${CMAKE_SHARED_LIBRARY_SUFFIX})
@@ -159,7 +172,7 @@ endif()
 set(JLCXX_CMAKECONFIG_INSTALL_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}" CACHE STRING "install path for jlcxxConfig.cmake")
 
 
-install(TARGETS ${JLCXX_TARGET} cxxwrap_julia_stl EXPORT JlCxxTargets
+install(TARGETS ${JLCXX_TARGET} ${JLCXX_STL_TARGET} EXPORT JlCxxTargets
         ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
         LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

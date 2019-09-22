@@ -10,9 +10,9 @@ namespace jlcxx
 namespace stl
 {
 
-std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr<StlWrappers>();
+JLCXX_API std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr<StlWrappers>();
 
-void StlWrappers::instantiate(Module& mod)
+JLCXX_API void StlWrappers::instantiate(Module& mod)
 {
   m_instance.reset(new StlWrappers(mod));
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
@@ -21,7 +21,7 @@ void StlWrappers::instantiate(Module& mod)
   smartptr::apply_smart_combination<std::unique_ptr, stltypes>(mod);
 }
 
-StlWrappers& StlWrappers::instance()
+JLCXX_API StlWrappers& StlWrappers::instance()
 {
   if(m_instance == nullptr)
   {
@@ -30,12 +30,12 @@ StlWrappers& StlWrappers::instance()
   return *m_instance;
 }
 
-StlWrappers& wrappers()
+JLCXX_API StlWrappers& wrappers()
 {
   return StlWrappers::instance();
 }
 
-StlWrappers::StlWrappers(Module& stl) :
+JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   m_stl_mod(stl),
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector")))
 {
@@ -49,7 +49,7 @@ void wrap_string(TypeWrapper<string_t>&& wrapper)
     .template constructor<const char_t*>()
     .template constructor<const char_t*, std::size_t>()
     .method("c_str", [] (const string_t& s) { return s.c_str(); })
-    .method("cppsize", &string_t::size)
+    .method("cppsize", [] (const string_t& s) { return s.size(); })
     .method("getindex", [] (const string_t& s, cxxint_t i) { return s[i-1]; });
 }
 
