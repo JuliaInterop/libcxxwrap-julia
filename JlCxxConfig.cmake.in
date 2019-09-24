@@ -13,4 +13,4 @@ set_target_properties(JlCxx::cxxwrap_julia PROPERTIES
   INTERFACE_LINK_LIBRARIES "${Julia_LIBRARY}"
 )
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)

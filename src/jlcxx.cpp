@@ -14,8 +14,8 @@ namespace jlcxx
 jl_module_t* g_cxxwrap_module;
 jl_datatype_t* g_cppfunctioninfo_type;
 
-void (*g_protect_from_gc)(jl_value_t*);
-void (*g_unprotect_from_gc)(jl_value_t*);
+JLCXX_API void (*g_protect_from_gc)(jl_value_t*);
+JLCXX_API void (*g_unprotect_from_gc)(jl_value_t*);
 
 JLCXX_API void protect_from_gc(jl_value_t* v)
 {

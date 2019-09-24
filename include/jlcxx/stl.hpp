@@ -35,7 +35,7 @@ template<typename T1, typename T2> using skip_if_same = typename SkipIfSameAs<T1
 namespace stl
 {
 
-class StlWrappers
+class JLCXX_API StlWrappers
 {
 private:
   StlWrappers(Module& mod);
@@ -53,7 +53,7 @@ public:
   }
 };
 
-StlWrappers& wrappers();
+JLCXX_API StlWrappers& wrappers();
 
 using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists<ParameterList
 <

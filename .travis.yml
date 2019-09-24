@@ -42,3 +42,4 @@ deploy:
   on:
     repo: JuliaInterop/libcxxwrap-julia
     tags: true
+    julia: 1.0
