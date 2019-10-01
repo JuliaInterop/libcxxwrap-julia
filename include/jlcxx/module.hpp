@@ -149,7 +149,7 @@ class JLCXX_API Module;
 class JLCXX_API FunctionWrapperBase
 {
 public:
-  FunctionWrapperBase(Module* mod, jl_datatype_t* return_type) : m_module(mod), m_return_type(return_type)
+  FunctionWrapperBase(Module* mod, jl_datatype_t* return_type) : m_name(nullptr), m_module(mod), m_return_type(return_type)
   {
   }
 
@@ -189,7 +189,7 @@ protected:
 
   void set_pointer_indices();
 private:
-  jl_value_t* m_name;
+  jl_value_t* m_name = nullptr;
   Module* m_module;
   jl_datatype_t* m_return_type = nullptr;
 

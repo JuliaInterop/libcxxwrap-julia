@@ -9,7 +9,7 @@ add_test(NAME test_module COMMAND test_module)
 if(WIN32)
   set_property(TEST test_module PROPERTY
     ENVIRONMENT
-      "PATH=${JULIA_HOME}\;${CMAKE_BINARY_DIR}/$<CONFIGURATION>"
+      "PATH=${JULIA_HOME}\;${CMAKE_BINARY_DIR}"
       "JULIA_HOME=${JULIA_HOME}"
   )
 else()
