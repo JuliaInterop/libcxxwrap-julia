@@ -19,7 +19,11 @@ find_package(Julia REQUIRED)
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${Julia_LIBRARY_DIR}")
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_MACOSX_RPATH 1)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+if(MSVC)
+	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  "${CMAKE_BINARY_DIR}/bin")
+else()
+	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
+endif()
 
 # includes
 # ============
@@ -51,6 +55,12 @@ if(WIN32 AND DEFINED ENV{MSYSTEM})
   if($ENV{MSYSTEM} STREQUAL "MINGW32")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=pentium4 -static-libstdc++")
   endif()
+endif()
+
+if(MSVC)
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
+	set(CMAKE_SHARED_LIBRARY_PREFIX "lib")
+	set(CMAKE_STATIC_LIBRARY_PREFIX "lib")
 endif()
 
 set(CMAKE_INSTALL_LIBDIR "lib")
@@ -143,8 +153,10 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${JLCXX_TARGET}_MAJOR_VERSION
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
-target_compile_options(${JLCXX_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
-target_compile_options(${JLCXX_STL_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
+if(NOT MSVC)
+	target_compile_options(${JLCXX_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
+	target_compile_options(${JLCXX_STL_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
+endif()
 
 generate_export_header(${JLCXX_TARGET})
 

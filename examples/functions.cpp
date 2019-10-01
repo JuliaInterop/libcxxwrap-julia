@@ -118,9 +118,9 @@ JLCXX_MODULE init_half_module(jlcxx::Module& mod)
   [](jlcxx::ArrayRef<double> in, jlcxx::ArrayRef<double> out)
   {
     jlcxx::JuliaFunction f("half_julia");
-    std::transform(in.begin(), in.end(), out.begin(), [=](const double d)
+    std::transform(in.begin(), in.end(), out.begin(), [=](double d)
     {
-      return jlcxx::unbox<double>(f(static_cast<double>(d)));
+      return jlcxx::unbox<double>(f(std::forward<double>(d)));
     });
   });
 
@@ -216,7 +216,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.method("test_julia_call", [](double a, double b)
   {
     jlcxx::JuliaFunction julia_max("max");
-    return julia_max(static_cast<double>(a), static_cast<double>(b)); // static_cast here ensures a and b are passed by value
+    return julia_max(std::forward<double>(a), std::forward<double>(b)); // std::forward here ensures a and b are passed by value
   });
   mod.method("test_julia_call_any", [](jl_value_t* x)
   {

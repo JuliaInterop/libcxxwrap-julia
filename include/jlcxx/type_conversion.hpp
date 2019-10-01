@@ -309,6 +309,8 @@ private:
   jl_datatype_t* m_dt = nullptr;
 };
 
+JLCXX_API std::map<std::size_t, CachedDatatype>& jlcxx_type_map();
+
 /// Store the Julia datatype linked to SourceT
 template<typename SourceT>
 class JuliaTypeCache
@@ -317,30 +319,28 @@ public:
 
   static inline jl_datatype_t* julia_type()
   {
-    if(m_dt.get_dt() == nullptr)
+    const auto result = jlcxx_type_map().find(typeid(SourceT).hash_code());
+    if(result == jlcxx_type_map().end())
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
     }
-    return m_dt.get_dt();
+    return result->second.get_dt();
   }
 
   static inline void set_julia_type(jl_datatype_t* dt)
   {
-    if(m_dt.get_dt() != nullptr)
+    const auto insresult = jlcxx_type_map().insert(std::make_pair(typeid(SourceT).hash_code(), CachedDatatype(dt)));
+    if(!insresult.second)
     {
-      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(m_dt.get_dt()) << std::endl;
+      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << std::endl;
       return;
     }
-    m_dt.set_dt(dt);
   }
 
   static inline bool has_julia_type()
   {
-    return m_dt.get_dt() != nullptr;
+    return jlcxx_type_map().count(typeid(SourceT).hash_code()) != 0;
   }
-
-private:
-  static inline CachedDatatype m_dt;
 };
 
 /// Store the Julia datatype linked to SourceT
@@ -348,46 +348,9 @@ template<typename SourceT, typename TraitT=mapping_trait<SourceT>>
 class dynamic_type_mapping
 {
 public:
-
-  static constexpr bool storing_dt = true;
-
   static inline jl_datatype_t* julia_type()
   {
     return JuliaTypeCache<SourceT>::julia_type();
-  }
-};
-
-
-template<typename T, typename Enable = void>
-struct NeedsStorage
-{
-  static constexpr bool value = true;
-};
-
-template<typename T>
-struct NeedsStorage<T, typename std::enable_if<dynamic_type_mapping<T>::storing_dt>::type>
-{
-  static constexpr bool value = !dynamic_type_mapping<T>::storing_dt;
-};
-
-/// Automatically cache the Julia pointer, if needed
-template<typename T, bool needs_storage = NeedsStorage<T>::value>
-struct CachedTypeMapping
-{
-  static jl_datatype_t* julia_type()
-  {
-    static CachedDatatype dt(dynamic_type_mapping<T>::julia_type());
-    return dt.get_dt();
-  }
-};
-
-// Case of the default dynamic_type_mapping, which already stores the datatype
-template<typename T>
-struct CachedTypeMapping<T, false>
-{
-  static jl_datatype_t* julia_type()
-  {
-    return dynamic_type_mapping<T>::julia_type();
   }
 };
 
@@ -395,7 +358,16 @@ struct CachedTypeMapping<T, false>
 template<typename T>
 inline jl_datatype_t* julia_type()
 {
-  return CachedTypeMapping<typename std::remove_const<T>::type>::julia_type();
+  static bool recursing = false;
+  using nonconst_t = typename std::remove_const<T>::type;
+  if (recursing)
+  {
+    return JuliaTypeCache<nonconst_t>::julia_type();
+  }
+  recursing = true;
+  static jl_datatype_t* dt = dynamic_type_mapping<nonconst_t>::julia_type();
+  recursing = false;
+  return dt;
 }
 
 namespace detail
@@ -646,6 +618,26 @@ struct ConvertToJulia<T, NoMappingTrait>
     return cpp_val;
   }
 };
+
+// Complex types fail on Windows
+#ifdef _WIN32
+
+template<typename T>
+struct JlCxxComplex
+{
+  T a;
+  T b;
+};
+
+template<typename NumberT>
+struct ConvertToJulia<std::complex<NumberT>, NoMappingTrait>
+{
+  JlCxxComplex<NumberT> operator()(const std::complex<NumberT>& cpp_val) const
+  {
+    return { cpp_val.real(), cpp_val.imag() };
+  }
+};
+#endif
 
 /// Conversion to the statically mapped target type.
 template<typename T>

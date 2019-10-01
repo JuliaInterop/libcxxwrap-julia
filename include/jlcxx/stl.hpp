@@ -149,7 +149,6 @@ inline void apply_stl(jlcxx::Module& mod)
 template<typename T>
 struct dynamic_type_mapping<std::vector<T>>
 {
-  static constexpr bool storing_dt = true;
   using MappedT = std::vector<T>;
 
   static inline jl_datatype_t* julia_type()

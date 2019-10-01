@@ -2,6 +2,7 @@
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
 #include "jlcxx/jlcxx_config.hpp"
+#include "jlcxx/smart_pointers.hpp"
 
 #include <julia.h>
 #if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4 || JULIA_VERSION_MAJOR > 0
@@ -249,27 +250,6 @@ JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
     return dt;
   }
 
-  // std::stringstream dt_def;
-  // if(mutabl)
-  // {
-  //   dt_def << "mutable ";
-  // }
-  // dt_def << "struct " << symbol_name(name);
-  // const size_t nparams = jl_svec_len(parameters);
-  // if(nparams != 0)
-  // {
-  //   dt_def << "{";
-  //   for(size_t i = 0; i != nparams; ++i)
-  //   {
-  //     dt_def << julia_type_name(jl_svecref(parameters,i)) << ",";
-  //   }
-  //   dt_def << "}";
-  // }
-
-  // dt_def << " <: " << julia_type_name(super);
-
-  // std::cout << "adding type " << dt_def.str() << std::endl;
-
   dt = jl_new_datatype(name, module, super, parameters, fnames, ftypes, abstract, mutabl, ninitialized);
   set_internal_constant(module, dt, dt_prefix + symbol_name(name));
   return dt;
@@ -324,6 +304,38 @@ namespace detail
     {
     }
   };
+}
+
+JLCXX_API std::map<std::size_t, CachedDatatype>& jlcxx_type_map()
+{
+  static std::map<std::size_t, CachedDatatype> m_map;
+  return m_map;
+}
+
+namespace smartptr
+{
+
+std::map<std::size_t, std::shared_ptr<TypeWrapper1>>& jlcxx_smartpointer_types()
+{
+  static std::map<std::size_t, std::shared_ptr<TypeWrapper1>> m_map;
+  return m_map;
+}
+
+JLCXX_API void set_smartpointer_type(const std::size_t hash, TypeWrapper1* new_wrapper)
+{
+  jlcxx_smartpointer_types()[hash] = std::shared_ptr<TypeWrapper1>(new_wrapper);
+}
+
+JLCXX_API TypeWrapper1* get_smartpointer_type(const std::size_t hash)
+{
+  auto result = jlcxx_smartpointer_types().find(hash);
+  if(result == jlcxx_smartpointer_types().end())
+  {
+    return nullptr;
+  }
+  return result->second.get();
+}
+
 }
 
 JLCXX_API void register_core_types()
