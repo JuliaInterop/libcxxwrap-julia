@@ -483,6 +483,10 @@ public:
     assert(f != nullptr);
     m_functions.push_back(std::shared_ptr<FunctionWrapperBase>(f));
     assert(m_functions.back() != nullptr);
+    if(m_override_module != nullptr)
+    {
+      m_functions.back()->set_override_module(m_override_module);
+    }
   }
 
   /// Define a new function
@@ -624,6 +628,9 @@ public:
 
   cxxint_t store_pointer(void* ptr);
 
+  inline void set_override_module(jl_module_t* mod) { m_override_module = mod; }
+  inline void unset_override_module() { m_override_module = nullptr; }
+
 private:
 
   template<typename T>
@@ -658,6 +665,7 @@ private:
   }
 
   jl_module_t* m_jl_mod;
+  jl_module_t* m_override_module = nullptr;
   ArrayRef<void*> m_pointer_array;
   std::vector<std::shared_ptr<FunctionWrapperBase>> m_functions;
   std::map<std::string, jl_value_t*> m_jl_constants;
@@ -947,6 +955,7 @@ public:
   TypeWrapper<T>& method(const std::string& name, R(CT::*f)(ArgsT...))
   {
     m_module.method(name, [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); } );
+    m_module.method(name, [f](T* obj, ArgsT... args) -> R { return ((*obj).*f)(args...); } );
     return *this;
   }
 
@@ -955,6 +964,7 @@ public:
   TypeWrapper<T>& method(const std::string& name, R(CT::*f)(ArgsT...) const)
   {
     m_module.method(name, [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); } );
+    m_module.method(name, [f](const T* obj, ArgsT... args) -> R { return ((*obj).*f)(args...); } );
     return *this;
   }
 
