@@ -104,7 +104,7 @@ struct static_type_mapping<ConstArray<T,N>, ConstArrayTrait>
 };
 
 template<typename T, index_t N>
-struct dynamic_type_mapping<ConstArray<T,N>, ConstArrayTrait>
+struct julia_type_factory<ConstArray<T,N>, ConstArrayTrait>
 {
   static jl_datatype_t* julia_type()
   {

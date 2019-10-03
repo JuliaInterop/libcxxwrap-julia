@@ -306,27 +306,27 @@ namespace detail
   };
 }
 
-JLCXX_API std::map<std::size_t, CachedDatatype>& jlcxx_type_map()
+JLCXX_API std::map<type_hash_t, CachedDatatype>& jlcxx_type_map()
 {
-  static std::map<std::size_t, CachedDatatype> m_map;
+  static std::map<type_hash_t, CachedDatatype> m_map;
   return m_map;
 }
 
 namespace smartptr
 {
 
-std::map<std::size_t, std::shared_ptr<TypeWrapper1>>& jlcxx_smartpointer_types()
+std::map<type_hash_t, std::shared_ptr<TypeWrapper1>>& jlcxx_smartpointer_types()
 {
-  static std::map<std::size_t, std::shared_ptr<TypeWrapper1>> m_map;
+  static std::map<type_hash_t, std::shared_ptr<TypeWrapper1>> m_map;
   return m_map;
 }
 
-JLCXX_API void set_smartpointer_type(const std::size_t hash, TypeWrapper1* new_wrapper)
+JLCXX_API void set_smartpointer_type(const type_hash_t& hash, TypeWrapper1* new_wrapper)
 {
   jlcxx_smartpointer_types()[hash] = std::shared_ptr<TypeWrapper1>(new_wrapper);
 }
 
-JLCXX_API TypeWrapper1* get_smartpointer_type(const std::size_t hash)
+JLCXX_API TypeWrapper1* get_smartpointer_type(const type_hash_t& hash)
 {
   auto result = jlcxx_smartpointer_types().find(hash);
   if(result == jlcxx_smartpointer_types().end())
@@ -341,6 +341,7 @@ JLCXX_API TypeWrapper1* get_smartpointer_type(const std::size_t hash)
 JLCXX_API void register_core_types()
 {
   set_julia_type<void>(jl_void_type);
+  set_julia_type<void*>(jl_voidpointer_type);
   set_julia_type<float>(jl_float32_type);
   set_julia_type<double>(jl_float64_type);
   set_julia_type<bool>((jl_datatype_t*)julia_type("CxxBool", g_cxxwrap_module));
@@ -354,6 +355,8 @@ JLCXX_API void register_core_types()
   set_julia_type<unsigned long>((jl_datatype_t*)julia_type("CxxULong", g_cxxwrap_module));
 
   set_julia_type<ObjectIdDict>((jl_datatype_t*)julia_type("IdDict", jl_base_module));
+  set_julia_type<jl_datatype_t*>(jl_any_type);
+  set_julia_type<jl_value_t*>(jl_any_type);
 }
 
 }

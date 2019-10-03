@@ -67,6 +67,8 @@ private:
 template<typename... ArgumentsT>
 jl_value_t* JuliaFunction::operator()(ArgumentsT&&... args) const
 {
+  (create_if_not_exists<ArgumentsT>(), ...);
+
   const int nb_args = sizeof...(args);
 
   jl_value_t** julia_args;
@@ -115,7 +117,7 @@ template<> struct static_type_mapping<SafeCFunction>
   typedef SafeCFunction type;
 };
 
-template<> struct dynamic_type_mapping<SafeCFunction>
+template<> struct julia_type_factory<SafeCFunction>
 {
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)jlcxx::julia_type("SafeCFunction"); }
 };
@@ -212,7 +214,7 @@ template<typename R, typename...ArgsT> struct static_type_mapping<R(*)(ArgsT...)
   typedef SafeCFunction type;
 };
 
-template<typename R, typename...ArgsT> struct dynamic_type_mapping<R(*)(ArgsT...)>
+template<typename R, typename...ArgsT> struct julia_type_factory<R(*)(ArgsT...)>
 {
   static jl_datatype_t* julia_type() { return (jl_datatype_t*)jlcxx::julia_type("SafeCFunction"); }
 };

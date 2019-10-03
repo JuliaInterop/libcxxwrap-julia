@@ -46,7 +46,7 @@ int main()
   jlcxx::g_unprotect_from_gc = __dummy_protect;
   jl_init();
 
-  jl_eval_string("Base.include(@__MODULE__, \"cxxwrap_testmod.jl\")");
+  jl_value_t* cxxwrap_mod_jval = jl_eval_string("Base.include(@__MODULE__, \"cxxwrap_testmod.jl\")");
   if (jl_exception_occurred())
   {
     jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
@@ -54,6 +54,12 @@ int main()
     jl_atexit_hook(1);
     return 1;
   }
+
+  jl_module_t* cxxwrap_mod = (jl_module_t*)cxxwrap_mod_jval;
+  jl_value_t* cppfuncinfo = jl_get_global(cxxwrap_mod, jl_symbol("CppFunctionInfo"));
+  void* protect_f = jl_unbox_voidpointer(jl_get_global(cxxwrap_mod, jl_symbol("_c_protect_from_gc")));
+  void* unprotect_f = jl_unbox_voidpointer(jl_get_global(cxxwrap_mod, jl_symbol("_c_unprotect_from_gc")));
+  initialize(cxxwrap_mod_jval, cppfuncinfo, protect_f, unprotect_f);
 
   jl_value_t* mod = jl_eval_string(R"(
     module TestModule
@@ -67,9 +73,6 @@ int main()
     std::cout << "TestModule creation failed" << std::endl;
     return 1;
   }
-
-  jlcxx::JuliaFunction initialize_cxx_lib("initialize_cxx_lib", "CxxWrap");
-  initialize_cxx_lib((void*)initialize);
 
   register_julia_module((jl_module_t*)mod, register_test_module);
 

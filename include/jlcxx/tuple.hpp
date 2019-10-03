@@ -78,7 +78,7 @@ template<typename... TypesT> struct static_type_mapping<std::tuple<TypesT...>, T
   using type = jl_value_t*;
 };
 
-template<typename... TypesT> struct dynamic_type_mapping<std::tuple<TypesT...>, TupleTrait>
+template<typename... TypesT> struct julia_type_factory<std::tuple<TypesT...>, TupleTrait>
 {
   static jl_datatype_t* julia_type()
   {
@@ -120,7 +120,7 @@ struct static_type_mapping<NTuple<N,T>, TupleTrait>
 };
 
 template<typename N, typename T>
-struct dynamic_type_mapping<NTuple<N,T>>
+struct julia_type_factory<NTuple<N,T>>
 {
   static jl_datatype_t* julia_type()
   {
