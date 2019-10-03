@@ -61,11 +61,9 @@ struct ConstCxxRef{T} <: CxxBaseRef{T}
   ConstCxxRef{T}(x::CxxBaseRef) where {T} = new{T}(x.cpp_object)
 end
 
-function initialize_cxx_lib(initialize_ptr)
-  _c_protect_from_gc = @cfunction protect_from_gc Nothing (Any,)
-  _c_unprotect_from_gc = @cfunction unprotect_from_gc Nothing (Any,)
-  ccall(initialize_ptr, Cvoid, (Any, Any, Ptr{Cvoid}, Ptr{Cvoid}), @__MODULE__, CppFunctionInfo, _c_protect_from_gc, _c_unprotect_from_gc)
-end
+const _c_protect_from_gc = @cfunction protect_from_gc Nothing (Any,)
+const _c_unprotect_from_gc = @cfunction unprotect_from_gc Nothing (Any,)
+
 
 function __delete end
 function delete(x)

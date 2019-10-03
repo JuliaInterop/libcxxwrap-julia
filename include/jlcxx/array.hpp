@@ -258,6 +258,7 @@ struct PackedArrayType<T,CxxWrappedTrait<SubTraitT>>
 {
   static jl_datatype_t* type()
   {
+    create_if_not_exists<T&>();
     return julia_type<T&>();
   }
 };
@@ -265,7 +266,7 @@ struct PackedArrayType<T,CxxWrappedTrait<SubTraitT>>
 }
 
 template<typename T, int Dim>
-struct dynamic_type_mapping<ArrayRef<T, Dim>>
+struct julia_type_factory<ArrayRef<T, Dim>>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -310,7 +311,7 @@ struct static_type_mapping<Array<T>, CxxWrappedTrait<SubTraitT>>
 };
 
 template<typename T>
-struct dynamic_type_mapping<Array<T>>
+struct julia_type_factory<Array<T>>
 {
   static inline jl_datatype_t* julia_type()
   {

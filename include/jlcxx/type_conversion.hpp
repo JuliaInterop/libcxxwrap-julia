@@ -113,13 +113,19 @@ inline const char* julia_string(jl_value_t* v)
     return jl_string_ptr(v);
 }
 
-inline std::string julia_type_name(jl_datatype_t* dt)
-{
-  return jl_typename_str((jl_value_t*)dt);
-}
 inline std::string julia_type_name(jl_value_t* dt)
 {
+  if(jl_is_unionall(dt))
+  {
+    jl_unionall_t* ua = (jl_unionall_t*)dt;
+    return jl_symbol_name(ua->var->name);
+  }
   return jl_typename_str(dt);
+}
+
+inline std::string julia_type_name(jl_datatype_t* dt)
+{
+  return julia_type_name((jl_value_t*)dt);
 }
 
 // Specialize to indicate direct Julia supertype in a smart-pointer compatible way i.e. using this to define supertypes
@@ -309,7 +315,48 @@ private:
   jl_datatype_t* m_dt = nullptr;
 };
 
-JLCXX_API std::map<std::size_t, CachedDatatype>& jlcxx_type_map();
+// Work around the fact that references aren't part of the typeid result
+using type_hash_t = std::pair<std::size_t, std::size_t>;
+
+namespace detail
+{
+
+template<typename T>
+struct TypeHash
+{
+  static inline type_hash_t value()
+  {
+    return std::make_pair(typeid(T).hash_code(), std::size_t(0));
+  }
+};
+
+template<typename T>
+struct TypeHash<T&>
+{
+  static inline type_hash_t value()
+  {
+    return std::make_pair(typeid(T).hash_code(), std::size_t(1));
+  }
+};
+
+template<typename T>
+struct TypeHash<const T&>
+{
+  static inline type_hash_t value()
+  {
+    return std::make_pair(typeid(T).hash_code(), std::size_t(2));
+  }
+};
+
+}
+
+template<typename T>
+inline type_hash_t type_hash()
+{
+  return detail::TypeHash<T>::value();
+}
+
+JLCXX_API std::map<type_hash_t, CachedDatatype>& jlcxx_type_map();
 
 /// Store the Julia datatype linked to SourceT
 template<typename SourceT>
@@ -319,7 +366,7 @@ public:
 
   static inline jl_datatype_t* julia_type()
   {
-    const auto result = jlcxx_type_map().find(typeid(SourceT).hash_code());
+    const auto result = jlcxx_type_map().find(type_hash<SourceT>());
     if(result == jlcxx_type_map().end())
     {
       throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
@@ -329,45 +376,81 @@ public:
 
   static inline void set_julia_type(jl_datatype_t* dt)
   {
-    const auto insresult = jlcxx_type_map().insert(std::make_pair(typeid(SourceT).hash_code(), CachedDatatype(dt)));
+    const auto insresult = jlcxx_type_map().insert(std::make_pair(type_hash<SourceT>(), CachedDatatype(dt)));
     if(!insresult.second)
     {
-      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << std::endl;
+      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << " using hash " << insresult.first->first.first << " and const-ref indicator " << insresult.first->first.second << std::endl;
       return;
     }
   }
 
   static inline bool has_julia_type()
   {
-    return jlcxx_type_map().count(typeid(SourceT).hash_code()) != 0;
+    const std::size_t nb_hits = jlcxx_type_map().count(type_hash<SourceT>());
+    return nb_hits != 0;
   }
 };
 
+template<typename T>
+void set_julia_type(jl_datatype_t* dt)
+{
+  JuliaTypeCache<typename std::remove_const<T>::type>::set_julia_type(dt);
+}
+
 /// Store the Julia datatype linked to SourceT
 template<typename SourceT, typename TraitT=mapping_trait<SourceT>>
-class dynamic_type_mapping
+class julia_type_factory
 {
 public:
   static inline jl_datatype_t* julia_type()
   {
-    return JuliaTypeCache<SourceT>::julia_type();
+    throw std::runtime_error(std::string("No appropriate factory for type ") + typeid(SourceT).name());
+    return nullptr;
   }
 };
 
-/// Convenience function to get the julia data type associated with T
+/// Get the julia data type associated with T
 template<typename T>
 inline jl_datatype_t* julia_type()
 {
-  static bool recursing = false;
   using nonconst_t = typename std::remove_const<T>::type;
-  if (recursing)
-  {
-    return JuliaTypeCache<nonconst_t>::julia_type();
-  }
-  recursing = true;
-  static jl_datatype_t* dt = dynamic_type_mapping<nonconst_t>::julia_type();
-  recursing = false;
+  static jl_datatype_t* dt = JuliaTypeCache<nonconst_t>::julia_type();
   return dt;
+}
+
+/// Check if a type is registered
+template <typename T>
+bool has_julia_type()
+{
+  using nonconst_t = typename std::remove_const<T>::type;
+  return JuliaTypeCache<nonconst_t>::has_julia_type();
+}
+
+/// Create the julia type associated with the given C++ type
+template <typename T>
+void create_julia_type()
+{
+  using nonconst_t = typename std::remove_const<T>::type;
+  jl_datatype_t* result = julia_type_factory<nonconst_t>::julia_type();
+  if(!has_julia_type<nonconst_t>())
+  {
+    set_julia_type<nonconst_t>(result);
+  }
+}
+
+template<typename T>
+void create_if_not_exists()
+{
+  using nonconst_t = typename std::remove_const<T>::type;
+  static bool exists = false;
+  if(!exists)
+  {
+    if(!has_julia_type<nonconst_t>())
+    {
+      create_julia_type<nonconst_t>();
+    }
+    exists = true;
+  }
 }
 
 namespace detail
@@ -396,12 +479,13 @@ namespace detail
 template<typename T>
 inline jl_datatype_t* julia_base_type()
 {
+  create_if_not_exists<T>();
   return detail::GetBaseT<T>::type();
 }
 
 // Mapping for const references
 template<typename SourceT>
-struct dynamic_type_mapping<const SourceT&>
+struct julia_type_factory<const SourceT&>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -411,7 +495,7 @@ struct dynamic_type_mapping<const SourceT&>
 
 // Mapping for mutable references
 template<typename SourceT>
-struct dynamic_type_mapping<SourceT&>
+struct julia_type_factory<SourceT&>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -421,7 +505,7 @@ struct dynamic_type_mapping<SourceT&>
 
 // Mapping for const pointers
 template<typename SourceT>
-struct dynamic_type_mapping<const SourceT*>
+struct julia_type_factory<const SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -431,7 +515,7 @@ struct dynamic_type_mapping<const SourceT*>
 
 // Mapping for mutable pointers
 template<typename SourceT>
-struct dynamic_type_mapping<SourceT*>
+struct julia_type_factory<SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -440,7 +524,7 @@ struct dynamic_type_mapping<SourceT*>
 };
 
 template<>
-struct dynamic_type_mapping<void*>
+struct julia_type_factory<void*>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -449,7 +533,7 @@ struct dynamic_type_mapping<void*>
 };
 
 template<>
-struct dynamic_type_mapping<jl_datatype_t*>
+struct julia_type_factory<jl_datatype_t*>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -458,7 +542,7 @@ struct dynamic_type_mapping<jl_datatype_t*>
 };
 
 template<>
-struct dynamic_type_mapping<jl_value_t*>
+struct julia_type_factory<jl_value_t*>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -485,20 +569,6 @@ inline CppT convert_to_cpp(JuliaT julia_val)
   return ConvertToCpp<CppT>()(julia_val);
 }
 
-/// Automatically register pointer types
-template<typename T>
-void set_julia_type(jl_datatype_t* dt)
-{
-  JuliaTypeCache<typename std::remove_const<T>::type>::set_julia_type(dt);
-}
-
-/// Check if a type is registered
-template <typename T>
-bool has_julia_type()
-{
-  return JuliaTypeCache<T>::has_julia_type();
-}
-
 template<typename T, typename TraitT=mapping_trait<T>>
 struct JuliaReturnType
 {
@@ -513,16 +583,15 @@ struct JuliaReturnType<T, CxxWrappedTrait<SubTraitT>>
 {
   inline static jl_datatype_t* value()
   {
-    if(julia_type<T>() != nullptr) // This will trigger automatic type creation if needed
-      return jl_any_type;
-
-    return nullptr; // Never reached
+    assert(has_julia_type<T>());
+    return jl_any_type;
   }
 };
 
 template<typename T>
 inline jl_datatype_t* julia_return_type()
 {
+  create_if_not_exists<T>();
   return JuliaReturnType<T>::value();
 }
 
@@ -880,7 +949,7 @@ struct static_type_mapping<TypeVar<I>>
 };
 
 template<int I>
-struct dynamic_type_mapping<TypeVar<I>>
+struct julia_type_factory<TypeVar<I>>
 {
   typedef jl_tvar_t* type;
   static jl_tvar_t* julia_type() { return TypeVar<I>::tvar(); }
@@ -917,7 +986,7 @@ struct static_type_mapping<SingletonType<T>>
 };
 
 template<typename T>
-struct dynamic_type_mapping<SingletonType<T>>
+struct julia_type_factory<SingletonType<T>>
 {
   static inline jl_datatype_t* julia_type()
   {
@@ -939,7 +1008,8 @@ struct ConvertToJulia<SingletonType<T>, NoMappingTrait>
 {
   jl_datatype_t* operator()(SingletonType<T>) const
   {
-    return julia_base_type<T>();
+    static jl_datatype_t* result = julia_base_type<T>();
+    return result;
   }
 };
 
@@ -955,7 +1025,7 @@ template<typename NumberT> struct static_type_mapping<StrictlyTypedNumber<Number
   typedef StrictlyTypedNumber<NumberT> type;
 };
 
-template<typename NumberT> struct dynamic_type_mapping<StrictlyTypedNumber<NumberT>>
+template<typename NumberT> struct julia_type_factory<StrictlyTypedNumber<NumberT>>
 {
   static jl_datatype_t* julia_type()
   {
@@ -965,7 +1035,7 @@ template<typename NumberT> struct dynamic_type_mapping<StrictlyTypedNumber<Numbe
 
 template<typename NumberT> struct IsMirroredType<std::complex<NumberT>> : std::true_type {};
 
-template<typename NumberT> struct dynamic_type_mapping<std::complex<NumberT>>
+template<typename NumberT> struct julia_type_factory<std::complex<NumberT>>
 {
   static jl_datatype_t* julia_type()
   {
