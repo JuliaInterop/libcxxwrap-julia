@@ -203,7 +203,7 @@ struct julia_type_factory<MappedT, CxxWrappedTrait<SmartPointerTrait>>
   static inline jl_datatype_t* julia_type()
   {
     using PointeeT = typename detail::get_pointee<MappedT>::type;
-    if(!std::is_same<supertype<PointeeT>, PointeeT>::value)
+    if constexpr(!std::is_same<supertype<PointeeT>, PointeeT>::value)
     {
       create_if_not_exists<typename smartptr::ConvertToBase<MappedT>::SuperPtrT>();
     }
