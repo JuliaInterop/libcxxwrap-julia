@@ -16,7 +16,8 @@ if version_number == ""
     version_number = "v0.99.0"
 end
 
-# This transforms the dependency script to use the binaries generated in the same Travis run
+# This transforms the dependency script to use the binaries generated in the same Travis run. This code should be skipped on a stand-alone project
+### begin of part to be skipped ###
 @show ws_root = dirname(dirname(dirname(dirname(@__FILE__))))
 @show prod_dir = joinpath(ws_root, "products")
 @show generated_script_name = joinpath(prod_dir,"build_libcxxwrap-julia-1.0.$(version_number).jl")
@@ -30,6 +31,7 @@ open(generated_script_name, "r") do generated_script
         global local_dep_script *= l
     end
 end
+### end of part to be skipped ###
 
 # These are the platforms we will build for by default, unless further
 # platforms are passed in on the command line
@@ -54,7 +56,7 @@ products = prefix -> [
 # Dependencies that must be installed before this package can be built
 dependencies = [
    "https://github.com/JuliaPackaging/JuliaBuilder/releases/download/v1.0.0-2/build_Julia.v1.0.0.jl",
-   BinaryBuilder.InlineBuildDependency(local_dep_script)
+   BinaryBuilder.InlineBuildDependency(local_dep_script) # Replace this with build script from https://github.com/JuliaInterop/libcxxwrap-julia/releases
 ]
 
 build_tarballs(ARGS, "testlib", VersionNumber(version_number), sources, script, platforms, products, dependencies)

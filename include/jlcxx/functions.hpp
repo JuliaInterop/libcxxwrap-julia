@@ -216,7 +216,12 @@ template<typename R, typename...ArgsT> struct static_type_mapping<R(*)(ArgsT...)
 
 template<typename R, typename...ArgsT> struct julia_type_factory<R(*)(ArgsT...)>
 {
-  static jl_datatype_t* julia_type() { return (jl_datatype_t*)jlcxx::julia_type("SafeCFunction"); }
+  static jl_datatype_t* julia_type()
+  {
+    create_if_not_exists<R>();
+    (create_if_not_exists<ArgsT>(), ...);
+    return (jl_datatype_t*)jlcxx::julia_type("SafeCFunction");
+  }
 };
 
 template<typename R, typename...ArgsT>
