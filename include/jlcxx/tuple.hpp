@@ -82,6 +82,7 @@ template<typename... TypesT> struct julia_type_factory<std::tuple<TypesT...>, Tu
 {
   static jl_datatype_t* julia_type()
   {
+    (create_if_not_exists<TypesT>(), ...);
     return jl_apply_tuple_type(jl_svec(sizeof...(TypesT), jlcxx::julia_type<TypesT>()...));
   }
 };
@@ -124,6 +125,7 @@ struct julia_type_factory<NTuple<N,T>>
 {
   static jl_datatype_t* julia_type()
   {
+    create_if_not_exists<T>();
     return (jl_datatype_t*)jl_apply_tuple_type(jl_svec1(apply_type((jl_value_t*)jl_vararg_type, jl_svec2(::jlcxx::julia_type<T>(), ::jlcxx::julia_type<N>()))));
   }
 };

@@ -108,6 +108,7 @@ struct julia_type_factory<ConstArray<T,N>, ConstArrayTrait>
 {
   static jl_datatype_t* julia_type()
   {
+    create_if_not_exists<T>();
     jl_datatype_t* pdt = (jl_datatype_t*)::jlcxx::julia_type("ConstArray");
     return  (jl_datatype_t*)apply_type((jl_value_t*)pdt, jl_svec2(::jlcxx::julia_type<T>(), box<index_t>(N)));
   }

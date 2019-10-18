@@ -125,22 +125,16 @@ private:
 namespace detail
 {
 
-template<typename JuliaT, typename TargetT>
-struct ExtractArrayElement
+template<typename T, typename TraitT=mapping_trait<T>>
+struct ArrayElementType
 {
-  inline TargetT& operator()(JuliaT* arr, const std::size_t i)
-  {
-    return *extract_pointer_nonull<TargetT>(arr[i]);
-  }
+  using type = static_julia_type<T>;
 };
 
 template<typename T>
-struct ExtractArrayElement<T,T>
+struct ArrayElementType<T,WrappedPtrTrait>
 {
-  inline T& operator()(T* arr, const std::size_t i)
-  {
-    return arr[i];
-  }
+  using type = T;
 };
 
 }
@@ -151,7 +145,7 @@ class ArrayRef
 {
 public:
 
-  typedef static_julia_type<ValueT> julia_t;
+  using julia_t = typename detail::ArrayElementType<ValueT>::type;
 
   ArrayRef(jl_array_t* arr) : m_array(arr)
   {
@@ -223,12 +217,26 @@ public:
 
   ValueT& operator[](const std::size_t i)
   {
-    return detail::ExtractArrayElement<julia_t,ValueT>()(data(), i);
+    if constexpr(std::is_same<julia_t, ValueT>::value)
+    {
+      return data()[i];
+    }
+    else
+    {
+      return *extract_pointer_nonull<ValueT>(data()[i]);
+    }
   }
 
   const ValueT& operator[](const std::size_t i) const
   {
-    return detail::ExtractArrayElement<const julia_t,const ValueT>()(data(), i);
+    if constexpr(std::is_same<julia_t, ValueT>::value)
+    {
+      return data()[i];
+    }
+    else
+    {
+      return *extract_pointer_nonull<ValueT>(data()[i]);
+    }
   }
 
   jl_array_t* m_array;
@@ -253,6 +261,15 @@ struct PackedArrayType
   }
 };
 
+template<typename T>
+struct PackedArrayType<T*, WrappedPtrTrait>
+{
+  static jl_datatype_t* type()
+  {
+    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("Ptr"), jl_svec1(julia_base_type<T>()));
+  }
+};
+
 template<typename T, typename SubTraitT>
 struct PackedArrayType<T,CxxWrappedTrait<SubTraitT>>
 {
@@ -270,6 +287,7 @@ struct julia_type_factory<ArrayRef<T, Dim>>
 {
   static inline jl_datatype_t* julia_type()
   {
+    create_if_not_exists<T>();
     return (jl_datatype_t*)apply_array_type(detail::PackedArrayType<T>::type(), Dim);
   }
 };
@@ -315,6 +333,7 @@ struct julia_type_factory<Array<T>>
 {
   static inline jl_datatype_t* julia_type()
   {
+    create_if_not_exists<T>();
     return (jl_datatype_t*)apply_array_type(detail::PackedArrayType<T>::type(), 1);
   }
 };

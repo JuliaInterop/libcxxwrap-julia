@@ -57,4 +57,17 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
     result.push_back("world");
     return result;
   });
+
+  // Test some automatic type creation
+  containers.method("tuple_int_pointer", [] () { return std::make_tuple(static_cast<int*>(nullptr), 1); });
+  containers.method("uint8_arrayref", [] (jlcxx::ArrayRef<uint8_t *> a)
+  {
+    int result = 0;
+    for(std::size_t i = 0; i != a.size(); ++i)
+    {
+      result += *(a[i]);
+    }
+    return result;
+  });
+  containers.method("uint8_ptr", [] (uint8_t* x) { return int(*x); });
 }

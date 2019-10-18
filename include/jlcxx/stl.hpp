@@ -149,6 +149,7 @@ struct julia_type_factory<std::vector<T>>
 
   static inline jl_datatype_t* julia_type()
   {
+    create_if_not_exists<T>();
     assert(!has_julia_type<MappedT>());
     assert(registry().has_current_module());
     jl_datatype_t* jltype = ::jlcxx::julia_type<T>();
