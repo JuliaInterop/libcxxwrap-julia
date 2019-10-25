@@ -1,6 +1,7 @@
 ﻿#ifndef JLCXX_STL_HPP
 #define JLCXX_STL_HPP
 
+#include <valarray>
 #include <vector>
 
 #include "module.hpp"
@@ -43,6 +44,7 @@ private:
   Module& m_stl_mod;
 public:
   TypeWrapper1 vector;
+  TypeWrapper1 valarray;
 
   static void instantiate(Module& mod);
   static StlWrappers& instance();
@@ -134,10 +136,31 @@ struct WrapVector
   }
 };
 
+struct WrapValArray
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+    wrapped.template constructor<std::size_t>();
+    wrapped.template constructor<const T&, std::size_t>();
+    wrapped.template constructor<const T*, std::size_t>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> const T& { return v[i-1]; });
+    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) -> T& { return v[i-1]; });
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, cxxint_t i) { v[i-1] = val; });
+    wrapped.module().unset_override_module();
+  }
+};
+
 template<typename T>
 inline void apply_stl(jlcxx::Module& mod)
 {
   TypeWrapper1(mod, StlWrappers::instance().vector).apply<std::vector<T>>(WrapVector());
+  TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
 }
 
 }
