@@ -38,13 +38,6 @@ include(InstallRequiredSystemLibraries)
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-parameter -Wextra -Wreorder")
-    CHECK_CXX_COMPILER_FLAG("-std=c++17" HAS_CPP17_FLAG)
-
-    if (HAS_CPP17_FLAG)
-        set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++17")
-    else()
-        message(FATAL_ERROR "Unsupported compiler -- jlcxx requires C++17 support!")
-    endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -153,10 +146,8 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${JLCXX_TARGET}_MAJOR_VERSION
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
-if(NOT MSVC)
-	target_compile_options(${JLCXX_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
-	target_compile_options(${JLCXX_STL_TARGET} PUBLIC "$<$<COMPILE_LANGUAGE:CXX>:-std=c++17>" )
-endif()
+target_compile_features(${JLCXX_TARGET} PUBLIC cxx_std_17)
+target_compile_features(${JLCXX_STL_TARGET} PUBLIC cxx_std_17)
 
 generate_export_header(${JLCXX_TARGET})
 
