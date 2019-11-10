@@ -169,29 +169,6 @@ JLCXX_API jl_value_t* julia_type(const std::string& name, jl_module_t* mod)
   return nullptr;
 }
 
-InitHooks& InitHooks::instance()
-{
-  static InitHooks hooks;
-  return hooks;
-}
-
-InitHooks::InitHooks()
-{
-}
-
-void InitHooks::add_hook(const hook_t hook)
-{
-  m_hooks.push_back(hook);
-}
-
-void InitHooks::run_hooks()
-{
-  for(const hook_t& h : m_hooks)
-  {
-    h();
-  }
-}
-
 JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params)
 {
 #if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 6

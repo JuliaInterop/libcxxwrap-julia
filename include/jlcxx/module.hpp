@@ -1231,35 +1231,6 @@ private:
 
 JLCXX_API ModuleRegistry& registry();
 
-/// Registry for functions that are called when the CxxWrap module is initialized
-class InitHooks
-{
-public:
-  typedef std::function<void()> hook_t;
-
-  // Singleton implementation
-  static InitHooks& instance();
-
-  // add a new hook
-  void add_hook(const hook_t hook);
-
-  // run all hooks
-  void run_hooks();
-private:
-  InitHooks();
-  std::vector<hook_t> m_hooks;
-};
-
-/// Helper to register a hook on library load
-struct RegisterHook
-{
-  template<typename F>
-  RegisterHook(F&& f)
-  {
-    InitHooks::instance().add_hook(InitHooks::hook_t(f));
-  }
-};
-
 JLCXX_API void register_core_types();
 
 } // namespace jlcxx
