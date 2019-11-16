@@ -12,8 +12,8 @@
 namespace jlcxx
 {
 
-jl_module_t* g_cxxwrap_module;
-jl_datatype_t* g_cppfunctioninfo_type;
+jl_module_t* g_cxxwrap_module = nullptr;
+jl_datatype_t* g_cppfunctioninfo_type = nullptr;
 
 JLCXX_API void (*g_protect_from_gc)(jl_value_t*);
 JLCXX_API void (*g_unprotect_from_gc)(jl_value_t*);
@@ -269,7 +269,7 @@ namespace detail
       tname << prefix << (std::is_unsigned<T>::value ? "U" : "") << basename;
       tname << sizeof(T)*8;
       jl_module_t* mod = prefix.empty() ? jl_base_module : g_cxxwrap_module;
-      set_julia_type<T>((jl_datatype_t*)julia_type(tname.str(), mod));
+      set_julia_type<T>((jl_datatype_t*)julia_type(tname.str(), mod),false);
       AddIntegerTypes<ParameterList<OtherTypesT...>>()(basename, prefix);
     }
   };
@@ -317,23 +317,48 @@ JLCXX_API TypeWrapper1* get_smartpointer_type(const type_hash_t& hash)
 
 JLCXX_API void register_core_types()
 {
-  set_julia_type<void>(jl_void_type);
-  set_julia_type<void*>(jl_voidpointer_type);
-  set_julia_type<float>(jl_float32_type);
-  set_julia_type<double>(jl_float64_type);
-  set_julia_type<bool>((jl_datatype_t*)julia_type("CxxBool", g_cxxwrap_module));
-  set_julia_type<char>((jl_datatype_t*)julia_type("CxxChar", g_cxxwrap_module));
-  set_julia_type<unsigned char>((jl_datatype_t*)julia_type("CxxUChar", g_cxxwrap_module));
-  set_julia_type<wchar_t>((jl_datatype_t*)julia_type("CxxWchar", g_cxxwrap_module));
-  
-  jlcxx::detail::AddIntegerTypes<fundamental_int_types>()("Int", "");
-  jlcxx::detail::AddIntegerTypes<fixed_int_types>()("Int", "Cxx");
-  set_julia_type<long>((jl_datatype_t*)julia_type("CxxLong", g_cxxwrap_module));
-  set_julia_type<unsigned long>((jl_datatype_t*)julia_type("CxxULong", g_cxxwrap_module));
+  if(jl_base_module == nullptr)
+  {
+    throw std::runtime_error("Julia is not initialized, can't run register_core_types");
+  }
+  static bool registered = false;
+  if(!registered)
+  {
+    set_julia_type<void>(jl_void_type,false);
+    set_julia_type<void*>(jl_voidpointer_type,false);
+    set_julia_type<float>(jl_float32_type,false);
+    set_julia_type<double>(jl_float64_type,false);
+    
+    jlcxx::detail::AddIntegerTypes<fundamental_int_types>()("Int", "");
 
-  set_julia_type<ObjectIdDict>((jl_datatype_t*)julia_type("IdDict", jl_base_module));
-  set_julia_type<jl_datatype_t*>(jl_any_type);
-  set_julia_type<jl_value_t*>(jl_any_type);
+    set_julia_type<ObjectIdDict>((jl_datatype_t*)julia_type("IdDict", jl_base_module),false);
+    set_julia_type<jl_datatype_t*>(jl_any_type,false);
+    set_julia_type<jl_value_t*>(jl_any_type,false);
+    registered = true;
+  }
+}
+
+JLCXX_API void register_core_cxxwrap_types()
+{
+  if(g_cxxwrap_module == nullptr)
+  {
+    throw std::runtime_error("CxxWrap is not initialized, can't run register_cxxwrap_core_types");
+  }
+  static bool registered = false;
+  if(!registered)
+  {
+    set_julia_type<bool>((jl_datatype_t*)julia_type("CxxBool", g_cxxwrap_module));
+    set_julia_type<char>((jl_datatype_t*)julia_type("CxxChar", g_cxxwrap_module));
+    set_julia_type<unsigned char>((jl_datatype_t*)julia_type("CxxUChar", g_cxxwrap_module));
+    set_julia_type<wchar_t>((jl_datatype_t*)julia_type("CxxWchar", g_cxxwrap_module));
+    
+    jlcxx::detail::AddIntegerTypes<fixed_int_types>()("Int", "Cxx");
+    
+    set_julia_type<long>((jl_datatype_t*)julia_type("CxxLong", g_cxxwrap_module));
+    set_julia_type<unsigned long>((jl_datatype_t*)julia_type("CxxULong", g_cxxwrap_module));
+
+    registered = true;
+  }
 }
 
 }

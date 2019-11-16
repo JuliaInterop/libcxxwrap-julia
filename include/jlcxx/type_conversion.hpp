@@ -292,15 +292,15 @@ template<typename T> using static_julia_type = typename static_type_mapping<T>::
 struct CachedDatatype
 {
   explicit CachedDatatype() : m_dt(nullptr) {}
-  explicit CachedDatatype(jl_datatype_t* dt)
+  explicit CachedDatatype(jl_datatype_t* dt, bool protect = true)
   {
-    set_dt(dt);
+    set_dt(dt,protect);
   }
 
-  void set_dt(jl_datatype_t* dt)
+  void set_dt(jl_datatype_t* dt, bool protect = true)
   {
     m_dt = dt;
-    if(m_dt != nullptr)
+    if(m_dt != nullptr && protect)
     {
       protect_from_gc(m_dt);
     }
@@ -374,9 +374,9 @@ public:
     return result->second.get_dt();
   }
 
-  static inline void set_julia_type(jl_datatype_t* dt)
+  static inline void set_julia_type(jl_datatype_t* dt, bool protect = true)
   {
-    const auto insresult = jlcxx_type_map().insert(std::make_pair(type_hash<SourceT>(), CachedDatatype(dt)));
+    const auto insresult = jlcxx_type_map().insert(std::make_pair(type_hash<SourceT>(), CachedDatatype(dt, protect)));
     if(!insresult.second)
     {
       std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << " using hash " << insresult.first->first.first << " and const-ref indicator " << insresult.first->first.second << std::endl;
@@ -392,9 +392,9 @@ public:
 };
 
 template<typename T>
-void set_julia_type(jl_datatype_t* dt)
+void set_julia_type(jl_datatype_t* dt, bool protect = true)
 {
-  JuliaTypeCache<typename std::remove_const<T>::type>::set_julia_type(dt);
+  JuliaTypeCache<typename std::remove_const<T>::type>::set_julia_type(dt, protect);
 }
 
 /// Store the Julia datatype linked to SourceT

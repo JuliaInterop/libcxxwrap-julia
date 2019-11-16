@@ -1232,6 +1232,7 @@ private:
 JLCXX_API ModuleRegistry& registry();
 
 JLCXX_API void register_core_types();
+JLCXX_API void register_core_cxxwrap_types();
 
 } // namespace jlcxx
 
