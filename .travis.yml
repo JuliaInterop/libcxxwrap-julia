@@ -22,8 +22,7 @@ sudo: required
 # Before anything else, get the latest versions of things
 before_script:
   - cd ../..
-  - julia -e 'using Pkg; Pkg.add("BinaryProvider")'
-  - julia -e 'using Pkg; Pkg.add(PackageSpec(name="BinaryBuilder", rev="master"))'
+  - julia -e 'using Pkg; pkg"add BinaryProvider"; pkg"add BinaryBuilder#af0b4853b2b95b1c411f06f834dcbf461bb50264"; Pkg.build()'
 
 script:
   - julia --color=yes JuliaInterop/libcxxwrap-julia/.ci/build_tarballs.jl
