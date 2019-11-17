@@ -367,62 +367,62 @@ struct ConvertToCpp<ArrayRef<T,Dim>, CxxWrappedTrait<SubTraitT>>
 };
 
 // Iterator operator implementation
-template<typename L, typename R>
-bool operator!=(const array_iterator_base<L,L>& l, const array_iterator_base<R,R>& r)
+template<typename PointedT, typename CppT>
+bool operator!=(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return r.ptr() != l.ptr();
 }
 
-template<typename L, typename R>
-bool operator==(const array_iterator_base<L,L>& l, const array_iterator_base<R,R>& r)
+template<typename PointedT, typename CppT>
+bool operator==(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return r.ptr() == l.ptr();
 }
 
-template<typename L, typename R>
-bool operator<=(const array_iterator_base<L,L>& l, const array_iterator_base<R,R>& r)
+template<typename PointedT, typename CppT>
+bool operator<=(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return l.ptr() <= r.ptr();
 }
 
-template<typename L, typename R>
-bool operator>=(const array_iterator_base<L,L>& l, const array_iterator_base<R,R>& r)
+template<typename PointedT, typename CppT>
+bool operator>=(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return l.ptr() >= r.ptr();
 }
 
-template<typename L, typename R>
-bool operator>(const array_iterator_base<L,L>& l, const array_iterator_base<R,R>& r)
+template<typename PointedT, typename CppT>
+bool operator>(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return l.ptr() > r.ptr();
 }
 
-template<typename L, typename R>
-bool operator<(const array_iterator_base<L,L>& l, const array_iterator_base<R,R>& r)
+template<typename PointedT, typename CppT>
+bool operator<(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return l.ptr() < r.ptr();
 }
 
-template<typename T>
-array_iterator_base<T, T> operator+(const array_iterator_base<T,T>& l, const std::ptrdiff_t n)
+template<typename PointedT, typename CppT>
+array_iterator_base<PointedT, CppT> operator+(const array_iterator_base<PointedT, CppT>& l, const std::ptrdiff_t n)
 {
-  return array_iterator_base<T, T>(l.ptr() + n);
+  return array_iterator_base<PointedT, CppT>(l.ptr() + n);
 }
 
-template<typename T>
-array_iterator_base<T, T> operator+(const std::ptrdiff_t n, const array_iterator_base<T,T>& r)
+template<typename PointedT, typename CppT>
+array_iterator_base<PointedT, CppT> operator+(const std::ptrdiff_t n, const array_iterator_base<PointedT, CppT>& r)
 {
-  return array_iterator_base<T, T>(r.ptr() + n);
+  return array_iterator_base<PointedT, CppT>(r.ptr() + n);
 }
 
-template<typename T>
-array_iterator_base<T, T> operator-(const array_iterator_base<T,T>& l, const std::ptrdiff_t n)
+template<typename PointedT, typename CppT>
+array_iterator_base<PointedT, CppT> operator-(const array_iterator_base<PointedT, CppT>& l, const std::ptrdiff_t n)
 {
-  return array_iterator_base<T, T>(l.ptr() - n);
+  return array_iterator_base<PointedT, CppT>(l.ptr() - n);
 }
 
-template<typename T>
-std::ptrdiff_t operator-(const array_iterator_base<T,T>& l, const array_iterator_base<T,T>& r)
+template<typename PointedT, typename CppT>
+std::ptrdiff_t operator-(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
 {
   return l.ptr() - r.ptr();
 }
