@@ -283,12 +283,12 @@ namespace detail
 template<typename T>
 struct GetJlType
 {
-  jl_datatype_t* operator()() const
+  jl_value_t* operator()() const
   {
     using uncref_t = remove_const_ref<T>;
     if(has_julia_type<uncref_t>())
     {
-      return julia_base_type<remove_const_ref<T>>();
+      return (jl_value_t*)julia_base_type<remove_const_ref<T>>();
     }
     else
     {
@@ -301,9 +301,9 @@ struct GetJlType
 template<int I>
 struct GetJlType<TypeVar<I>>
 {
-  jl_tvar_t* operator()() const
+  jl_value_t* operator()() const
   {
-    return TypeVar<I>::tvar();
+    return (jl_value_t*)TypeVar<I>::tvar();
   }
 };
 
@@ -350,15 +350,23 @@ struct ParameterList
 
   jl_svec_t* operator()(const int n = nb_parameters)
   {
-    jl_svec_t* result = jl_svec(n, detail::GetJlType<ParametersT>()()...);
+    std::vector<jl_value_t*> paramlist({detail::GetJlType<ParametersT>()()...});
     for(int i = 0; i != n; ++i)
     {
-      if(jl_svecref(result,i) == nullptr)
+      if(paramlist[i] == nullptr)
       {
         std::vector<std::string> typenames({(typeid(ParametersT).name())...}); 
         throw std::runtime_error("Attempt to use unmapped type " + typenames[i] + " in parameter list");
       }
     }
+    jl_svec_t* result = jl_alloc_svec_uninit(n);
+    JL_GC_PUSH1(&result);
+    for(int i = 0; i != n; ++i)
+    {
+      jl_svecset(result, i, paramlist[i]);
+    }
+    JL_GC_POP();
+
     return result;
   }
 };

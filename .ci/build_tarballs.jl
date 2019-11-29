@@ -11,13 +11,15 @@ function getscript(version)
     return """
     Julia_PREFIX=\$prefix
 
-    \$Julia_PREFIX/bin/julia -e 'using Pkg; pkg"add CxxWrap#master"; Pkg.build()'
-
     # Build libcxxwrap
     cd \$WORKSPACE/srcdir/libcxxwrap-julia*
     mkdir build && cd build
     cmake -DJulia_PREFIX=\$Julia_PREFIX -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/opt/\$target/\$target.toolchain -DCMAKE_CXX_FLAGS="-march=x86-64" -DCMAKE_INSTALL_PREFIX=\${prefix} ..
     VERBOSE=ON cmake --build . --config Release --target install
+
+    export JLCXX_DIR=\$prefix
+    \$Julia_PREFIX/bin/julia -e 'using Pkg; pkg"add CxxWrap#master"; Pkg.build(); using CxxWrap'
+
     if [[ "\$target" == "x86_64-linux-gnu" ]]; then
         ctest -V
     fi
