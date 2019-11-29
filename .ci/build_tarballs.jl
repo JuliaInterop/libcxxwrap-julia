@@ -11,10 +11,7 @@ function getscript(version)
     return """
     Julia_PREFIX=\$prefix
 
-
-    # Download julia
-    #cd /usr/local
-    #curl -L "https://github.com/JuliaPackaging/JuliaBuilder/releases/download/$version/julia-$version-\$target.tar.gz" | tar -zx --strip-components=1 
+    \$Julia_PREFIX/bin/julia -e 'using Pkg; pkg"add CxxWrap#master"; Pkg.build()'
 
     # Build libcxxwrap
     cd \$WORKSPACE/srcdir/libcxxwrap-julia*

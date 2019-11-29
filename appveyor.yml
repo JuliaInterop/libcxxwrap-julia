@@ -31,6 +31,7 @@ build_script:
   - IF %PLATFORM% EQU x86 set "CMAKE_ARCH=Win32"
   - cmake -G "%CMAKE_GEN%" -A %CMAKE_ARCH% -DJulia_EXECUTABLE=C:\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\install\usr ..
   - cmake --build . --config Release --target install
+  - C:\julia\bin\julia -e 'using Pkg; pkg"add CxxWrap#master"; Pkg.build()'
 
 test_script:
   - ctest -V -C Release

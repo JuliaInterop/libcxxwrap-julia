@@ -8,7 +8,7 @@ extern "C"
 using namespace jlcxx;
 
 /// Initialize the module
-JLCXX_API void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f)
+JLCXX_API void initialize_cxxwrap(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f)
 {
   if(g_cxxwrap_module != nullptr)
   {
@@ -123,7 +123,7 @@ JLCXX_API jl_array_t* get_box_types(jl_module_t* jlmod)
   return convert_type_vector(registry().get_module(jlmod).box_types());
 }
 
-JLCXX_API const char* version_string()
+JLCXX_API const char* cxxwrap_version_string()
 {
   return JLCXX_VERSION_STRING;
 }

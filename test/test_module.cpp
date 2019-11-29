@@ -33,33 +33,14 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 
 extern "C"
 {
-extern void initialize(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f);
-extern void* create_registry();
-extern void bind_module_constants(jl_value_t* module_any);
+  extern void bind_module_constants(jl_value_t* module_any);
 }
 
 void __dummy_protect(jl_value_t*) {}
 
 int main()
 {
-  jlcxx::g_protect_from_gc = __dummy_protect;
-  jlcxx::g_unprotect_from_gc = __dummy_protect;
-  jl_init();
-
-  jl_value_t* cxxwrap_mod_jval = jl_eval_string("Base.include(@__MODULE__, \"cxxwrap_testmod.jl\")");
-  if (jl_exception_occurred())
-  {
-    jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
-    jl_printf(jl_stderr_stream(), "\n");
-    jl_atexit_hook(1);
-    return 1;
-  }
-
-  jl_module_t* cxxwrap_mod = (jl_module_t*)cxxwrap_mod_jval;
-  jl_value_t* cppfuncinfo = jl_get_global(cxxwrap_mod, jl_symbol("CppFunctionInfo"));
-  void* protect_f = jl_unbox_voidpointer(jl_get_global(cxxwrap_mod, jl_symbol("_c_protect_from_gc")));
-  void* unprotect_f = jl_unbox_voidpointer(jl_get_global(cxxwrap_mod, jl_symbol("_c_unprotect_from_gc")));
-  initialize(cxxwrap_mod_jval, cppfuncinfo, protect_f, unprotect_f);
+  jlcxx::cxxwrap_init();
 
   jl_value_t* mod = jl_eval_string(R"(
     module TestModule

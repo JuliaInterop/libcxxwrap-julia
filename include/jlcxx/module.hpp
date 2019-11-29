@@ -1233,6 +1233,8 @@ JLCXX_API ModuleRegistry& registry();
 
 JLCXX_API void register_core_types();
 JLCXX_API void register_core_cxxwrap_types();
+/// Initialize Julia and the CxxWrap module, optionally taking a path to an environment to load
+JLCXX_API void cxxwrap_init(const std::string& envpath = "");
 
 } // namespace jlcxx
 

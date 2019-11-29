@@ -361,4 +361,33 @@ JLCXX_API void register_core_cxxwrap_types()
   }
 }
 
+JLCXX_API void cxxwrap_init(const std::string& envpath)
+{
+  if(g_cxxwrap_module != nullptr)
+  {
+    throw std::runtime_error("The CxxWrap module was already initialized");
+  }
+
+  jl_init();
+
+  if(!envpath.empty())
+  {
+    std::stringstream activation_command;
+    activation_command << "import Pkg; " << "Pkg.activate(\"" << envpath << "\")";
+    jl_eval_string(activation_command.str().c_str());
+  }
+
+  jl_eval_string("using CxxWrap");
+
+  if(g_cxxwrap_module == nullptr)
+  {
+    if(jl_exception_occurred())
+    {
+      jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+      jl_printf(jl_stderr_stream(), "\n");
+    }
+    throw std::runtime_error("Error initializing CxxWrap module");
+  }
+}
+
 }
