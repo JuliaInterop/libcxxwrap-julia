@@ -110,6 +110,8 @@ enum MyEnum
   EnumValB
 };
 
+enum class EnumClass { red, green = 20, blue };
+
 struct Foo
 {
   Foo(const std::wstring& n, jlcxx::ArrayRef<double,1> d) : name(n), data(d.begin(), d.end())
@@ -256,6 +258,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.set_const("EnumValB", EnumValB);
   types.method("enum_to_int", [] (const MyEnum e) { return static_cast<int>(e); });
   types.method("get_enum_b", [] () { return EnumValB; });
+
+  types.add_bits<EnumClass>("EnumClass", jlcxx::julia_type("CppEnum"));
+  types.set_const("EnumClassRed", EnumClass::red);
+  types.set_const("EnumClassBlue", EnumClass::blue);
+  types.method("check_red", [] (const EnumClass c) { return c == EnumClass::red; });
 
   types.add_type<Foo>("Foo")
     .constructor<const std::wstring&, jlcxx::ArrayRef<double,1>>()
