@@ -346,12 +346,12 @@ inline jl_value_t* make_fname(const std::string& nametype, ArgsT... args)
 template<typename... ParametersT>
 struct ParameterList
 {
-  static constexpr int nb_parameters = sizeof...(ParametersT);
+  static constexpr size_t nb_parameters = sizeof...(ParametersT);
 
-  jl_svec_t* operator()(const int n = nb_parameters)
+  jl_svec_t* operator()(const size_t n = nb_parameters)
   {
     std::vector<jl_value_t*> paramlist({detail::GetJlType<ParametersT>()()...});
-    for(int i = 0; i != n; ++i)
+    for(size_t i = 0; i != n; ++i)
     {
       if(paramlist[i] == nullptr)
       {
@@ -361,7 +361,8 @@ struct ParameterList
     }
     jl_svec_t* result = jl_alloc_svec_uninit(n);
     JL_GC_PUSH1(&result);
-    for(int i = 0; i != n; ++i)
+    assert(paramlist.size() >= n);
+    for(size_t i = 0; i != n; ++i)
     {
       jl_svecset(result, i, paramlist[i]);
     }
@@ -652,10 +653,12 @@ private:
   template<typename T>
   void add_copy_constructor(std::true_type, jl_datatype_t*)
   {
+    set_override_module(jl_base_module);
     method("deepcopy_internal", [this](const T& other, ObjectIdDict)
     {
       return create<T>(other);
     });
+    unset_override_module();
   }
 
   template<typename T>
@@ -1119,6 +1122,16 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   {
     super_parameters = SuperParametersT::nb_parameters == 0 ? parameter_list<T>()() : SuperParametersT()();
     super = (jl_datatype_t*)apply_type((jl_value_t*)super_generic, super_parameters);
+  }
+
+  if (!jl_is_datatype(super) || !jl_is_abstracttype(super)||
+    jl_subtype((jl_value_t*)super, (jl_value_t*)jl_vararg_type) ||
+    jl_is_tuple_type(super) ||
+    jl_is_namedtuple_type(super) ||
+    jl_subtype((jl_value_t*)super, (jl_value_t*)jl_type_type) ||
+    jl_subtype((jl_value_t*)super, (jl_value_t*)jl_builtin_type))
+  {
+      throw std::runtime_error("invalid subtyping in definition of " + name + " with supertype " + julia_type_name(super));
   }
 
   const std::string allocname = name+"Allocated";

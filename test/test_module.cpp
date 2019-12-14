@@ -21,6 +21,19 @@ private:
   int m_data;
 };
 
+template<typename T1, typename T2, typename T3, typename T4 = void>
+struct ManyParams
+{
+};
+
+struct WrapManyParams
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& )
+  {
+  }
+};
+
 }
 
 JLCXX_MODULE register_test_module(jlcxx::Module& mod)
@@ -29,6 +42,11 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 
   mod.add_type<Foo>("Foo")
     .method("getx", &Foo::getx);
+
+  using namespace jlcxx;
+
+  mod.add_type<Parametric<TypeVar<1>, TypeVar<2>, TypeVar<3>>>("ManyParams")
+    .apply<ManyParams<int,int,int>>(WrapManyParams());
 }
 
 extern "C"

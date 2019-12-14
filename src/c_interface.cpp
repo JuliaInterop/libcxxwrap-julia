@@ -43,6 +43,7 @@ JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::
   }
   catch (const std::runtime_error& e)
   {
+    std::cerr << "C++ exception while wrapping module " << module_name(jlmod) << ": " << e.what()  << std::endl;
     jl_error(e.what());
   }
 }

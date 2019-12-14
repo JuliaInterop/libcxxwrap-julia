@@ -105,9 +105,9 @@ namespace jlcxx
 JLCXX_MODULE define_types_module(jlcxx::Module& types)
 {
   types.add_type<A>("A").method("message", &A::message);
-  types.add_type<B>("B", jlcxx::julia_type<A>());
-  types.add_type<C>("C", jlcxx::julia_type<B>());
-  types.add_type<D>("D", jlcxx::julia_type<A>());
+  types.add_type<B>("B", jlcxx::julia_base_type<A>());
+  types.add_type<C>("C", jlcxx::julia_base_type<B>());
+  types.add_type<D>("D", jlcxx::julia_base_type<A>());
   types.method("create_abstract", create_abstract);
 
   types.method("shared_b", []() { return std::make_shared<B>(); });
@@ -128,7 +128,7 @@ JLCXX_MODULE define_vsolver_module(jlcxx::Module& vsolver_mod)
   vsolver_mod.add_type<virtualsolver::Base>("BaseV")
     .method("solve", &virtualsolver::Base::solve);
 
-  vsolver_mod.add_type<virtualsolver::E>("E", jlcxx::julia_type<virtualsolver::Base>());
-  vsolver_mod.add_type<virtualsolver::F>("F", jlcxx::julia_type<virtualsolver::Base>())
+  vsolver_mod.add_type<virtualsolver::E>("E", jlcxx::julia_base_type<virtualsolver::Base>());
+  vsolver_mod.add_type<virtualsolver::F>("F", jlcxx::julia_base_type<virtualsolver::Base>())
     .constructor<virtualsolver::history_f>();
 }
