@@ -82,35 +82,21 @@ MESSAGE(STATUS "Julia_INCLUDE_DIRS:   ${Julia_INCLUDE_DIRS}")
 
 if(Julia_EXECUTABLE)
     execute_process(
-        COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "${USING_LIBDL}\nabspath(dirname(Libdl.dlpath(\"libjulia\")))"
-        OUTPUT_VARIABLE Julia_LIBRARY_DIR
+        COMMAND ${Julia_EXECUTABLE} --startup-file=no -E "${USING_LIBDL}\nabspath(Libdl.dlpath((ccall(:jl_is_debugbuild, Cint, ()) != 0) ? \"libjulia-debug\" : \"libjulia\"))"
+        OUTPUT_VARIABLE Julia_LIBRARY
     )
 
-    string(REGEX REPLACE "\"" "" Julia_LIBRARY_DIR "${Julia_LIBRARY_DIR}")
-    string(REGEX REPLACE "\n" "" Julia_LIBRARY_DIR "${Julia_LIBRARY_DIR}")
+    string(REGEX REPLACE "\"" "" Julia_LIBRARY "${Julia_LIBRARY}")
+    string(REGEX REPLACE "\n" "" Julia_LIBRARY "${Julia_LIBRARY}")
 
-    string(STRIP "${Julia_LIBRARY_DIR}" Julia_LIBRARY_DIR)
-    set(Julia_LIBRARY_DIR "${Julia_LIBRARY_DIR}"
+    string(STRIP "${Julia_LIBRARY}" Julia_LIBRARY)
+    set(Julia_LIBRARY "${Julia_LIBRARY}"
         CACHE PATH "Julia library directory")
-
-    if(WIN32)
-        set(CMAKE_FIND_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES} .a)
-        find_library(Julia_LIBRARY
-            NAMES libjulia.dll.a
-            PATHS ${Julia_LIBRARY_DIR}//..//lib
-            NO_DEFAULT_PATH
-        )
-    else()
-        find_library(Julia_LIBRARY
-            NAMES julia libjulia
-            PATHS ${Julia_LIBRARY_DIR}
-            NO_DEFAULT_PATH
-        )
-    endif()
 else()
     find_library(Julia_LIBRARY NAMES libjulia.${Julia_VERSION_STRING}.dylib julia libjulia libjulia.dll.a CMAKE_FIND_ROOT_PATH_BOTH)
-    get_filename_component(Julia_LIBRARY_DIR ${Julia_LIBRARY} DIRECTORY)
 endif()
+
+get_filename_component(Julia_LIBRARY_DIR ${Julia_LIBRARY} DIRECTORY)
 
 MESSAGE(STATUS "Julia_LIBRARY_DIR:    ${Julia_LIBRARY_DIR}")
 MESSAGE(STATUS "Julia_LIBRARY:        ${Julia_LIBRARY}")
