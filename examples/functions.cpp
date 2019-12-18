@@ -197,6 +197,8 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.add_type<BoxedNumber>("BoxedNumber")
     .method("getnumber", &BoxedNumber::getnumber);
 
+  std::cout << std::boolalpha << "BoxedNum is mirrored: " << jlcxx::IsMirroredType<BoxedNumber>::value << std::endl;
+
   mod.method("boxednumber_nb_created", [] () { return BoxedNumber::m_nb_created; });
   mod.method("boxednumber_nb_deleted", [] () { return BoxedNumber::m_nb_deleted; });
 
@@ -277,6 +279,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.method("callback_byval", [] (jl_function_t* f, int& result)
   {
     jlcxx::JuliaFunction juliafunc(f);
+    std::cout << "Doing call in byval" << std::endl;
     juliafunc(BoxedNumber(1), result);
   });
 

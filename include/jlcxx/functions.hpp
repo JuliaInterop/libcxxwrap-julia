@@ -67,40 +67,59 @@ private:
 template<typename... ArgumentsT>
 jl_value_t* JuliaFunction::operator()(ArgumentsT&&... args) const
 {
+  std::cout << "Started function call" << std::endl;
   (create_if_not_exists<ArgumentsT>(), ...);
+  std::cout << "Created types" << std::endl;
 
   const int nb_args = sizeof...(args);
 
-  jl_value_t** julia_args;
-  JL_GC_PUSHARGS(julia_args, nb_args+1); // The last element is the result
-
-  // Process arguments
-  StoreArgs store_args(julia_args);
-  store_args.push(std::forward<ArgumentsT>(args)...);
-  for(int i = 0; i != nb_args; ++i)
+  jl_value_t* result = nullptr;
+  JL_GC_PUSH1(&result);
   {
-    if(julia_args[i] == nullptr)
+    jl_value_t** julia_args;
+    JL_GC_PUSHARGS(julia_args, nb_args);
+
+    std::cout << "Storing args" << std::endl;
+    // Process arguments
+    StoreArgs store_args(julia_args);
+    store_args.push(std::forward<ArgumentsT>(args)...);
+    bool bad_argument = false;
+    for(int i = 0; i != nb_args; ++i)
     {
-      JL_GC_POP();
-      std::stringstream sstr;
-      sstr << "Unsupported Julia function argument type at position " << i;
-      throw std::runtime_error(sstr.str());
+      if(julia_args[i] == nullptr)
+      {
+        std::cout << "bad argument" << std::endl;
+        std::stringstream sstr;
+        sstr << "Unsupported Julia function argument type at position " << i << "\n";
+        jl_printf(jl_stderr_stream(), "%s", sstr.str().c_str());
+        bad_argument = true;
+        break;
+      }
     }
-  }
 
-  // Do the call
-  julia_args[nb_args] = jl_call(m_function, julia_args, nb_args);
-  if (jl_exception_occurred())
-  {
-    jl_call2(jl_get_function(jl_base_module, "show"), jl_stderr_obj(), jl_exception_occurred());
-    jl_printf(jl_stderr_stream(), "\n");
-    jlbacktrace();
+    if(!bad_argument)
+    {
+      // Do the call
+      std::cout << "Doing call" << std::endl;
+      result = jl_call(m_function, julia_args, nb_args);
+      std::cout << "Finished call" << std::endl;
+      if (jl_exception_occurred())
+      {
+        std::cout << "Treating exception" << std::endl;
+        jl_call2(jl_get_function(jl_base_module, "show"), jl_stderr_obj(), jl_exception_occurred());
+        jl_printf(jl_stderr_stream(), "\n");
+        jlbacktrace();
+        result = nullptr;
+      }
+    }
+    std::cout << "popping args" << std::endl;
     JL_GC_POP();
-    return nullptr;
   }
-
+  std::cout << "popping result" << std::endl;
   JL_GC_POP();
-  return julia_args[nb_args];
+  std::cout << "returning result" << std::endl;
+  
+  return result;
 }
 
 /// Data corresponds to immutable with the same name on the Julia side
