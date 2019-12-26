@@ -611,17 +611,21 @@ namespace detail
 template<typename T>
 jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
 {
+  assert(jl_is_concrete_type((jl_value_t*)dt));
   assert(jl_datatype_nfields(dt) == 1);
   assert(jl_is_cpointer_type(jl_field_type(dt,0)));
 
-  jl_value_t *result = jl_new_struct_uninit(dt);
-  JL_GC_PUSH1(&result);
-  ((WrappedCppPtr*)result)->voidptr = (void*)cpp_ptr;
+  jl_value_t* arg = nullptr;
+  jl_value_t* result =  nullptr;
+  JL_GC_PUSH2(&arg, &result);
+  arg = jl_box_voidpointer((void*)cpp_ptr);
+  result = jl_new_struct(dt, arg);
 
   if(add_finalizer)
   {
     jl_gc_add_finalizer(result, detail::get_finalizer());//jl_box_voidpointer((void*)detail::finalizer<T>));//
   }
+  
   JL_GC_POP();
   return result;
 };
