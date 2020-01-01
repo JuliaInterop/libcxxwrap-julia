@@ -192,23 +192,30 @@ struct get_pointee
 template<template<typename...> class PtrT, typename T, typename... OtherParamsT>
 struct get_pointee<PtrT<T, OtherParamsT...>>
 {
-  using type = T;
+  using pointee_t = typename std::remove_const<T>::type;
+  using pointer_t = PtrT<pointee_t, OtherParamsT...>;
+  using const_pointer_t = PtrT<const pointee_t, OtherParamsT...>;
 };
 
 }
 
-template<typename MappedT>
-struct julia_type_factory<MappedT, CxxWrappedTrait<SmartPointerTrait>>
+template<typename T>
+struct julia_type_factory<T, CxxWrappedTrait<SmartPointerTrait>>
 {
   static inline jl_datatype_t* julia_type()
   {
-    using PointeeT = typename detail::get_pointee<MappedT>::type;
+    using PointeeT = typename detail::get_pointee<T>::pointee_t;
+    using MappedT = typename detail::get_pointee<T>::pointer_t;
     create_if_not_exists<PointeeT>();
     if constexpr(!std::is_same<supertype<PointeeT>, PointeeT>::value)
     {
       create_if_not_exists<typename smartptr::ConvertToBase<MappedT>::SuperPtrT>();
     }
-    assert(!has_julia_type<MappedT>());
+    if(has_julia_type<MappedT>())
+    {
+      assert((std::is_same<T, typename detail::get_pointee<T>::const_pointer_t>::value));
+      return JuliaTypeCache<MappedT>::julia_type();
+    }
     assert(registry().has_current_module());
     jl_datatype_t* jltype = ::jlcxx::julia_type<PointeeT>();
     Module& curmod = registry().current_module();

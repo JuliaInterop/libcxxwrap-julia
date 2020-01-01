@@ -112,8 +112,8 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
 
   types.method("shared_b", []() { return std::make_shared<B>(); });
   types.method("shared_c", []() { return std::make_shared<C>(); });
-  types.method("shared_d", []() { return std::make_shared<D>(); });
-  types.method("shared_ptr_message", [](const std::shared_ptr<A>& x) { return x->message(); });
+  types.method("shared_d", []() { return std::make_shared<const D>(); });
+  types.method("shared_ptr_message", [](const std::shared_ptr<const A>& x) { return x->message(); });
 
   types.method("weak_ptr_message_a", [](const std::weak_ptr<A>& x) { return x.lock()->message(); });
   types.method("weak_ptr_message_b", [](const std::weak_ptr<B>& x) { return x.lock()->message(); });
