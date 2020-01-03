@@ -37,7 +37,6 @@ JLCXX_API void register_julia_module(jl_module_t* jlmod, void (*regfunc)(jlcxx::
     mod.for_each_function([] (FunctionWrapperBase& f) {
       // Make sure any pointers in the types are also resolved at module init.
       f.argument_types();
-      f.return_type();
     });
     jlcxx::registry().reset_current_module();
   }
@@ -92,10 +91,13 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
     boxed_f = jlcxx::box<cxxint_t>(f.pointer_index());
     boxed_thunk = jlcxx::box<cxxint_t>(f.thunk_index());
 
+    auto returntypes = f.return_type();
+
     function_array.push_back(jl_new_struct(g_cppfunctioninfo_type,
       f.name(),
       arg_types_array.wrapped(),
-      f.return_type(),
+      returntypes.first, // ccall return type
+      returntypes.second, // Julia return type assert
       boxed_f,
       boxed_thunk,
       f.override_module()

@@ -152,6 +152,14 @@ struct WrappedCppPtr {
   void* voidptr;
 };
 
+/// Store a boxed Julia value together with the C++ type
+template<typename T>
+struct BoxedValue
+{
+  operator jl_value_t*() const { return value; }
+  jl_value_t* value;
+};
+
 template<typename CppT>
 inline CppT* extract_pointer(const WrappedCppPtr& p)
 {
@@ -284,6 +292,13 @@ template<typename SourceT>
 struct static_type_mapping<SourceT&>
 {
   using type = WrappedCppPtr;
+};
+
+/// Boxed values map to jl_value_t*
+template<typename T>
+struct static_type_mapping<BoxedValue<T>>
+{
+  using type = jl_value_t*;
 };
 
 template<typename T> using static_julia_type = typename static_type_mapping<T>::type;
@@ -572,24 +587,34 @@ inline CppT convert_to_cpp(JuliaT julia_val)
 template<typename T, typename TraitT=mapping_trait<T>>
 struct JuliaReturnType
 {
-  inline static jl_datatype_t* value()
+  inline static std::pair<jl_datatype_t*,jl_datatype_t*> value()
   {
-    return julia_type<T>();
+    return std::make_pair(julia_type<T>(),julia_type<T>());
   }
 };
 
 template<typename T, typename SubTraitT>
 struct JuliaReturnType<T, CxxWrappedTrait<SubTraitT>>
 {
-  inline static jl_datatype_t* value()
+  inline static std::pair<jl_datatype_t*,jl_datatype_t*> value()
   {
     assert(has_julia_type<T>());
-    return jl_any_type;
+    return std::make_pair(jl_any_type,julia_type<T>());
   }
 };
 
 template<typename T>
-inline jl_datatype_t* julia_return_type()
+struct JuliaReturnType<BoxedValue<T>>
+{
+  inline static std::pair<jl_datatype_t*,jl_datatype_t*> value()
+  {
+    return std::make_pair(jl_any_type,julia_type<T>());
+  }
+};
+
+// The Julia return type is a pair of the type needed for ccall and the return type assert declared in the wrapped function
+template<typename T>
+inline std::pair<jl_datatype_t*,jl_datatype_t*> julia_return_type()
 {
   create_if_not_exists<T>();
   return JuliaReturnType<T>::value();
@@ -609,7 +634,7 @@ namespace detail
 
 /// Wrap a C++ pointer in a Julia type that contains a single void pointer field, returning the result as an any
 template<typename T>
-jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
+BoxedValue<T> boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
 {
   assert(jl_is_concrete_type((jl_value_t*)dt));
   assert(jl_datatype_nfields(dt) == 1);
@@ -627,12 +652,12 @@ jl_value_t* boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalizer)
   }
   
   JL_GC_POP();
-  return result;
+  return {result};
 };
 
 /// Transfer ownership of a regular pointer to Julia
 template<typename T>
-jl_value_t* julia_owned(T* cpp_ptr)
+BoxedValue<T> julia_owned(T* cpp_ptr)
 {
   static_assert(!std::is_fundamental<T>::value, "Ownership can't be transferred for fundamental types");
   const bool finalize = true;
@@ -753,6 +778,14 @@ struct BoxValue<CppT,jl_value_t*>
     return (jl_value_t*)convert_to_julia(cppval);
   }
 };
+template<typename CppT>
+struct BoxValue<BoxedValue<CppT>,jl_value_t*>
+{
+  inline jl_value_t* operator()(const BoxedValue<CppT>& v)
+  {
+    return v;
+  }
+};
 
 // Pass-through for jl_value_t*
 template<>
@@ -777,7 +810,7 @@ struct BoxValue<jl_datatype_t*,jl_datatype_t*>
 template<typename CppT>
 struct BoxValue<CppT,WrappedCppPtr>
 {
-  inline jl_value_t* operator()(CppT cppval)
+  inline BoxedValue<CppT> operator()(CppT cppval)
   {
     return boxed_cpp_pointer(new CppT(cppval), julia_type<CppT>(), true);
   }
@@ -785,28 +818,28 @@ struct BoxValue<CppT,WrappedCppPtr>
 template<typename CppT>
 struct BoxValue<CppT&,WrappedCppPtr>
 {
-  inline jl_value_t* operator()(CppT& cppval)
+  inline BoxedValue<CppT&> operator()(CppT& cppval)
   {
-    return boxed_cpp_pointer(&cppval, julia_type<CppT&>(), false);
+    return {boxed_cpp_pointer(&cppval, julia_type<CppT&>(), false).value};
   }
 };
 template<typename CppT>
 struct BoxValue<CppT*,WrappedCppPtr>
 {
-  inline jl_value_t* operator()(CppT* cppval)
+  inline BoxedValue<CppT*> operator()(CppT* cppval)
   {
-    return boxed_cpp_pointer(cppval, julia_type<CppT*>(), false);
+    return {boxed_cpp_pointer(cppval, julia_type<CppT*>(), false).value};
   }
 };
 
 template<typename CppT, typename ArgT>
-inline jl_value_t* box(ArgT&& cppval)
+inline auto box(ArgT&& cppval)
 {
   return BoxValue<CppT, static_julia_type<CppT>>()(std::forward<ArgT>(cppval));
 }
 
 template<typename CppT, typename ArgT>
-inline jl_value_t* box(ArgT&& cppval, jl_value_t* dt)
+inline auto box(ArgT&& cppval, jl_value_t* dt)
 {
   return BoxValue<CppT, static_julia_type<CppT>>()(std::forward<ArgT>(cppval), dt);
 }
@@ -957,6 +990,12 @@ struct julia_type_factory<TypeVar<I>>
 {
   typedef jl_tvar_t* type;
   static jl_tvar_t* julia_type() { return TypeVar<I>::tvar(); }
+};
+
+template<typename T>
+struct julia_type_factory<BoxedValue<T>>
+{
+  static jl_datatype_t* julia_type() { return jl_any_type; }
 };
 
 // Helper for ObjectIdDict

@@ -334,7 +334,7 @@ struct julia_type_factory<Array<T>>
   static inline jl_datatype_t* julia_type()
   {
     create_if_not_exists<T>();
-    return (jl_datatype_t*)apply_array_type(detail::PackedArrayType<T>::type(), 1);
+    return (jl_datatype_t*)apply_array_type(jlcxx::julia_type<T>(), 1);
   }
 };
 

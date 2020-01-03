@@ -114,7 +114,7 @@ struct NeedConvertHelper<>
 
 /// Convenience function to create an object with a finalizer attached
 template<typename T, bool finalize=true, typename... ArgsT>
-jl_value_t* create(ArgsT&&... args)
+BoxedValue<T> create(ArgsT&&... args)
 {
   jl_datatype_t* dt = julia_type<T>();
   assert(jl_is_mutable_datatype(dt));
@@ -149,7 +149,7 @@ class JLCXX_API Module;
 class JLCXX_API FunctionWrapperBase
 {
 public:
-  FunctionWrapperBase(Module* mod, jl_datatype_t* return_type) : m_name(nullptr), m_module(mod), m_return_type(return_type)
+  FunctionWrapperBase(Module* mod, std::pair<jl_datatype_t*,jl_datatype_t*> return_type) : m_name(nullptr), m_module(mod), m_return_type(return_type)
   {
   }
 
@@ -157,9 +157,9 @@ public:
   virtual std::vector<jl_datatype_t*> argument_types() const = 0;
 
   /// Return type
-  jl_datatype_t* return_type() const { return m_return_type; }
+  std::pair<jl_datatype_t*,jl_datatype_t*> return_type() const { return m_return_type; }
 
-  void set_return_type(jl_datatype_t* dt) { m_return_type = dt; }
+  void set_return_type(std::pair<jl_datatype_t*,jl_datatype_t*> dt) { m_return_type = dt; }
 
   virtual ~FunctionWrapperBase() {}
 
@@ -191,7 +191,7 @@ protected:
 private:
   jl_value_t* m_name = nullptr;
   Module* m_module;
-  jl_datatype_t* m_return_type = nullptr;
+  std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
   cxxint_t m_pointer_index = 0;
   cxxint_t m_thunk_index = 0;
