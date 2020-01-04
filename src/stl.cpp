@@ -59,7 +59,7 @@ void wrap_string(TypeWrapper<string_t>&& wrapper)
 
 }
 
-JLCXX_MODULE define_julia_module(jlcxx::Module& stl)
+JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
 {
   jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
   jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
