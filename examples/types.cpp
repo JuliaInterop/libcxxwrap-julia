@@ -124,6 +124,13 @@ struct Foo
 
 struct NullableStruct { NullableStruct() {} };
 
+struct IntDerived
+{
+    int val;
+    IntDerived() : val(42) { }
+    bool operator == (IntDerived &other){ return this->val == other.val; }
+};
+
 } // namespace cpp_types
 
 namespace jlcxx
@@ -297,4 +304,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     const std::string result = messages.str();
     return result.substr(0,result.size()-1);
   });
+
+  types.add_type<IntDerived>("IntDerived", jlcxx::julia_type("Integer", "Base"));
+  types.set_override_module(jl_base_module);
+  types.method("==", [](IntDerived& a, IntDerived& b) { return a == b; });
+  types.method("Int", [](IntDerived& a) { return a.val; });
+  types.unset_override_module();
 }
