@@ -264,8 +264,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.set_const("EnumValA", EnumValA);
   types.set_const("EnumValB", EnumValB);
 
+  #if JULIA_VERSION_MAJOR == 1 && JULIA_VERSION_MINOR < 4
   jl_gc_collect(1);
-  jl_gc_collect(0);
+  #else
+  jl_gc_collect(JL_GC_FULL);
+  #endif
 
   types.method("enum_to_int", [] (const MyEnum e) { return static_cast<int>(e); });
   types.method("get_enum_b", [] () { return EnumValB; });

@@ -5,9 +5,7 @@
 #include "jlcxx/smart_pointers.hpp"
 
 #include <julia.h>
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4 || JULIA_VERSION_MAJOR > 0
 #include <julia_threads.h>
-#endif
 
 namespace jlcxx
 {
