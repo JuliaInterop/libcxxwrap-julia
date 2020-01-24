@@ -49,11 +49,6 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
     .apply<ManyParams<int,int,int>>(WrapManyParams());
 }
 
-extern "C"
-{
-  extern void bind_module_constants(jl_value_t* module_any);
-}
-
 void __dummy_protect(jl_value_t*) {}
 
 int main()
@@ -74,8 +69,7 @@ int main()
   }
 
   register_julia_module((jl_module_t*)mod, register_test_module);
-
-  bind_module_constants(mod);
+  jl_call1(jl_get_function(jlcxx::get_cxxwrap_module(), "wraptypes"), mod);
 
   jl_value_t* dt = jl_eval_string("TestModule.Foo");
   if(jlcxx::julia_type_name(dt) != "Foo")
