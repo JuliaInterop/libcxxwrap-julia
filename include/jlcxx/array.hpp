@@ -319,7 +319,7 @@ ArrayRef<ValueT, Dim>::ArrayRef(const bool julia_owned, julia_t* c_ptr, const Si
 template<typename ValueT, typename... SizesT>
 auto make_julia_array(ValueT* c_ptr, const SizesT... sizes) -> ArrayRef<ValueT, sizeof...(SizesT)>
 {
-  return ArrayRef<ValueT, sizeof...(SizesT)>(true, c_ptr, sizes...);
+  return ArrayRef<ValueT, sizeof...(SizesT)>(false, c_ptr, sizes...);
 }
 
 template<typename T, typename SubTraitT>

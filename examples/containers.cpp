@@ -31,10 +31,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
 
   containers.method("mutable_array", []()
   {
-    double* a = new double[6];
-    a[0] = 1.0; a[1] = 2.0; a[2] = 3.0;
-    a[3] = 4.0; a[4] = 5.0; a[5] = 6.0;
-    return make_julia_array(a, 3, 2);
+    static double a[2][3] = {{1., 2., 3}, {4., 5., 6.}};
+    return make_julia_array(&a[0][0], 3, 2);
   });
   containers.method("check_mutable_array", [](jlcxx::ArrayRef<double, 2> arr)
   {
