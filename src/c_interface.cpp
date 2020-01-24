@@ -58,10 +58,10 @@ JLCXX_API jl_module_t* get_cxxwrap_module()
 }
 
 /// Bind jl_datatype_t structures to corresponding Julia symbols in the given module
-JLCXX_API void bind_module_constants(jl_value_t* module_any)
+JLCXX_API void bind_module_constants(jl_value_t* module_any, jl_value_t* symbols, jl_value_t* values)
 {
   jl_module_t* mod = (jl_module_t*)module_any;
-  registry().get_module(mod).bind_constants(mod);
+  registry().get_module(mod).bind_constants(ArrayRef<jl_value_t*>((jl_array_t*)symbols), ArrayRef<jl_value_t*>((jl_array_t*)values));
 }
 
 void fill_types_vec(Array<jl_datatype_t*>& types_array, const std::vector<jl_datatype_t*>& types_vec)

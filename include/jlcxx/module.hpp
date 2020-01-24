@@ -594,13 +594,11 @@ public:
   template<typename T>
   void set_const(const std::string& name, T&& value)
   {
-    if(m_jl_constants.count(name) != 0)
+    if(get_constant(name) != nullptr)
     {
       throw std::runtime_error("Duplicate registration of constant " + name);
     }
-    jl_value_t* boxed_const = box<T>(value);
-    protect_from_gc(boxed_const);
-    m_jl_constants[name] = boxed_const;
+    set_constant(name, box<T>(value));
   }
 
   std::string name() const
@@ -608,13 +606,14 @@ public:
     return module_name(m_jl_mod);
   }
 
-  void bind_constants(jl_module_t* mod);
+  void bind_constants(ArrayRef<jl_value_t*> symbols, ArrayRef<jl_value_t*> values);
 
   jl_datatype_t* get_julia_type(const char* name)
   {
-    if(m_jl_constants.count(name) != 0 && jl_is_datatype(m_jl_constants[name]))
+    jl_value_t *cst = get_constant(name);
+    if(cst != nullptr && jl_is_datatype(cst))
     {
-      return (jl_datatype_t*)m_jl_constants[name];
+      return (jl_datatype_t*)cst;
     }
 
     return nullptr;
@@ -675,11 +674,16 @@ private:
     return method(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)));
   }
 
+  void set_constant(const std::string& name, jl_value_t* boxed_const);
+  jl_value_t *get_constant(const std::string &name);
+
   jl_module_t* m_jl_mod;
   jl_module_t* m_override_module = nullptr;
   ArrayRef<void*> m_pointer_array;
   std::vector<std::shared_ptr<FunctionWrapperBase>> m_functions;
-  std::map<std::string, jl_value_t*> m_jl_constants;
+  std::map<std::string, size_t> m_jl_constants;
+  std::vector<std::string> m_constant_names;
+  Array<jl_value_t*> m_constant_values;
   std::vector<jl_datatype_t*> m_box_types;
 
   template<class T> friend class TypeWrapper;
@@ -1097,7 +1101,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   static_assert(!IsMirroredType<T>::value, "Mirrored types (marked with IsMirroredType) can't be added using add_type, map them directly to a struct instead and use map_type or explicitly disable mirroring for this type, e.g. define template<> struct IsMirroredType<Foo> : std::false_type { };");
   static_assert(!std::is_scalar<T>::value, "Scalar types must be added using add_bits");
 
-  if(m_jl_constants.count(name) > 0)
+  if(get_constant(name) != nullptr)
   {
     throw std::runtime_error("Duplicate registration of type or constant " + name);
   }
@@ -1153,8 +1157,8 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
     add_copy_constructor<T>(CopyConstructible<T>(), base_dt);
   }
 
-  m_jl_constants[name] = is_parametric ? base_dt->name->wrapper : (jl_value_t*)base_dt;
-  m_jl_constants[allocname] = is_parametric ? box_dt->name->wrapper : (jl_value_t*)box_dt;
+  set_const(name, is_parametric ? base_dt->name->wrapper : (jl_value_t*)base_dt);
+  set_const(allocname, is_parametric ? box_dt->name->wrapper : (jl_value_t*)box_dt);
 
   if(!is_parametric)
   {
@@ -1215,7 +1219,7 @@ void Module::add_bits(const std::string& name, JLSuperT* super)
   protect_from_gc(dt);
   JL_GC_POP();
   detail::dispatch_set_julia_type<T, is_parametric>()(dt);
-  m_jl_constants[name] = (jl_value_t*)dt;
+  set_const(name, (jl_value_t*)dt);
 }
 
 /// Registry containing different modules

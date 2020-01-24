@@ -38,8 +38,10 @@ JLCXX_API std::stack<std::size_t>& gc_free_stack()
 
 Module::Module(jl_module_t* jmod) :
   m_jl_mod(jmod),
-  m_pointer_array((jl_array_t*)jl_get_global(jmod, jl_symbol("__cxxwrap_pointers")))
+  m_pointer_array((jl_array_t*)jl_get_global(jmod, jl_symbol("__cxxwrap_pointers"))),
+  m_constant_values(jl_any_type)
 {
+  protect_from_gc(m_constant_values.wrapped());
 }
 
 cxxint_t Module::store_pointer(void *ptr)
@@ -49,12 +51,35 @@ cxxint_t Module::store_pointer(void *ptr)
   return m_pointer_array.size();
 }
 
-void Module::bind_constants(jl_module_t* mod)
+void Module::bind_constants(ArrayRef<jl_value_t*> symbols, ArrayRef<jl_value_t*> values)
 {
-  for(auto& dt_pair : m_jl_constants)
+  const std::size_t nb_consts = m_jl_constants.size();
+  assert(nb_consts == jl_array_len(m_constant_values.wrapped()));
+  assert(nb_consts == m_constant_names.size());
+  for(std::size_t i = 0; i != nb_consts; ++i)
   {
-    jl_set_const(mod, jl_symbol(dt_pair.first.c_str()), dt_pair.second);
+    symbols.push_back((jl_value_t*)jl_symbol(m_constant_names[i].c_str()));
+    values.push_back(jl_array_ptr_ref(m_constant_values.wrapped(), i));
   }
+}
+
+void Module::set_constant(const std::string& name, jl_value_t* boxed_const)
+{
+  JL_GC_PUSH1(&boxed_const);
+  m_jl_constants[name] = m_constant_names.size();
+  m_constant_values.push_back(boxed_const);
+  JL_GC_POP();
+  m_constant_names.push_back(name);
+}
+
+jl_value_t* Module::get_constant(const std::string& name)
+{
+  const auto it = m_jl_constants.find(name);
+  if(it == m_jl_constants.end())
+  {
+    return nullptr;
+  }
+  return jl_array_ptr_ref(m_constant_values.wrapped(), it->second);
 }
 
 Module &ModuleRegistry::create_module(jl_module_t* jmod)

@@ -263,6 +263,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_bits<MyEnum>("MyEnum", jlcxx::julia_type("CppEnum"));
   types.set_const("EnumValA", EnumValA);
   types.set_const("EnumValB", EnumValB);
+
+  jl_gc_collect(1);
+  jl_gc_collect(0);
+
   types.method("enum_to_int", [] (const MyEnum e) { return static_cast<int>(e); });
   types.method("get_enum_b", [] () { return EnumValB; });
 

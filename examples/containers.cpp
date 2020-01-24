@@ -18,8 +18,6 @@ const double* const_matrix()
   return &d[0][0];
 }
 
-double mutable_array[2][3] = {{1., 2., 3}, {4., 5., 6.}};
-
 JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
 {
   using namespace jlcxx;
@@ -31,7 +29,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
   // Note the column-major order for matrices
   containers.method("const_matrix", []() { return jlcxx::make_const_array(const_matrix(), 3, 2); });
 
-  containers.method("mutable_array", []() { return make_julia_array(&mutable_array[0][0], 3, 2); });
+  containers.method("mutable_array", []()
+  {
+    double* a = new double[6];
+    a[0] = 1.0; a[1] = 2.0; a[2] = 3.0;
+    a[3] = 4.0; a[4] = 5.0; a[5] = 6.0;
+    return make_julia_array(a, 3, 2);
+  });
   containers.method("check_mutable_array", [](jlcxx::ArrayRef<double, 2> arr)
   {
     for(auto el : arr)
