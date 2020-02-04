@@ -195,6 +195,7 @@ int BoxedNumber::m_nb_deleted = 0;
 JLCXX_MODULE init_test_module(jlcxx::Module& mod)
 {
   mod.add_type<BoxedNumber>("BoxedNumber")
+    .constructor<int>()
     .method("getnumber", &BoxedNumber::getnumber);
 
   mod.method("boxednumber_nb_created", [] () { return BoxedNumber::m_nb_created; });
@@ -317,6 +318,16 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
 
   // Irrational
   mod.method("process_irrational", [] (const double irr, const double fact) { return irr*fact; });
+
+  static jl_value_t* marked_value;
+  mod.method("marked_boxed_value", [&] () -> jl_value_t*
+  {
+    marked_value = jlcxx::create<BoxedNumber>(43).value;
+    jlcxx::protect_from_gc(marked_value);
+    return marked_value;
+  });
+  mod.method("unmark_boxed", [&] () { jlcxx::unprotect_from_gc(marked_value); });
+
 }
 
 }

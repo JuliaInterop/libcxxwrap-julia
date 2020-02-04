@@ -139,10 +139,6 @@ struct UpCast
 extern jl_module_t* g_cxxwrap_module;
 extern jl_datatype_t* g_cppfunctioninfo_type;
 
-typedef void (*protect_f_t)(jl_value_t*);
-JLCXX_API extern protect_f_t g_protect_from_gc;
-JLCXX_API extern protect_f_t g_unprotect_from_gc;
-
 class JLCXX_API Module;
 
 /// Abstract base class for storing any function

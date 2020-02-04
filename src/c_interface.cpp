@@ -2,13 +2,15 @@
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/jlcxx_config.hpp"
 
+#include "julia_gcext.h"
+
 extern "C"
 {
 
 using namespace jlcxx;
 
 /// Initialize the module
-JLCXX_API void initialize_cxxwrap(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type, void* gc_protect_f, void* gc_unprotect_f)
+JLCXX_API void initialize_cxxwrap(jl_value_t* julia_module, jl_value_t* cppfunctioninfo_type)
 {
   if(g_cxxwrap_module != nullptr)
   {
@@ -19,10 +21,10 @@ JLCXX_API void initialize_cxxwrap(jl_value_t* julia_module, jl_value_t* cppfunct
     return;
   }
 
+  jl_gc_set_cb_root_scanner(cxx_root_scanner, 1);
+
   g_cxxwrap_module = (jl_module_t*)julia_module;
   g_cppfunctioninfo_type = (jl_datatype_t*)cppfunctioninfo_type;
-  g_protect_from_gc = reinterpret_cast<protect_f_t>(gc_protect_f);
-  g_unprotect_from_gc = reinterpret_cast<protect_f_t>(gc_unprotect_f);
 
   register_core_types();
   register_core_cxxwrap_types();
@@ -129,6 +131,16 @@ JLCXX_API jl_array_t* get_box_types(jl_module_t* jlmod)
 JLCXX_API const char* cxxwrap_version_string()
 {
   return JLCXX_VERSION_STRING;
+}
+
+JLCXX_API void gcprotect(jl_value_t* v)
+{
+  protect_from_gc(v);
+}
+
+JLCXX_API void gcunprotect(jl_value_t* v)
+{
+  unprotect_from_gc(v);
 }
 
 }
