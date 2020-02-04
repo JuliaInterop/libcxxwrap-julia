@@ -60,6 +60,7 @@ namespace detail
 
 JLCXX_API void protect_from_gc(jl_value_t* v);
 JLCXX_API void unprotect_from_gc(jl_value_t* v);
+JLCXX_API void cxx_root_scanner(int);
 
 template<typename T>
 inline void protect_from_gc(T* x)

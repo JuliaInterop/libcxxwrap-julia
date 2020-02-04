@@ -6,26 +6,52 @@
 
 #include <julia.h>
 #include <julia_threads.h>
+#include <julia_gcext.h>
 
 namespace jlcxx
 {
 
+using cxx_gc_roots_t = std::map<jl_value_t*, int>;
+cxx_gc_roots_t& cxx_gc_roots()
+{
+  static cxx_gc_roots_t m_roots;
+  return m_roots;
+}
+
 jl_module_t* g_cxxwrap_module = nullptr;
 jl_datatype_t* g_cppfunctioninfo_type = nullptr;
 
-JLCXX_API void (*g_protect_from_gc)(jl_value_t*);
-JLCXX_API void (*g_unprotect_from_gc)(jl_value_t*);
-
 JLCXX_API void protect_from_gc(jl_value_t* v)
 {
-  JL_GC_PUSH1(&v);
-  g_protect_from_gc(v);
-  JL_GC_POP();
+  // Insert a "number of times protected" count of 1 or increment the count
+  auto insresult = cxx_gc_roots().insert(std::make_pair(v, 1));
+  if(!insresult.second)
+  {
+    ++(insresult.first->second);
+  }
 }
 
 JLCXX_API void unprotect_from_gc(jl_value_t* v)
 {
-  g_unprotect_from_gc(v);
+  auto it = cxx_gc_roots().find(v);
+  if(it == cxx_gc_roots().end())
+  {
+    throw std::runtime_error("Attempt to unprotect an object that was not GC protected");
+  }
+  --(it->second);
+  if(it->second == 0)
+  {
+    cxx_gc_roots().erase(it);
+  }
+}
+
+JLCXX_API void cxx_root_scanner(int)
+{
+  jl_ptls_t ptls = jl_get_ptls_states();
+  for(const auto rootpair : cxx_gc_roots())
+  {
+    jl_gc_mark_queue_obj(ptls, rootpair.first);
+  }
 }
 
 JLCXX_API std::stack<std::size_t>& gc_free_stack()
