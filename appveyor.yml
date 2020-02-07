@@ -36,7 +36,7 @@ build_script:
   - cmake -G "%CMAKE_GEN%" -A %CMAKE_ARCH% -DJulia_EXECUTABLE=C:\julia\bin\julia -DCMAKE_INSTALL_PREFIX=..\install\usr ..
   - cmake --build . --config Release --target install
   - set "JLCXX_DIR=%cd%\..\install\usr"
-  - C:\julia\bin\julia -e "using Pkg; pkg\"add CxxWrap#master\"; Pkg.build(); using CxxWrap"
+  - C:\julia\bin\julia -e "using Pkg; pkg\"add CxxWrap#gcext\"; Pkg.build(); using CxxWrap"
 
 test_script:
   - ctest -V -C Release
