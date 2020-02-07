@@ -225,3 +225,9 @@ if(WIN32)
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/..
         )
 endif()
+
+message(STATUS "To use the libraries from the build directory in Julia, add the following to ~/.julia/artifacts/Overrides.toml:
+########## Begin Overrides.toml ##########
+[3eaa8342-bff7-56a5-9981-c04077f7cee7]
+libcxxwrap_julia = \"${CMAKE_CURRENT_BINARY_DIR}\"
+########### End Overrides.toml ###########")

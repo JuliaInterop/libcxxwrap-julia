@@ -23,7 +23,7 @@ script:
   - mkdir build && cd build
   - cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DCMAKE_BUILD_TYPE=Release ..
   - VERBOSE=ON cmake --build . --config Release --target install
-  - JLCXX_DIR=$PWD julia -e 'using Pkg; pkg"add CxxWrap#master"; Pkg.build(); using CxxWrap'
+  - JLCXX_DIR=$PWD julia -e 'using Pkg; pkg"add CxxWrap#gcext"; Pkg.build(); using CxxWrap'
   - ctest -V
   - cd ../testlib-builder
   - mkdir build && cd build
