@@ -164,7 +164,9 @@ struct WrapFoo2
   void operator()(TypeWrapperT&& wrapped)
   {
     typedef typename TypeWrapperT::type WrappedT;
+    wrapped.module().set_override_module(wrapped.module().julia_module());
     wrapped.module().method("foo2_method", [] (const WrappedT&) {});
+    wrapped.module().unset_override_module();
   }
 };
 
