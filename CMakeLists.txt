@@ -226,8 +226,11 @@ if(WIN32)
         )
 endif()
 
-message(STATUS "To use the libraries from the build directory in Julia, add the following to ~/.julia/artifacts/Overrides.toml:
-########## Begin Overrides.toml ##########
+option(APPEND_OVERRIDES_TOML "Append an entry to the Overrides.toml file to make Julia use the libcxxwrap in the current dir" OFF)
+
+if(APPEND_OVERRIDES_TOML)
+  write_file("$ENV{HOME}/.julia/artifacts/Overrides.toml" "
 [3eaa8342-bff7-56a5-9981-c04077f7cee7]
 libcxxwrap_julia = \"${CMAKE_CURRENT_BINARY_DIR}\"
-########### End Overrides.toml ###########")
+  " APPEND)
+endif()
