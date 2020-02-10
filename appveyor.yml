@@ -33,7 +33,7 @@ build_script:
   - set "CMAKE_GEN=Visual Studio 16 2019"
   - set "CMAKE_ARCH=x64"
   - IF %PLATFORM% EQU x86 set "CMAKE_ARCH=Win32"
-  - cmake -G "%CMAKE_GEN%" -A %CMAKE_ARCH% -DJulia_EXECUTABLE=C:\julia\bin\julia -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
+  - cmake -G "%CMAKE_GEN%" -A %CMAKE_ARCH% -DJulia_EXECUTABLE=C:\julia\bin\julia -DOVERRIDES_PATH=%HOMEDRIVE%\%HOMEPATH%\.julia\artifacts\Overrides.toml -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
   - cmake --build . --config Release --target install
   - set "JLCXX_DIR=%cd%\..\install\usr"
   - C:\julia\bin\julia -e "using Pkg; pkg\"add CxxWrap#gcext\"; Pkg.build(); using CxxWrap"

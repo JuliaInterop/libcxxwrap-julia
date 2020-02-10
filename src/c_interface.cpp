@@ -95,11 +95,19 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
 
     auto returntypes = f.return_type();
 
+    jl_datatype_t* ccall_return_type = returntypes.first;
+    jl_datatype_t* julia_return_type = returntypes.second;
+    if(ccall_return_type == nullptr)
+    {
+      ccall_return_type = julia_type<void>();
+      julia_return_type = ccall_return_type;
+    }
+
     function_array.push_back(jl_new_struct(g_cppfunctioninfo_type,
       f.name(),
       arg_types_array.wrapped(),
-      returntypes.first, // ccall return type
-      returntypes.second, // Julia return type assert
+      ccall_return_type,
+      julia_return_type,
       boxed_f,
       boxed_thunk,
       f.override_module()
