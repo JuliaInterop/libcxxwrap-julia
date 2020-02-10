@@ -226,10 +226,11 @@ if(WIN32)
         )
 endif()
 
+set(OVERRIDES_PATH "$ENV{HOME}/.julia/artifacts/Overrides.toml" CACHE FILEPATH "Path to the Overrides file")
 option(APPEND_OVERRIDES_TOML "Append an entry to the Overrides.toml file to make Julia use the libcxxwrap in the current dir" OFF)
 
 if(APPEND_OVERRIDES_TOML)
-  write_file("$ENV{HOME}/.julia/artifacts/Overrides.toml" "
+  write_file(${OVERRIDES_PATH} "
 [3eaa8342-bff7-56a5-9981-c04077f7cee7]
 libcxxwrap_julia = \"${CMAKE_CURRENT_BINARY_DIR}\"
   " APPEND)

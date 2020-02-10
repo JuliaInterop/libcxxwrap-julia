@@ -373,7 +373,7 @@ JLCXX_API void register_core_types()
   static bool registered = false;
   if(!registered)
   {
-    set_julia_type<void>(jl_void_type,false);
+    set_julia_type<void>((jl_datatype_t*)julia_type("Cvoid", jl_base_module),false);
     set_julia_type<void*>(jl_voidpointer_type,false);
     set_julia_type<float>(jl_float32_type,false);
     set_julia_type<double>(jl_float64_type,false);
