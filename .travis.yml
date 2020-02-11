@@ -23,7 +23,7 @@ script:
   - VERBOSE=ON cmake --build . --config Release --target install
   - if [[ $TRAVIS_OS_NAME == "osx" ]]; then ln -s libcxxwrap_julia.0.7.0.dylib lib/libcxxwrap_julia.0.6.6.dylib; fi
   - cat ~/.julia/artifacts/Overrides.toml
-  - JLCXX_DIR=$PWD julia -e 'using Pkg; pkg"add CxxWrap#gcext"; Pkg.build(); using CxxWrap'
+  - JLCXX_DIR=$PWD julia -e 'using Pkg; pkg"add https://github.com/barche/libcxxwrap_julia_jll.jl.git"; pkg"add CxxWrap#master"; using CxxWrap'
   - ctest -V
   - cd ../testlib-builder
   - mkdir build && cd build
