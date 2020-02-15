@@ -60,11 +60,14 @@ struct TemplateDefaultType
 template<typename T>
 struct AbstractTemplate
 {
+  virtual void foo() const = 0;
+  virtual ~AbstractTemplate(){};
 };
 
 template<typename T>
 struct ConcreteTemplate : public AbstractTemplate<T>
 {
+  void foo() const {}
 };
 
 // Helper to wrap TemplateType instances. May also be a C++14 lambda, see README.md

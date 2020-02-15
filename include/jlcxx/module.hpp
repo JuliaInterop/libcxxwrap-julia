@@ -476,6 +476,18 @@ using fixed_int_types = remove_duplicates<ParameterList
   int64_t,uint64_t
 >>;
 
+/// Trait to allow user-controlled disabling of the default constructor
+template <typename T>
+struct DefaultConstructible : std::bool_constant<std::is_default_constructible<T>::value && !std::is_abstract<T>::value>
+{
+};
+
+/// Trait to allow user-controlled disabling of the copy constructor
+template <typename T>
+struct CopyConstructible : std::bool_constant<std::is_copy_constructible<T>::value && !std::is_abstract<T>::value>
+{
+};
+
 /// Store all exposed C++ functions associated with a module
 class JLCXX_API Module
 {
@@ -638,27 +650,20 @@ public:
 private:
 
   template<typename T>
-  void add_default_constructor(std::true_type, jl_datatype_t* dt);
+  void add_default_constructor(jl_datatype_t* dt);
 
   template<typename T>
-  void add_default_constructor(std::false_type, jl_datatype_t*)
+  void add_copy_constructor(jl_datatype_t*)
   {
-  }
-
-  template<typename T>
-  void add_copy_constructor(std::true_type, jl_datatype_t*)
-  {
-    set_override_module(jl_base_module);
-    method("deepcopy_internal", [this](const T& other, ObjectIdDict)
+    if constexpr (CopyConstructible<T>::value)
     {
-      return create<T>(other);
-    });
-    unset_override_module();
-  }
-
-  template<typename T>
-  void add_copy_constructor(std::false_type, jl_datatype_t*)
-  {
+      set_override_module(jl_base_module);
+      method("deepcopy_internal", [this](const T& other, ObjectIdDict)
+      {
+        return create<T>(other);
+      });
+      unset_override_module();
+    }
   }
 
   template<typename T, typename SuperParametersT, typename JLSuperT>
@@ -686,9 +691,12 @@ private:
 };
 
 template<typename T>
-void Module::add_default_constructor(std::true_type, jl_datatype_t* dt)
+void Module::add_default_constructor(jl_datatype_t* dt)
 {
-  this->constructor<T>(dt);
+  if constexpr (DefaultConstructible<T>::value)
+  {
+    this->constructor<T>(dt);
+  }
 }
 
 // Specialize this to build the correct parameter list, wrapping non-types in integral constants
@@ -814,18 +822,6 @@ void for_each_type(FunctorT&& f)
 {
   ForEachType<T>()(f);
 }
-
-/// Trait to allow user-controlled disabling of the default constructor
-template<typename T>
-struct DefaultConstructible : std::is_default_constructible<T>
-{
-};
-
-/// Trait to allow user-controlled disabling of the copy constructor
-template<typename T>
-struct CopyConstructible : std::is_copy_constructible<T>
-{
-};
 
 template<typename... Types>
 struct UnpackedTypeList
@@ -1055,8 +1051,8 @@ private:
     jl_datatype_t* app_box_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_box_dt, parameter_list<AppliedT>()(nb_julia_parameters));
 
     set_julia_type<AppliedT>(app_box_dt);
-    m_module.add_default_constructor<AppliedT>(DefaultConstructible<AppliedT>(), app_dt);
-    m_module.add_copy_constructor<AppliedT>(CopyConstructible<AppliedT>(), app_dt);
+    m_module.add_default_constructor<AppliedT>(app_dt);
+    m_module.add_copy_constructor<AppliedT>(app_dt);
 
     apply_ftor(TypeWrapper<AppliedT>(m_module, app_dt, app_box_dt));
 
@@ -1149,8 +1145,8 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   if(!is_parametric)
   {
     set_julia_type<T>(box_dt);
-    add_default_constructor<T>(DefaultConstructible<T>(), base_dt);
-    add_copy_constructor<T>(CopyConstructible<T>(), base_dt);
+    add_default_constructor<T>(base_dt);
+    add_copy_constructor<T>(base_dt);
   }
 
   set_const(name, is_parametric ? base_dt->name->wrapper : (jl_value_t*)base_dt);
