@@ -93,6 +93,60 @@ struct TypeFtor
   int m_count = 0;
 };
 
+namespace detail
+{
+  template<typename T> std::string int_type_name() { return "undefined"; }
+  template<> std::string int_type_name<short int>() { return "short int"; }
+  template<> std::string int_type_name<unsigned short int>() { return "unsigned short int"; }
+  template<> std::string int_type_name<int>() { return "int"; }
+  template<> std::string int_type_name<unsigned int>() { return "unsigned int"; }
+  template<> std::string int_type_name<long long int>() { return "long long int"; }
+  template<> std::string int_type_name<unsigned long long int>() { return "unsigned long long int"; }
+  template<typename T> std::string fixedint_type_name() { return "undefined"; }
+  template<> std::string fixedint_type_name<int8_t>() { return "int8_t"; }
+  template<> std::string fixedint_type_name<uint8_t>() { return "uint8_t"; }
+  template<> std::string fixedint_type_name<int16_t>() { return "int16_t"; }
+  template<> std::string fixedint_type_name<uint16_t>() { return "uint16_t"; }
+  template<> std::string fixedint_type_name<int32_t>() { return "int32_t"; }
+  template<> std::string fixedint_type_name<uint32_t>() { return "uint32_t"; }
+  template<> std::string fixedint_type_name<int64_t>() { return "int64_t"; }
+  template<> std::string fixedint_type_name<uint64_t>() { return "uint64_t"; }
+}
+
+struct IntTypeLister
+{
+  IntTypeLister(std::vector<std::string>& typenames, std::vector<jl_value_t*>& datatypes) : m_typenames(typenames), m_datatypes(datatypes)
+  {
+  }
+
+  template<typename T>
+  void operator()()
+  {
+    m_typenames.push_back(detail::int_type_name<T>());
+    m_datatypes.push_back((jl_value_t*)jlcxx::julia_type<T>());
+  }
+
+  std::vector<std::string>& m_typenames;
+  std::vector<jl_value_t*>& m_datatypes;
+};
+
+struct FixedIntTypeLister
+{
+  FixedIntTypeLister(std::vector<std::string>& typenames, std::vector<jl_value_t*>& datatypes) : m_typenames(typenames), m_datatypes(datatypes)
+  {
+  }
+
+  template<typename T>
+  void operator()()
+  {
+    m_typenames.push_back(detail::fixedint_type_name<T>());
+    m_datatypes.push_back((jl_value_t*)jlcxx::julia_type<T>());
+  }
+
+  std::vector<std::string>& m_typenames;
+  std::vector<jl_value_t*>& m_datatypes;
+};
+
 }
 
 extern "C"
@@ -172,5 +226,25 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     TypeFtor f;
     jlcxx::for_each_parameter_type<jlcxx::ParameterList<float, double>>(f);
     return f.m_count;
+  });
+
+  mod.method("strict_method", [](jlcxx::StrictlyTypedNumber<long>)
+  {
+    return std::string("long");
+  });
+  mod.method("strict_method", [](jlcxx::StrictlyTypedNumber<char>)
+  {
+    return std::string("char");
+  });
+
+  mod.method("julia_integer_mapping", []()
+  {
+    std::vector<std::string> typenames;
+    std::vector<jl_value_t*> datatypes;
+    typenames.push_back("char");
+    datatypes.push_back((jl_value_t*)jlcxx::julia_type<char>());
+    jlcxx::for_each_type<jlcxx::fundamental_int_types>(IntTypeLister(typenames,datatypes));
+    jlcxx::for_each_type<jlcxx::fixed_int_types>(FixedIntTypeLister(typenames,datatypes));
+    return std::make_tuple(typenames,datatypes);
   });
 }

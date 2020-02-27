@@ -1069,6 +1069,15 @@ template<typename NumberT> struct static_type_mapping<StrictlyTypedNumber<Number
   typedef StrictlyTypedNumber<NumberT> type;
 };
 
+template<typename NumberT> struct static_type_mapping<StrictlyTypedNumber<NumberT>&>
+{
+  static_assert(sizeof(NumberT)==0, "References to StrictlyTypedNumber are not allowed, use values instead");
+};
+template<typename NumberT> struct static_type_mapping<const StrictlyTypedNumber<NumberT>&>
+{
+  static_assert(sizeof(NumberT)==0, "References to StrictlyTypedNumber are not allowed, use values instead");
+};
+
 template<typename NumberT> struct julia_type_factory<StrictlyTypedNumber<NumberT>>
 {
   static jl_datatype_t* julia_type()

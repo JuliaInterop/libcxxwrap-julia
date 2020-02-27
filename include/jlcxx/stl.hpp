@@ -69,7 +69,8 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
   wchar_t,
   void*,
   std::string,
-  std::wstring
+  std::wstring,
+  jl_value_t*
 >, fundamental_int_types>, fixed_int_types>>;
 
 template<typename TypeWrapperT>
