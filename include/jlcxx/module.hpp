@@ -460,6 +460,7 @@ template<typename T1, typename T2> using combine_parameterlists = typename detai
 
 using fundamental_int_types = remove_duplicates<ParameterList
 <
+  signed char,
   short int,
   unsigned short int,
   int,
