@@ -62,17 +62,9 @@ JLCXX_API std::stack<std::size_t>& gc_free_stack()
 
 Module::Module(jl_module_t* jmod) :
   m_jl_mod(jmod),
-  m_pointer_array((jl_array_t*)jl_get_global(jmod, jl_symbol("__cxxwrap_pointers"))),
   m_constant_values(jl_any_type)
 {
   protect_from_gc(m_constant_values.wrapped());
-}
-
-cxxint_t Module::store_pointer(void *ptr)
-{
-  assert(ptr != nullptr);
-  m_pointer_array.push_back(ptr);
-  return m_pointer_array.size();
 }
 
 void Module::bind_constants(ArrayRef<jl_value_t*> symbols, ArrayRef<jl_value_t*> values)
@@ -106,6 +98,12 @@ jl_value_t* Module::get_constant(const std::string& name)
   return jl_array_ptr_ref(m_constant_values.wrapped(), it->second);
 }
 
+FunctionWrapperBase::FunctionWrapperBase(Module* mod, std::pair<jl_datatype_t*,jl_datatype_t*> return_type) :
+  m_name(nullptr), m_module(mod), m_return_type(return_type), m_override_module((jl_value_t*)mod->julia_module())
+{
+}
+
+
 Module &ModuleRegistry::create_module(jl_module_t* jmod)
 {
   if(jmod == nullptr)
@@ -122,16 +120,6 @@ Module& ModuleRegistry::current_module()
 {
   assert(m_current_module != nullptr);
   return *m_current_module;
-}
-
-void FunctionWrapperBase::set_pointer_indices()
-{
-  m_pointer_index = m_module->store_pointer(pointer());
-  void* thk = thunk();
-  if(thk != nullptr)
-  {
-    m_thunk_index = m_module->store_pointer(thunk());
-  }
 }
 
 JLCXX_API ModuleRegistry& registry()
@@ -226,19 +214,6 @@ JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params)
   return jl_apply_type(jl_is_unionall(tc) ? tc : ((jl_datatype_t*)tc)->name->wrapper, jl_svec_data(params), jl_svec_len(params));
 #endif
 }
-
-// jl_value_t* ConvertToJulia<std::wstring, false, false, false>::operator()(const std::wstring& str) const
-// {
-//   static const JuliaFunction wstring_to_julia("wstring_to_julia", "CxxWrap");
-//   return wstring_to_julia(str.c_str(), static_cast<cxxint_t>(str.size()));
-// }
-
-// std::wstring ConvertToCpp<std::wstring, false, false, false>::operator()(jl_value_t* jstr) const
-// {
-//   static const JuliaFunction wstring_to_cpp("wstring_to_cpp", "CxxWrap");
-//   ArrayRef<wchar_t> arr((jl_array_t*)wstring_to_cpp(jstr));
-//   return std::wstring(arr.data(), arr.size());
-// }
 
 static constexpr const char* dt_prefix = "__cxxwrap_dt_";
 
