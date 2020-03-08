@@ -90,8 +90,8 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
 
     fill_types_vec(arg_types_array, f.argument_types());
 
-    boxed_f = jlcxx::box<cxxint_t>(f.pointer_index());
-    boxed_thunk = jlcxx::box<cxxint_t>(f.thunk_index());
+    boxed_f = jlcxx::box<void*>(f.pointer());
+    boxed_thunk = jlcxx::box<void*>(f.thunk());
 
     auto returntypes = f.return_type();
 

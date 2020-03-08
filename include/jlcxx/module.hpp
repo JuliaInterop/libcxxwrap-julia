@@ -145,9 +145,7 @@ class JLCXX_API Module;
 class JLCXX_API FunctionWrapperBase
 {
 public:
-  FunctionWrapperBase(Module* mod, std::pair<jl_datatype_t*,jl_datatype_t*> return_type) : m_name(nullptr), m_module(mod), m_return_type(return_type)
-  {
-  }
+  FunctionWrapperBase(Module* mod, std::pair<jl_datatype_t*,jl_datatype_t*> return_type);
 
   /// Types of the arguments (used in the wrapper signature)
   virtual std::vector<jl_datatype_t*> argument_types() const = 0;
@@ -170,30 +168,22 @@ public:
     return m_name;
   }
 
-  inline cxxint_t pointer_index() { return m_pointer_index; }
-  inline cxxint_t thunk_index() { return m_thunk_index; }
-
   inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
   inline jl_value_t* override_module() const { return m_override_module; }
 
-protected:
   /// Function pointer as void*, since that's what Julia expects
-  virtual void* pointer() = 0;
+  virtual void *pointer() = 0;
 
   /// The thunk (i.e. std::function) to pass as first argument to the function pointed to by function_pointer
-  virtual void* thunk() = 0;
+  virtual void *thunk() = 0;
 
-  void set_pointer_indices();
 private:
   jl_value_t* m_name = nullptr;
   Module* m_module;
   std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
-  cxxint_t m_pointer_index = 0;
-  cxxint_t m_thunk_index = 0;
-
   // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
-  jl_value_t* m_override_module = jl_nothing;
+  jl_value_t* m_override_module = nullptr;
 };
 
 /// Implementation of function storage, case of std::function
@@ -206,7 +196,6 @@ public:
   FunctionWrapper(Module* mod, const functor_t &function) : FunctionWrapperBase(mod, julia_return_type<R>()), m_function(function)
   {
     (create_if_not_exists<Args>(), ...);
-    set_pointer_indices();
   }
 
   virtual std::vector<jl_datatype_t*> argument_types() const
@@ -239,7 +228,6 @@ public:
   FunctionPtrWrapper(Module* mod, R (*f)(Args...)) : FunctionWrapperBase(mod, julia_return_type<R>()), m_function(f)
   {
     (create_if_not_exists<Args>(), ...);
-    set_pointer_indices();
   }
 
   virtual std::vector<jl_datatype_t*> argument_types() const
@@ -643,8 +631,6 @@ public:
     return m_jl_mod;
   }
 
-  cxxint_t store_pointer(void* ptr);
-
   inline void set_override_module(jl_module_t* mod) { m_override_module = mod; }
   inline void unset_override_module() { m_override_module = nullptr; }
 
@@ -681,7 +667,6 @@ private:
 
   jl_module_t* m_jl_mod;
   jl_module_t* m_override_module = nullptr;
-  ArrayRef<void*> m_pointer_array;
   std::vector<std::shared_ptr<FunctionWrapperBase>> m_functions;
   std::map<std::string, size_t> m_jl_constants;
   std::vector<std::string> m_constant_names;
@@ -1051,13 +1036,20 @@ private:
     jl_datatype_t* app_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_dt, parameter_list<AppliedT>()(nb_julia_parameters));
     jl_datatype_t* app_box_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_box_dt, parameter_list<AppliedT>()(nb_julia_parameters));
 
-    set_julia_type<AppliedT>(app_box_dt);
+    if(has_julia_type<AppliedT>())
+    {
+      std::cout << "existing type found : " << app_box_dt << " <-> " << julia_type<AppliedT>() << std::endl;
+      assert(julia_type<AppliedT>() == app_box_dt);
+    }
+    else
+    {
+      set_julia_type<AppliedT>(app_box_dt);
+      m_module.register_type(app_box_dt);
+    }
     m_module.add_default_constructor<AppliedT>(app_dt);
     m_module.add_copy_constructor<AppliedT>(app_dt);
 
     apply_ftor(TypeWrapper<AppliedT>(m_module, app_dt, app_box_dt));
-
-    m_module.register_type(app_box_dt);
 
     add_default_methods<AppliedT>(m_module);
 

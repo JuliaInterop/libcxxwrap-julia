@@ -318,3 +318,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.method("Int", [](IntDerived& a) { return a.val; });
   types.unset_override_module();
 }
+
+JLCXX_MODULE define_types2_module(jlcxx::Module& types2)
+{
+  types2.method("vecvec", [] (const std::vector<std::vector<int>>& v) { return v[0][0]; });
+  types2.method("vecvec", [] (const std::vector<std::vector<cpp_types::World>>& v) { return v[0][0]; });
+}
+
+JLCXX_MODULE define_types3_module(jlcxx::Module& types3)
+{
+  types3.method("vecvec", [] (const std::vector<std::vector<int>>& v) { return 2*v[0][0]; });
+  types3.method("vecvec", [] (const std::vector<std::vector<cpp_types::World>>& v) { return v[0][0]; });
+}

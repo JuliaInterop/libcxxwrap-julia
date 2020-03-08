@@ -219,11 +219,11 @@ struct julia_type_factory<T, CxxWrappedTrait<SmartPointerTrait>>
     assert(registry().has_current_module());
     jl_datatype_t* jltype = ::jlcxx::julia_type<PointeeT>();
     Module& curmod = registry().current_module();
-    if(jltype->name->module != curmod.julia_module())
-    {
-      const std::string tname = julia_type_name(jltype);
-      throw std::runtime_error("Smart pointer type with parameter " + tname + " must be defined in the same module as " + tname);
-    }
+    // if(jltype->name->module != curmod.julia_module())
+    // {
+    //   const std::string tname = julia_type_name(jltype);
+    //   throw std::runtime_error("Smart pointer type with parameter " + tname + " must be defined in the same module as " + tname);
+    // }
     detail::apply_smart_ptr_type<MappedT>()(curmod);
     smartptr::detail::SmartPtrMethods<MappedT, typename ConstructorPointerType<MappedT>::type>::apply(curmod);
     assert(has_julia_type<MappedT>());

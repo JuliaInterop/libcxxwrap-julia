@@ -180,16 +180,46 @@ struct julia_type_factory<std::vector<T>>
     assert(registry().has_current_module());
     jl_datatype_t* jltype = ::jlcxx::julia_type<T>();
     Module& curmod = registry().current_module();
-    if(jltype->name->module != curmod.julia_module())
-    {
-      const std::string tname = julia_type_name(jltype);
-      throw std::runtime_error("Type for std::vector<" + tname + "> must be defined in the same module as " + tname);
-    }
+    // if(jltype->name->module != curmod.julia_module())
+    // {
+    //   const std::string tname = julia_type_name(jltype);
+    //   throw std::runtime_error("Type for std::vector<" + tname + "> must be defined in the same module as " + tname);
+    // }
     stl::apply_stl<T>(curmod);
     assert(has_julia_type<MappedT>());
     return JuliaTypeCache<MappedT>::julia_type();
   }
 };
+
+// template<typename T>
+// struct CreateIfNotExists<std::vector<T>>
+// {
+//   void operator()()
+//   {
+//     using MappedT = std::vector<T>;
+//     create_if_not_exists<T>();
+
+//     assert(registry().has_current_module());
+//     Module& curmod = registry().current_module();
+//     if(!has_julia_type<MappedT>())
+//     {
+//       std::cout << "first-time creating type " << typeid(MappedT).name() << std::endl;
+//       stl::apply_stl<T>(curmod);
+//       jl_datatype_t* dt = JuliaTypeCache<MappedT>::julia_type();
+//       curmod.add_specific_type(dt);
+//       return;
+//     }
+
+//     jl_datatype_t* dt = JuliaTypeCache<MappedT>::julia_type();    
+//     if(!curmod.has_specific_type(dt))
+//     {
+//       curmod.add_specific_type(dt);
+//       //stl::apply_stl<T>(curmod);
+//     }
+//   }
+// };
+
+
 
 
 }
