@@ -236,6 +236,19 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
   {
     return std::string("char");
   });
+  mod.method("strict_method", [](jlcxx::StrictlyTypedNumber<bool>)
+  {
+    return std::string("bool");
+  });
+
+  mod.method("loose_method", [](bool)
+  {
+    return std::string("bool");
+  });
+  mod.method("loose_method", [](int)
+  {
+    return std::string("int");
+  });
 
   mod.method("julia_integer_mapping", []()
   {
