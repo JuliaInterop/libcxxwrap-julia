@@ -14,14 +14,39 @@ The main CMake option of interest is `Julia_PREFIX`, which should point to the J
 git clone https://github.com/JuliaInterop/libcxxwrap-julia.git
 mkdir libcxxwrap-julia-build
 cd libcxxwrap-julia-build
-cmake -DJulia_PREFIX=/home/user/julia-1.3.0-rc3 ../libcxxwrap-julia
+cmake -DJulia_PREFIX=/home/user/julia-1.4.0 ../libcxxwrap-julia
 cmake --build . --config Release
 ```
 
-Next, you can build your own code against this by setting the `JlCxx_DIR` CMake variable to the build directory (`libcxxwrap-julia-build`) used above. To use the compiled version in CxxWrap, also set the environment variable `JLCXX_DIR` to that build directory and rerun `Pkg.build` for CxxWrap.
+Instead of specifying the prefix, it is also possible to directly set the Julia executable, using:
+
+```bash
+cmake -DJulia_EXECUTABLE=/home/user/julia-1.4.0/bin/julia ../libcxxwrap-julia
+```
+
+Next, you can build your own code against this by setting the `JlCxx_DIR` CMake variable to the build directory (`libcxxwrap-julia-build`) used above, or add it to the `CMAKE_PREFIX_PATH` CMake variable.
+
+### Using the compiled libcxxwrap-julia in CxxWrap
+
+Since CxxWrap v0.10, binaries are managed through the `libcxxwrap_julia_jll` JLL package. To use your own binaries, you need to set up an overrides file, by default at `~/.julia/artifacts/Overrides.toml`or `%HOMEDRIVE%\%HOMEPATH%\.julia\artifacts\Overrides.toml`, with the following contents:
+
+```toml
+[3eaa8342-bff7-56a5-9981-c04077f7cee7]
+libcxxwrap_julia = "/path/to/libcxxwrap-julia-build"
+```
+
+The file can be generated automatically using the `OVERRIDES_PATH`, `OVERRIDE_ROOT` and `APPEND_OVERRIDES_TOML` Cmake options, with the caveat that each CMake run will append again to the file and make it invalid, i.e. this is mostly intended for use on CI (see the appveyor and travis files for examples).
 
 ### Building on Windows
 
 On Windows, building is easiest with [Visual Studio 2019](https://visualstudio.microsoft.com/vs/), for which the Community Edition with C++ support is a free download. You can clone the `https://github.com/JuliaInterop/libcxxwrap-julia.git` repository using the [built-in git support](https://docs.microsoft.com/en-us/visualstudio/get-started/tutorial-open-project-from-repo?view=vs-2019), and configure the `Julia_PREFIX` option from the built-in CMake support. See the [Visual Studio docs](https://docs.microsoft.com/en-us/cpp/build/customize-cmake-settings?view=vs-2019) for more info.
 
 See the [CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl) README for more info on the API.
+
+## Binaries for the master version
+
+Binaries for the master version are usually available at https://github.com/barche/libcxxwrap_julia_jll.jl, you can install them (in Pkg mode, hit `]`) using:
+
+```
+add https://github.com/barche/libcxxwrap_julia_jll.jl.git
+```

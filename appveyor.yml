@@ -37,7 +37,6 @@ build_script:
   - IF %PLATFORM% EQU x86 set "CMAKE_ARCH=Win32"
   - cmake -G "%CMAKE_GEN%" -A %CMAKE_ARCH% -DJulia_EXECUTABLE=C:\julia\bin\julia -DOVERRIDES_PATH=%HOMEDRIVE%\%HOMEPATH%\.julia\artifacts\Overrides.toml -DOVERRIDE_ROOT=..\install\usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
   - cmake --build . --config Release --target install
-  - set "JLCXX_DIR=%cd%\..\install\usr"
   - C:\julia\bin\julia -e "using Pkg; pkg\"add https://github.com/barche/libcxxwrap_julia_jll.jl.git\"; pkg\"add CxxWrap#master\"; using CxxWrap"
 
 test_script:
