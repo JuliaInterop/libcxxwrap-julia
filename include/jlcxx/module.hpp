@@ -939,7 +939,11 @@ public:
   template<typename... ArgsT>
   TypeWrapper<T>& constructor(bool finalize=true)
   {
-    m_module.constructor<T, ArgsT...>(m_dt, finalize);
+    // Only add the default constructor if it wasn't added automatically
+    if constexpr (!(DefaultConstructible<T>::value && sizeof...(ArgsT) == 0))
+    {
+      m_module.constructor<T, ArgsT...>(m_dt, finalize);
+    }
     return *this;
   }
 
