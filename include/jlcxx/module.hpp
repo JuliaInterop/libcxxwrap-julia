@@ -449,21 +449,45 @@ template<typename T1, typename T2> using combine_parameterlists = typename detai
 using fundamental_int_types = remove_duplicates<ParameterList
 <
   signed char,
+  unsigned char,
   short int,
   unsigned short int,
   int,
   unsigned int,
+  long,
+  unsigned long,
   long long int,
   unsigned long long int
 >>;
 
-using fixed_int_types = remove_duplicates<ParameterList
+using fixed_int_types = ParameterList
 <
   int8_t,uint8_t,
   int16_t,uint16_t,
   int32_t,uint32_t,
   int64_t,uint64_t
->>;
+>;
+
+template<typename T> inline std::string fundamental_int_type_name() { return "undefined"; }
+template<> inline std::string fundamental_int_type_name<signed char>() { return "signed char"; }
+template<> inline std::string fundamental_int_type_name<unsigned char>() { return "unsigned char"; }
+template<> inline std::string fundamental_int_type_name<short>() { return "short"; }
+template<> inline std::string fundamental_int_type_name<unsigned short>() { return "unsigned short"; }
+template<> inline std::string fundamental_int_type_name<int>() { return "int"; }
+template<> inline std::string fundamental_int_type_name<long>() { return "long"; }
+template<> inline std::string fundamental_int_type_name<unsigned long>() { return "unsigned long"; }
+template<> inline std::string fundamental_int_type_name<unsigned int>() { return "unsigned int"; }
+template<> inline std::string fundamental_int_type_name<long long>() { return "long long"; }
+template<> inline std::string fundamental_int_type_name<unsigned long long>() { return "unsigned long long"; }
+template<typename T> inline std::string fixed_int_type_name() { return "undefined"; }
+template<> inline std::string fixed_int_type_name<int8_t>() { return "int8_t"; }
+template<> inline std::string fixed_int_type_name<uint8_t>() { return "uint8_t"; }
+template<> inline std::string fixed_int_type_name<int16_t>() { return "int16_t"; }
+template<> inline std::string fixed_int_type_name<uint16_t>() { return "uint16_t"; }
+template<> inline std::string fixed_int_type_name<int32_t>() { return "int32_t"; }
+template<> inline std::string fixed_int_type_name<uint32_t>() { return "uint32_t"; }
+template<> inline std::string fixed_int_type_name<int64_t>() { return "int64_t"; }
+template<> inline std::string fixed_int_type_name<uint64_t>() { return "uint64_t"; }
 
 /// Trait to allow user-controlled disabling of the default constructor
 template <typename T>
