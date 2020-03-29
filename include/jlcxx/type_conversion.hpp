@@ -32,7 +32,7 @@ namespace detail
   template<>
   struct IndexT<8>
   {
-    using type = long long int; // make sure index_t maps to Int64 and not CxxInt64
+    using type = int64_t; // make sure index_t maps to Int64 and not CxxInt64
   };
 }
 

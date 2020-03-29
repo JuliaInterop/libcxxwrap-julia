@@ -5,9 +5,9 @@
 int main()
 {
   jlcxx::cxxwrap_init();
-  if (jlcxx::julia_type_name(jlcxx::julia_type<unsigned long>()) != "CxxULong")
+  if (jlcxx::julia_type_name(jlcxx::julia_type<char>()) != "CxxChar")
   {
-    throw std::runtime_error("unsigned long type test failed");
+    throw std::runtime_error("char type test failed");
   }
   if(jlcxx::julia_type_name(jlcxx::julia_type<bool>()) != "CxxBool")
   {

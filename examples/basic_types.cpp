@@ -93,26 +93,6 @@ struct TypeFtor
   int m_count = 0;
 };
 
-namespace detail
-{
-  template<typename T> std::string int_type_name() { return "undefined"; }
-  template<> std::string int_type_name<short int>() { return "short int"; }
-  template<> std::string int_type_name<unsigned short int>() { return "unsigned short int"; }
-  template<> std::string int_type_name<int>() { return "int"; }
-  template<> std::string int_type_name<unsigned int>() { return "unsigned int"; }
-  template<> std::string int_type_name<long long int>() { return "long long int"; }
-  template<> std::string int_type_name<unsigned long long int>() { return "unsigned long long int"; }
-  template<typename T> std::string fixedint_type_name() { return "undefined"; }
-  template<> std::string fixedint_type_name<int8_t>() { return "int8_t"; }
-  template<> std::string fixedint_type_name<uint8_t>() { return "uint8_t"; }
-  template<> std::string fixedint_type_name<int16_t>() { return "int16_t"; }
-  template<> std::string fixedint_type_name<uint16_t>() { return "uint16_t"; }
-  template<> std::string fixedint_type_name<int32_t>() { return "int32_t"; }
-  template<> std::string fixedint_type_name<uint32_t>() { return "uint32_t"; }
-  template<> std::string fixedint_type_name<int64_t>() { return "int64_t"; }
-  template<> std::string fixedint_type_name<uint64_t>() { return "uint64_t"; }
-}
-
 struct IntTypeLister
 {
   IntTypeLister(std::vector<std::string>& typenames, std::vector<jl_value_t*>& datatypes) : m_typenames(typenames), m_datatypes(datatypes)
@@ -122,7 +102,7 @@ struct IntTypeLister
   template<typename T>
   void operator()()
   {
-    m_typenames.push_back(detail::int_type_name<T>());
+    m_typenames.push_back(jlcxx::fundamental_int_type_name<T>());
     m_datatypes.push_back((jl_value_t*)jlcxx::julia_type<T>());
   }
 
@@ -139,7 +119,7 @@ struct FixedIntTypeLister
   template<typename T>
   void operator()()
   {
-    m_typenames.push_back(detail::fixedint_type_name<T>());
+    m_typenames.push_back(jlcxx::fixed_int_type_name<T>());
     m_datatypes.push_back((jl_value_t*)jlcxx::julia_type<T>());
   }
 

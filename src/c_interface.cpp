@@ -4,6 +4,52 @@
 
 #include "julia_gcext.h"
 
+namespace jlcxx
+{
+
+template<typename SourceT>
+struct BuildEquivalenceInner
+{
+  template<typename T>
+  void operator()()
+  {
+    if(std::is_same<SourceT,T>::value)
+    {
+      m_fundamental_types_matched.push_back(jl_cstr_to_string(fundamental_int_type_name<SourceT>().c_str()));
+      m_equivalent_types.push_back(jl_cstr_to_string(fixed_int_type_name<T>().c_str()));
+    }
+  }
+
+  ArrayRef<jl_value_t*> m_fundamental_types_matched;
+  ArrayRef<jl_value_t*> m_equivalent_types;
+};
+
+struct BuildEquivalence
+{
+  template<typename T>
+  void operator()()
+  {
+    for_each_type<fixed_int_types>(BuildEquivalenceInner<T>{m_fundamental_types_matched, m_equivalent_types});
+  }
+
+  ArrayRef<jl_value_t*> m_fundamental_types_matched;
+  ArrayRef<jl_value_t*> m_equivalent_types;
+};
+
+struct GetFundamentalTypes
+{
+  template<typename T>
+  void operator()()
+  {
+    m_types.push_back(jl_cstr_to_string(fundamental_int_type_name<T>().c_str()));
+    m_type_sizes.push_back(jl_box_int32(static_cast<int>(sizeof(T))));
+  }
+  ArrayRef<jl_value_t*> m_types;
+  ArrayRef<jl_value_t*> m_type_sizes;
+};
+
+}
+
 extern "C"
 {
 
@@ -149,6 +195,12 @@ JLCXX_API void gcprotect(jl_value_t* v)
 JLCXX_API void gcunprotect(jl_value_t* v)
 {
   unprotect_from_gc(v);
+}
+
+JLCXX_API void get_integer_types(jl_value_t* all_fundamental_types, jl_value_t* type_sizes, jl_value_t* fundamental_types_matched, jl_value_t* equivalent_types)
+{
+  for_each_type<fundamental_int_types>(GetFundamentalTypes{ArrayRef<jl_value_t*>((jl_array_t*)all_fundamental_types), ArrayRef<jl_value_t*>((jl_array_t*)type_sizes)});
+  for_each_type<fundamental_int_types>(BuildEquivalence{ArrayRef<jl_value_t*>((jl_array_t*)fundamental_types_matched), ArrayRef<jl_value_t*>((jl_array_t*)equivalent_types)});
 }
 
 }
