@@ -8,20 +8,22 @@ for use in other C++ projects. To build a Julia interface to a C++ library, you 
 
 ## Building libcxxwrap-julia
 
-The main CMake option of interest is `Julia_PREFIX`, which should point to the Julia installation prefix you want to use, i.e. the directory containing the `bin` and `lib` directories and so on. On Linux or Mac, the sequence of commands to follow is:
+The main CMake option of interest is `Julia_PREFIX`, which should point to the Julia installation you want to use. The `PREFIX` is a directory, one containing the `bin` and `lib` directories and so on. If you are using a binary download of Julia (https://julialang.org/downloads/), this is the top-level directory; if you build Julia from source (https://github.com/JuliaLang/julia), it would be the `usr` directory of the repository. Below we will call this directory `/home/user/path/to/julia`, but you should substitute your actual path in the commands below.
+
+On Linux or Mac, the sequence of commands to follow is:
 
 ```bash
 git clone https://github.com/JuliaInterop/libcxxwrap-julia.git
 mkdir libcxxwrap-julia-build
 cd libcxxwrap-julia-build
-cmake -DJulia_PREFIX=/home/user/julia-1.4.0 ../libcxxwrap-julia
+cmake -DJulia_PREFIX=home/user/path/to/julia ../libcxxwrap-julia
 cmake --build . --config Release
 ```
 
 Instead of specifying the prefix, it is also possible to directly set the Julia executable, using:
 
 ```bash
-cmake -DJulia_EXECUTABLE=/home/user/julia-1.4.0/bin/julia ../libcxxwrap-julia
+cmake -DJulia_EXECUTABLE=/home/user/path/to/julia/bin/julia ../libcxxwrap-julia
 ```
 
 Next, you can build your own code against this by setting the `JlCxx_DIR` CMake variable to the build directory (`libcxxwrap-julia-build`) used above, or add it to the `CMAKE_PREFIX_PATH` CMake variable.
