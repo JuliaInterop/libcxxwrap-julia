@@ -328,6 +328,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   });
   mod.method("unmark_boxed", [&] () { jlcxx::unprotect_from_gc(marked_value); });
 
+  mod.method("open", [] (const std::string& s) { return s; });
 }
 
 }
