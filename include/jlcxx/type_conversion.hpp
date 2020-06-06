@@ -172,7 +172,9 @@ inline CppT* extract_pointer_nonull(const WrappedCppPtr& p)
 {
   if(p.voidptr == nullptr)
   {
-    throw std::runtime_error("C++ object was deleted");
+    std::stringstream errorstr;
+    errorstr << "C++ object of type " << typeid(CppT).name() << " was deleted";
+    throw std::runtime_error(errorstr.str());
   }
   return extract_pointer<CppT>(p);
 }
@@ -667,7 +669,6 @@ BoxedValue<T> julia_owned(T* cpp_ptr)
 /// Base class to specialize for conversion to Julia
 // C++ wrapped types are in fact always returned as a pointer wrapped in a struct, so to avoid memory management issues with the wrapper itself
 // we always return the wrapping struct by value
-//template<typename T, typename TraitT=mapping_trait<typename std::remove_pointer<typename std::remove_reference<T>::type>::type>>
 template<typename T, typename TraitT=mapping_trait<T>>
 struct ConvertToJulia
 {
