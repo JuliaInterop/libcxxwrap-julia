@@ -8,6 +8,9 @@ for use in other C++ projects. To build a Julia interface to a C++ library, you 
 
 ## Building libcxxwrap-julia
 
+Building libcxxwrap-julia requires a C++ compiler which supports C++17
+(e.g. GCC 7, clang 5; for macOS users that means Xcode 9.3).
+
 The main CMake option of interest is `Julia_PREFIX`, which should point to the Julia installation you want to use. The `PREFIX` is a directory, one containing the `bin` and `lib` directories and so on. If you are using a binary download of Julia (https://julialang.org/downloads/), this is the top-level directory; if you build Julia from source (https://github.com/JuliaLang/julia), it would be the `usr` directory of the repository. Below we will call this directory `/home/user/path/to/julia`, but you should substitute your actual path in the commands below.
 
 On Linux or Mac, the sequence of commands to follow is:
