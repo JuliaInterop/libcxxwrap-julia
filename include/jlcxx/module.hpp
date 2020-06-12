@@ -669,7 +669,7 @@ private:
     if constexpr (CopyConstructible<T>::value)
     {
       set_override_module(jl_base_module);
-      method("deepcopy_internal", [this](const T& other, ObjectIdDict)
+      method("copy", [this](const T& other)
       {
         return create<T>(other);
       });

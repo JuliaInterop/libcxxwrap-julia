@@ -374,7 +374,6 @@ JLCXX_API void register_core_types()
     
     jlcxx::detail::AddIntegerTypes<fixed_int_types>()("Int", "");
 
-    set_julia_type<ObjectIdDict>((jl_datatype_t*)julia_type("IdDict", jl_base_module),false);
     set_julia_type<jl_datatype_t*>(jl_any_type,false);
     set_julia_type<jl_value_t*>(jl_any_type,false);
     registered = true;

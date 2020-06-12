@@ -999,24 +999,6 @@ struct julia_type_factory<BoxedValue<T>>
   static jl_datatype_t* julia_type() { return jl_any_type; }
 };
 
-// Helper for ObjectIdDict
-struct ObjectIdDict {};
-
-template<> struct static_type_mapping<ObjectIdDict>
-{
-  typedef jl_value_t* type;
-};
-
-// Used for deepcopy_internal overloading
-template<>
-struct ConvertToCpp<ObjectIdDict>
-{
-  ObjectIdDict operator()(jl_value_t*) const
-  {
-    return ObjectIdDict();
-  }
-};
-
 /// Helper for Singleton types (Type{T} in Julia)
 template<typename T>
 struct SingletonType
