@@ -54,10 +54,24 @@ public:
     return *this;
   }
 
+  array_iterator_base<PointedT, CppT> operator++(int)
+  {
+    auto result(*this);
+    ++(*this);
+    return result;
+  }
+
   array_iterator_base<PointedT, CppT>& operator--()
   {
     --m_ptr;
     return *this;
+  }
+
+  array_iterator_base<PointedT, CppT> operator--(int)
+  {
+    auto result(*this);
+    --(*this);
+    return result;
   }
 
   array_iterator_base<PointedT, CppT>& operator+=(std::ptrdiff_t n)
