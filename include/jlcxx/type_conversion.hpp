@@ -172,7 +172,7 @@ inline CppT* extract_pointer_nonull(const WrappedCppPtr& p)
 {
   if(p.voidptr == nullptr)
   {
-    std::stringstream errorstr;
+    std::stringstream errorstr("");
     errorstr << "C++ object of type " << typeid(CppT).name() << " was deleted";
     throw std::runtime_error(errorstr.str());
   }
