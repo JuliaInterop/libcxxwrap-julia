@@ -1,0 +1,9 @@
+{
+    "extensions": [
+      "julialang.language-julia",
+      "ms-vscode.cpptools",
+      "twxs.cmake"
+    ],
+  
+    "dockerFile": "Dockerfile"
+}
