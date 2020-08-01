@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_CONST_ARRAY_HPP
+#ifndef JLCXX_CONST_ARRAY_HPP
 #define JLCXX_CONST_ARRAY_HPP
 
 #include "jlcxx.hpp"

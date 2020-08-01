@@ -1,4 +1,4 @@
-﻿#include "jlcxx/array.hpp"
+#include "jlcxx/array.hpp"
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/jlcxx_config.hpp"
 

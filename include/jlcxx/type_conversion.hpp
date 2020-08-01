@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_TYPE_CONVERSION_HPP
+#ifndef JLCXX_TYPE_CONVERSION_HPP
 #define JLCXX_TYPE_CONVERSION_HPP
 
 #include <julia.h>

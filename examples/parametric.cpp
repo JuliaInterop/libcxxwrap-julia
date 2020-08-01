@@ -1,4 +1,4 @@
-﻿#include <type_traits>
+#include <type_traits>
 
 #include "jlcxx/jlcxx.hpp"
 

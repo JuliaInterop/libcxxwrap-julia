@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_ARRAY_HPP
+#ifndef JLCXX_ARRAY_HPP
 #define JLCXX_ARRAY_HPP
 
 #include "type_conversion.hpp"

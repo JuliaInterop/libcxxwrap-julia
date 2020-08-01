@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_HPP
+#ifndef JLCXX_HPP
 #define JLCXX_HPP
 
 #include <cassert>

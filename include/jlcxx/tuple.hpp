@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_TUPLE_HPP
+#ifndef JLCXX_TUPLE_HPP
 #define JLCXX_TUPLE_HPP
 
 #include <tuple>
