@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_SMART_POINTER_HPP
+#ifndef JLCXX_SMART_POINTER_HPP
 #define JLCXX_SMART_POINTER_HPP
 
 #include "module.hpp"

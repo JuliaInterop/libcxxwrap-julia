@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_FUNCTIONS_HPP
+#ifndef JLCXX_FUNCTIONS_HPP
 #define JLCXX_FUNCTIONS_HPP
 
 #include <sstream>

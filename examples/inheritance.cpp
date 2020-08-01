@@ -1,4 +1,4 @@
-﻿#include <string>
+#include <string>
 #include <memory>
 
 #include "jlcxx/jlcxx.hpp"

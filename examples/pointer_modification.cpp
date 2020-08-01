@@ -1,4 +1,4 @@
-﻿#include "jlcxx/jlcxx.hpp"
+#include "jlcxx/jlcxx.hpp"
 
 namespace ptrmodif
 {

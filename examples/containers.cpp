@@ -1,4 +1,4 @@
-﻿#include <tuple>
+#include <tuple>
 
 #include "jlcxx/array.hpp"
 #include "jlcxx/jlcxx.hpp"

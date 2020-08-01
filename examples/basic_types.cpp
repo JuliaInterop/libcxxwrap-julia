@@ -1,4 +1,4 @@
-﻿#include <algorithm>
+#include <algorithm>
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"

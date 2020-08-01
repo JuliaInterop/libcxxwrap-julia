@@ -1,4 +1,4 @@
-﻿#ifndef JLCXX_STL_HPP
+#ifndef JLCXX_STL_HPP
 #define JLCXX_STL_HPP
 
 #include <valarray>
