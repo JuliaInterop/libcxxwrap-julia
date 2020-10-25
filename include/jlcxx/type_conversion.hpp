@@ -1,4 +1,4 @@
-#ifndef JLCXX_TYPE_CONVERSION_HPP
+﻿#ifndef JLCXX_TYPE_CONVERSION_HPP
 #define JLCXX_TYPE_CONVERSION_HPP
 
 #include <julia.h>
@@ -655,7 +655,7 @@ BoxedValue<T> boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalize
   
   JL_GC_POP();
   return {result};
-};
+}
 
 /// Transfer ownership of a regular pointer to Julia
 template<typename T>
