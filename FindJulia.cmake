@@ -74,6 +74,7 @@ elseif(Julia_EXECUTABLE)
 elseif(Julia_PREFIX)
     set(Julia_INCLUDE_DIRS ${Julia_PREFIX}/include/julia)
 endif()
+set(Julia_INCLUDE_DIRS ${Julia_INCLUDE_DIRS};$ENV{includedir})
 MESSAGE(STATUS "Julia_INCLUDE_DIRS:   ${Julia_INCLUDE_DIRS}")
 
 ###################
@@ -163,6 +164,10 @@ if(Julia_EXECUTABLE)
     )
     string(REGEX REPLACE "\n" "" Julia_WORD_SIZE "${Julia_WORD_SIZE}")
     MESSAGE(STATUS "Julia_WORD_SIZE:      ${Julia_WORD_SIZE}")
+endif()
+
+if($ENV{target} MATCHES "^i686.*")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2")
 endif()
 
 ###########################
