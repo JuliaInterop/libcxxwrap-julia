@@ -2,9 +2,7 @@
 #define JLCXX_TYPE_CONVERSION_HPP
 
 #include <julia.h>
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR > 4 || JULIA_VERSION_MAJOR > 0
 #include <julia_threads.h>
-#endif
 
 #include <complex>
 #include <map>
@@ -77,11 +75,7 @@ inline void unprotect_from_gc(T* x)
 /// Get the symbol name correctly depending on Julia version
 inline std::string symbol_name(jl_sym_t* symbol)
 {
-#if JULIA_VERSION_MAJOR == 0 && JULIA_VERSION_MINOR < 5
-  return std::string(symbol->name);
-#else
   return std::string(jl_symbol_name(symbol));
-#endif
 }
 
 inline std::string module_name(jl_module_t* mod)
