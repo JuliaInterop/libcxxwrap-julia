@@ -85,10 +85,10 @@ struct ConvertToJulia<ConstArray<T,N>, ConstArrayTrait>
 {
   jl_value_t* operator()(const ConstArray<T,N>& arr)
   {
-    jl_value_t* result = nullptr;
+    jl_value_t* result;
     jl_value_t* ptr = nullptr;
     jl_value_t* size = nullptr;
-    JL_GC_PUSH3(&result, &ptr, &size);
+    JL_GC_PUSH2(&ptr, &size);
     ptr = box<const T*>(arr.ptr());
     size = convert_to_julia(arr.size());
     result = jl_new_struct(julia_type<ConstArray<T,N>>(), ptr, size);
@@ -109,8 +109,14 @@ struct julia_type_factory<ConstArray<T,N>, ConstArrayTrait>
   static jl_datatype_t* julia_type()
   {
     create_if_not_exists<T>();
-    jl_datatype_t* pdt = (jl_datatype_t*)::jlcxx::julia_type("ConstArray");
-    return  (jl_datatype_t*)apply_type((jl_value_t*)pdt, jl_svec2(::jlcxx::julia_type<T>(), box<index_t>(N)));
+    jl_value_t* pdt = ::jlcxx::julia_type("ConstArray");
+    jl_value_t* val = box<index_t>(N);
+    jl_value_t* result;
+    JL_GC_PUSH1(&val);
+    jl_value_t* t[2] = { (jl_value_t*)::jlcxx::julia_type<T>(), val };
+    result = apply_type(pdt, t, 2);
+    JL_GC_POP();
+    return (jl_datatype_t*)result;
   }
 };
 

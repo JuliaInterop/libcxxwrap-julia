@@ -86,6 +86,11 @@ inline std::string module_name(jl_module_t* mod)
 /// Backwards-compatible apply_type
 JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_svec_t* params);
 
+//
+JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_value_t **params, size_t n);
+JLCXX_API jl_datatype_t* apply_type1(jl_value_t* tc, jl_datatype_t *type);
+
+
 /// Get the type from a global symbol
 JLCXX_API jl_value_t* julia_type(const std::string& name, const std::string& module_name = "");
 JLCXX_API jl_value_t* julia_type(const std::string& name, jl_module_t* mod);
@@ -501,7 +506,7 @@ struct julia_type_factory<const SourceT&>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstCxxRef"), jl_svec1(julia_base_type<SourceT>()));
+    return apply_type1(jlcxx::julia_type("ConstCxxRef"), julia_base_type<SourceT>());
   }
 };
 
@@ -511,7 +516,7 @@ struct julia_type_factory<SourceT&>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("CxxRef"), jl_svec1(julia_base_type<SourceT>()));
+    return apply_type1(jlcxx::julia_type("CxxRef"), julia_base_type<SourceT>());
   }
 };
 
@@ -521,7 +526,7 @@ struct julia_type_factory<const SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("ConstCxxPtr"), jl_svec1(julia_base_type<SourceT>()));
+    return apply_type1(jlcxx::julia_type("ConstCxxPtr"), julia_base_type<SourceT>());
   }
 };
 
@@ -531,7 +536,7 @@ struct julia_type_factory<SourceT*>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jlcxx::julia_type("CxxPtr"), jl_svec1(julia_base_type<SourceT>()));
+    return apply_type1(jlcxx::julia_type("CxxPtr"), julia_base_type<SourceT>());
   }
 };
 
@@ -1010,7 +1015,7 @@ struct julia_type_factory<SingletonType<T>>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)jl_type_type, jl_svec1(::jlcxx::julia_base_type<T>()));
+    return apply_type1((jl_value_t *)jl_type_type, ::jlcxx::julia_base_type<T>());
   }
 };
 
@@ -1058,7 +1063,7 @@ template<typename NumberT> struct julia_type_factory<StrictlyTypedNumber<NumberT
 {
   static jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type((jl_value_t*)::jlcxx::julia_type("StrictlyTypedNumber"), jl_svec1(::jlcxx::julia_type<NumberT>()));
+    return apply_type1(::jlcxx::julia_type("StrictlyTypedNumber"), ::jlcxx::julia_type<NumberT>());
   }
 };
 
@@ -1068,7 +1073,7 @@ template<typename NumberT> struct julia_type_factory<std::complex<NumberT>>
 {
   static jl_datatype_t* julia_type()
   {
-    return (jl_datatype_t*)apply_type(jlcxx::julia_type("Complex"), jl_svec1(::jlcxx::julia_type<NumberT>()));
+    return apply_type1(jlcxx::julia_type("Complex"), ::jlcxx::julia_type<NumberT>());
   }
 };
 
