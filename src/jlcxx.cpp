@@ -1,4 +1,4 @@
-#include "jlcxx/array.hpp"
+﻿#include "jlcxx/array.hpp"
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
 #include "jlcxx/jlcxx_config.hpp"
@@ -219,7 +219,7 @@ JLCXX_API jl_value_t* apply_type(jl_value_t* tc, jl_value_t **params, size_t n)
   return jl_apply_type(jl_is_unionall(tc) ? tc : ((jl_datatype_t*)tc)->name->wrapper, params, n);
 }
 
-JLCXX_API jl_datatype_t* apply_type1(jl_value_t* tc, jl_datatype_t *t)
+JLCXX_API jl_datatype_t* apply_type(jl_value_t* tc, jl_datatype_t *t)
 {
   return (jl_datatype_t*)apply_type(tc, (jl_value_t**)&t, 1);
 }
