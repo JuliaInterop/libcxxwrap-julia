@@ -280,7 +280,7 @@ struct PackedArrayType<T*, WrappedPtrTrait>
 {
   static jl_datatype_t* type()
   {
-    return apply_type1(jlcxx::julia_type("Ptr"), julia_base_type<T>());
+    return apply_type(jlcxx::julia_type("Ptr"), julia_base_type<T>());
   }
 };
 
