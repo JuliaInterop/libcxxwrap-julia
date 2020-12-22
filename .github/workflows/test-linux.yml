@@ -1,0 +1,44 @@
+name: test
+on:
+  - push
+  - pull_request
+    
+defaults:
+  run:
+    shell: bash
+    
+jobs:
+  test:
+    name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        version:
+          - '1.3'
+          - '1.4'
+          - '1.5'
+          - 'nightly'
+        os:
+          - ubuntu-latest
+        arch:
+          - x64
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: ${{ matrix.version }}
+          arch: ${{ matrix.arch }}
+      - name: Build and test
+        run: |
+          mkdir build && cd build
+          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Release ..
+          VERBOSE=ON cmake --build . --config Release --target install
+          julia -e 'using Pkg; pkg"add CxxWrap#master"; using CxxWrap'
+          ctest -V
+      - name: Build testlib
+        run: |
+          cd testlib-builder
+          mkdir build && cd build
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/install ../src/testlib
+          cmake --build . --config Release
