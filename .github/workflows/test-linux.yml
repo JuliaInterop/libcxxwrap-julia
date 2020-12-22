@@ -32,8 +32,8 @@ jobs:
       - name: Build and test
         run: |
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Release ..
-          VERBOSE=ON cmake --build . --config Release --target install
+          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
+          VERBOSE=ON cmake --build . --config Debug --target install
           julia -e 'using Pkg; pkg"add CxxWrap#master"; using CxxWrap'
           ctest -V
       - name: Build testlib
