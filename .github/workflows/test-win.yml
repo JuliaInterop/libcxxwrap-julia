@@ -48,4 +48,4 @@ jobs:
             cd build
             cmake --build . --config Release --target install
             julia -e "using Pkg; pkg\"add CxxWrap#master\"; using CxxWrap"
-            ctest -V
+            ctest -C Release -V
