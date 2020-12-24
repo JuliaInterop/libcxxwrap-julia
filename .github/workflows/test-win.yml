@@ -33,13 +33,13 @@ jobs:
         run: |
             mkdir build
             cd build
-            cmake -G "Visual Studio 16 2019" -A Win32 -DOVERRIDES_PATH=$HOMEDRIVE/$HOMEPATH/.julia/artifacts/Overrides.toml -DOVERRIDE_ROOT=../install/usr -DAPPEND_OVERRIDES_TOML=ON ..
+            cmake -G "Visual Studio 16 2019" -A Win32 -DOVERRIDES_PATH=$HOMEDRIVE/$HOMEPATH/.julia/artifacts/Overrides.toml -DOVERRIDE_ROOT=../install/usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=../install/usr ..
       - name: Config 64bit
         if: ${{ matrix.arch == 'x64'}}
         run: |
             mkdir build
             cd build
-            cmake -G "Visual Studio 16 2019" -A x64 -DOVERRIDES_PATH=$HOMEDRIVE/$HOMEPATH/.julia/artifacts/Overrides.toml -DOVERRIDE_ROOT=../install/usr -DAPPEND_OVERRIDES_TOML=ON ..
+            cmake -G "Visual Studio 16 2019" -A x64 -DOVERRIDES_PATH=$HOMEDRIVE/$HOMEPATH/.julia/artifacts/Overrides.toml -DOVERRIDE_ROOT=../install/usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=../install/usr ..
       - name: Test
         run: |
             cd build
