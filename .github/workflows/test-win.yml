@@ -30,13 +30,22 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - name: Install libcxxwrap_julia_jll
-        run: julia -e 'using Pkg; pkg"add libcxxwrap_julia_jll"'
-      - name: Build and test
+      - name: Config 32bit
+        if: ${{ matrix.arch == 'x86'}}
         run: |
             mkdir build
             cd build
-            cmake -G "Visual Studio 16 2019" -DJulia_EXECUTABLE=C:\julia\bin\julia -DOVERRIDES_PATH=$HOMEDRIVE\$HOMEPATH\.julia\artifacts\Overrides.toml -DOVERRIDE_ROOT=..\install\usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
+            cmake -G "Visual Studio 16 2019" -A Win32 -DJulia_EXECUTABLE=C:\julia\bin\julia -DOVERRIDES_PATH=$HOMEDRIVE\$HOMEPATH\.julia\artifacts\Overrides.toml -DOVERRIDE_ROOT=..\install\usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
+      - name: Config 64bit
+        if: ${{ matrix.arch == 'x64'}}
+        run: |
+            mkdir build
+            cd build
+            cmake -G "Visual Studio 16 2019" -A x64 -DJulia_EXECUTABLE=C:\julia\bin\julia -DOVERRIDES_PATH=$HOMEDRIVE\$HOMEPATH\.julia\artifacts\Overrides.toml -DOVERRIDE_ROOT=..\install\usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
+      - name: Test
+        if: ${{ matrix.arch == 'x86'}}
+        run: |
+            cd build
             cmake --build . --config Release --target install
-            C:\julia\bin\julia -e "using Pkg; pkg\"add CxxWrap#master\"; using CxxWrap"
+            julia -e "using Pkg; pkg\"add CxxWrap#master\"; using CxxWrap"
             ctest -V
