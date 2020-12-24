@@ -34,10 +34,12 @@ jobs:
         run: julia -e 'using Pkg; pkg"add libcxxwrap_julia_jll"'
       - name: Build and test
         env:
-          CMAKE_ARCH: ${{ matrix.arch }}
+          CMAKE_ARCH: x64
+          if: ${{ matrix.arch == 'x64' }}
         run: |
             mkdir build
             cd build
+            echo %CMAKE_ARCH%
             cmake -G "Visual Studio 16 2019" -A %CMAKE_ARCH% -DJulia_EXECUTABLE=C:\julia\bin\julia -DOVERRIDES_PATH=%HOMEDRIVE%\%HOMEPATH%\.julia\artifacts\Overrides.toml -DOVERRIDE_ROOT=..\install\usr -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_INSTALL_PREFIX=..\install\usr ..
             cmake --build . --config Release --target install
             C:\julia\bin\julia -e "using Pkg; pkg\"add CxxWrap#master\"; using CxxWrap"
