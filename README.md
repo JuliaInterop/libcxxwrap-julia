@@ -1,7 +1,6 @@
 # JlCxx
 
-[![Build Status](https://travis-ci.org/JuliaInterop/libcxxwrap-julia.svg?branch=master)](https://travis-ci.org/JuliaInterop/libcxxwrap-julia)
-[![Build status](https://ci.appveyor.com/api/projects/status/96h6josegra2ct2d?svg=true)](https://ci.appveyor.com/project/barche/libcxxwrap-julia)
+![test-linux-mac](https://github.com/JuliaInterop/libcxxwrap-julia/workflows/test-linux-mac/badge.svg) ![test-win](https://github.com/JuliaInterop/libcxxwrap-julia/workflows/test-win/badge.svg)
 
 This is the C++ library component of the [CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl) package, distributed as a regular CMake library
 for use in other C++ projects. To build a Julia interface to a C++ library, you need to build against this library and supply the resulting library as a binary dependency to your Julia package. The `testlib-builder` directory contains a complete example of how to build and distribute these binaries, or you can use the [BinaryBuilder.jl](https://github.com/JuliaPackaging/BinaryBuilder.jl) wizard to generate the builder repository.
