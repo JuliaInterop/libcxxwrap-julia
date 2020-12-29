@@ -11,6 +11,9 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.version == 'nightly' && matrix.os == 'macOS-latest' }}
+    env:
+      ALLOW_FAILURES: "${{ matrix.version == 'nightly' && matrix.os == 'macOS-latest' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -36,12 +39,12 @@ jobs:
         run: |
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DOVERRIDE_VERSION_TO_JLL=ON -DCMAKE_BUILD_TYPE=Debug ..
-          VERBOSE=ON cmake --build . --config Debug --target install
-          julia -e 'using Pkg; pkg"add CxxWrap#master"; using CxxWrap'
-          ctest -V
+          VERBOSE=ON cmake --build . --config Debug --target install || $ALLOW_FAILURES
+          julia -e 'using Pkg; pkg"add CxxWrap#master"; using CxxWrap' || $ALLOW_FAILURES
+          ctest -V || $ALLOW_FAILURES
       - name: Build testlib
         run: |
           cd testlib-builder
           mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/install ../src/testlib
-          cmake --build . --config Release
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/install ../src/testlib || $ALLOW_FAILURES
+          cmake --build . --config Release || $ALLOW_FAILURES

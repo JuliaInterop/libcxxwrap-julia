@@ -11,6 +11,9 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
+    continue-on-error: ${{ matrix.version == 'nightly' }}
+    env:
+      ALLOW_FAILURES: "${{ matrix.version == 'nightly' }}"
     strategy:
       fail-fast: false
       matrix:
@@ -43,6 +46,6 @@ jobs:
       - name: Test
         run: |
             cd build
-            cmake --build . --config Release --target install
-            julia -e "using Pkg; pkg\"add CxxWrap#master\"; using CxxWrap"
-            ctest -C Release -V
+            cmake --build . --config Release --target install || $ALLOW_FAILURES
+            julia -e "using Pkg; pkg\"add CxxWrap#master\"; using CxxWrap" || $ALLOW_FAILURES
+            ctest -C Release -V || $ALLOW_FAILURES
