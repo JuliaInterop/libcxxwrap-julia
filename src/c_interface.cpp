@@ -41,6 +41,7 @@ struct GetFundamentalTypes
   template<typename T>
   void operator()()
   {
+    std::cout << "Extracting type " << fundamental_int_type_name<T>().c_str() << std::endl;
     m_types.push_back(jl_cstr_to_string(fundamental_int_type_name<T>().c_str()));
     m_type_sizes.push_back(jl_box_int32(static_cast<int>(sizeof(T))));
   }
@@ -199,7 +200,9 @@ JLCXX_API void gcunprotect(jl_value_t* v)
 
 JLCXX_API void get_integer_types(jl_value_t* all_fundamental_types, jl_value_t* type_sizes, jl_value_t* fundamental_types_matched, jl_value_t* equivalent_types)
 {
+  std::cout << "getting fundamental types" << std::endl;
   for_each_type<fundamental_int_types>(GetFundamentalTypes{ArrayRef<jl_value_t*>((jl_array_t*)all_fundamental_types), ArrayRef<jl_value_t*>((jl_array_t*)type_sizes)});
+  std::cout << "getting type equivalence" << std::endl;
   for_each_type<fundamental_int_types>(BuildEquivalence{ArrayRef<jl_value_t*>((jl_array_t*)fundamental_types_matched), ArrayRef<jl_value_t*>((jl_array_t*)equivalent_types)});
 }
 
