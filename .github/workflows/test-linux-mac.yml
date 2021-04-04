@@ -37,6 +37,9 @@ jobs:
         run: julia -e 'using Pkg; pkg"add libcxxwrap_julia_jll"'
       - name: Build and test
         run: |
+          if [[ "$OSTYPE" != "darwin"* ]]; then
+            rm /opt/hostedtoolcache/julia/*/x64/lib/julia/libstdc++.so.6
+          fi
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DOVERRIDE_VERSION_TO_JLL=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install || $ALLOW_FAILURES
