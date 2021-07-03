@@ -47,7 +47,11 @@ JLCXX_API void unprotect_from_gc(jl_value_t* v)
 
 JLCXX_API void cxx_root_scanner(int)
 {
+#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 107
+  jl_ptls_t ptls = jl_current_task->ptls;
+#else
   jl_ptls_t ptls = jl_get_ptls_states();
+#endif
   for(const auto rootpair : cxx_gc_roots())
   {
     jl_gc_mark_queue_obj(ptls, rootpair.first);
@@ -260,7 +264,12 @@ JLCXX_API jl_datatype_t* new_datatype(jl_sym_t *name,
     return dt;
   }
 
-  dt = jl_new_datatype(name, module, super, parameters, fnames, ftypes, abstract, mutabl, ninitialized);
+  dt = jl_new_datatype(name, module, super, parameters, fnames, ftypes,
+#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 107
+    jl_emptysvec, // fattrs
+#endif
+    abstract, mutabl, ninitialized);
+
   set_internal_constant(module, dt, dt_prefix + symbol_name(name));
   return dt;
 }
