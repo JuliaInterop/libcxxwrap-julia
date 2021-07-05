@@ -37,7 +37,7 @@ include(InstallRequiredSystemLibraries)
 # =================
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-parameter -Wextra -Wreorder -Wa,-mbig-obj -O2")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-parameter -Wextra -Wreorder")
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
@@ -48,6 +48,10 @@ if(WIN32 AND DEFINED ENV{MSYSTEM})
   if($ENV{MSYSTEM} STREQUAL "MINGW32")
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=pentium4 -static-libstdc++")
   endif()
+endif()
+
+if(WIN32 AND MINGW)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wa,-mbig-obj -O2")
 endif()
 
 if(MSVC)
