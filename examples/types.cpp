@@ -140,6 +140,16 @@ namespace jlcxx
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
 }
 
+class SingletonType
+{
+  public:
+    static SingletonType& instance() {static SingletonType s; return s; }
+    int alive() { return 1; }
+  private:
+    SingletonType() {}
+    ~SingletonType() {}
+};
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 {
   using namespace cpp_types;
@@ -317,6 +327,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.method("==", [](IntDerived& a, IntDerived& b) { return a == b; });
   types.method("Int", [](IntDerived& a) { return a.val; });
   types.unset_override_module();
+
+  types.add_type<SingletonType>("SingeltonType")
+    .method("alive", &SingletonType::alive);
+  types.method("singleton_instance", SingletonType::instance);
 }
 
 JLCXX_MODULE define_types2_module(jlcxx::Module& types2)

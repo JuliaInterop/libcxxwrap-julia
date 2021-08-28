@@ -934,7 +934,10 @@ inline void add_default_methods(Module& mod)
     mod.method("cxxupcast", UpCast<T>::apply);
     mod.last_function().set_override_module(get_cxxwrap_module());
   }
-  mod.method("__delete", detail::finalize<T>);
+  if constexpr(std::is_destructible<T>::value)
+  {
+    mod.method("__delete", detail::finalize<T>);
+  }
   mod.last_function().set_override_module(get_cxxwrap_module());
 }
 
