@@ -64,6 +64,8 @@ JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
   jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
   jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
 
+  stl.add_type<std::thread>("StdThread");
+
   jlcxx::add_smart_pointer<std::shared_ptr>(stl, "SharedPtr");
   jlcxx::add_smart_pointer<std::weak_ptr>(stl, "WeakPtr");
   jlcxx::add_smart_pointer<std::unique_ptr>(stl, "UniquePtr");
