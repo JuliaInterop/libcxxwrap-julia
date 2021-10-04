@@ -1,5 +1,5 @@
-#ifndef JLCXX_EXPORT_HPP
-#define JLCXX_EXPORT_HPP
+#ifndef JLCXX_CONFIG_HPP
+#define JLCXX_CONFIG_HPP
 
 #ifdef _WIN32
   #ifdef JLCXX_EXPORTS

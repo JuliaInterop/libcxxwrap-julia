@@ -10,6 +10,7 @@
 #include <typeinfo>
 #include <vector>
 
+#include "julia_headers.hpp"
 #include "array.hpp"
 #include "module.hpp"
 #include "smart_pointers.hpp"

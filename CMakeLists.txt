@@ -21,6 +21,8 @@ set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 set(CMAKE_MACOSX_RPATH 1)
 if(MSVC)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY  "${CMAKE_BINARY_DIR}/bin")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE  "${CMAKE_BINARY_DIR}/bin")
+  set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG  "${CMAKE_BINARY_DIR}/bin")
 else()
 	set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 endif()
@@ -76,6 +78,7 @@ set(JLCXX_HEADERS
     ${JLCXX_INCLUDE_DIR}/jlcxx/const_array.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx_config.hpp
+    ${JLCXX_INCLUDE_DIR}/jlcxx/julia_headers.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/functions.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/module.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/smart_pointers.hpp

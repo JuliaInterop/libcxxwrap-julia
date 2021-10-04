@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stdexcept>
-#include <julia.h>
+
+#include "jlcxx/julia_headers.hpp"
 
 #ifdef _WIN32
   #define jlcxx_EXCEPT_EXPORT __declspec(dllexport)
