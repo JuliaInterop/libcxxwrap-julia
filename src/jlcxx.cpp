@@ -1,11 +1,8 @@
-﻿#include "jlcxx/array.hpp"
+﻿
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
 #include "jlcxx/jlcxx_config.hpp"
-#include "jlcxx/smart_pointers.hpp"
 
-#include <julia.h>
-#include <julia_threads.h>
 #include <julia_gcext.h>
 
 namespace jlcxx

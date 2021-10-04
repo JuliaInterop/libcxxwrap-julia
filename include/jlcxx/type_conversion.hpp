@@ -1,8 +1,7 @@
 ﻿#ifndef JLCXX_TYPE_CONVERSION_HPP
 #define JLCXX_TYPE_CONVERSION_HPP
 
-#include <julia.h>
-#include <julia_threads.h>
+#include "julia_headers.hpp"
 
 #include <complex>
 #include <map>

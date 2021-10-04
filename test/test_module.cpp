@@ -1,4 +1,3 @@
-#include <julia.h>
 #include <jlcxx/jlcxx.hpp>
 #include <jlcxx/functions.hpp>
 
