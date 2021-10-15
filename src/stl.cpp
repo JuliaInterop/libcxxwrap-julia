@@ -1,7 +1,9 @@
 #include <string>
+#include <thread>
 #include <vector>
 
 #include "jlcxx/jlcxx.hpp"
+#include "jlcxx/functions.hpp"
 #include "jlcxx/stl.hpp"
 
 namespace jlcxx
@@ -64,8 +66,24 @@ JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
   jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
   jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
 
-  stl.add_type<std::thread>("StdThread");
+  stl.add_type<std::thread::id>("StdThreadId");
+  stl.set_override_module(jl_base_module);
+  stl.method("==", [] (const std::thread::id& a, const std::thread::id& b) { return a == b; });
+  stl.unset_override_module();
 
+  stl.add_bits<std::thread::native_handle_type>("StdThreadNativeHandleType");
+
+  stl.add_type<std::thread>("StdThread")
+    .constructor<void(*)()>()
+    .method("joinable", &std::thread::joinable)
+    .method("get_id", &std::thread::get_id)
+    .method("native_handle", &std::thread::native_handle)
+    .method("join", &std::thread::join)
+    .method("detach", &std::thread::detach)
+    .method("swap", &std::thread::swap);
+
+  stl.method("hardware_concurrency", [] () { return std::thread::hardware_concurrency(); });
+  
   jlcxx::add_smart_pointer<std::shared_ptr>(stl, "SharedPtr");
   jlcxx::add_smart_pointer<std::weak_ptr>(stl, "WeakPtr");
   jlcxx::add_smart_pointer<std::unique_ptr>(stl, "UniquePtr");
