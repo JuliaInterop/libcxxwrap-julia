@@ -1,0 +1,30 @@
+name: testjll
+on:
+  - push
+    
+defaults:
+  run:
+    shell: bash
+    
+jobs:
+  buildjll:
+    name: Build JLL
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: julia-actions/setup-julia@latest
+        with:
+          version: '1.6'
+          arch: x64
+      - name: Build JLLs
+        env:
+          GITHUB_TOKEN: ${{ secrets.DEPLOY_KEY }}
+          BINARYBUILDER_RUNNER: privileged
+          BINARYBUILDER_USE_SQUASHFS: true
+          BINARYBUILDER_AUTOMATIC_APPLE: true
+        run: |
+          cd ..
+          git config --global user.name "cxxwrapdeploy"
+          git config --global user.email "cxxwrapdeploy@bartjanssens.org"
+          julia --project=./libcxxwrap-julia/binarybuilder -e "using Pkg; Pkg.instantiate()"
+          julia --project=./libcxxwrap-julia/binarybuilder ./libcxxwrap-julia/binarybuilder/build_tarballs.jl
