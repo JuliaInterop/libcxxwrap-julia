@@ -161,6 +161,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_type<World>("World")
     .constructor<const std::string&>()
     .constructor<jlcxx::cxxint_t>(false) // no finalizer
+    .constructor([] (const std::string& a, const std::string& b) { return new World(a + " " + b); })
     .method("set", &World::set)
     .method("greet_cref", &World::greet)
     .method("greet_lambda", [] (const World& w) { return w.greet(); } );

@@ -563,6 +563,20 @@ public:
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
   }
 
+  template<typename T, typename R, typename LambdaT, typename... ArgsT>
+  void constructor(jl_datatype_t* dt, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, bool finalize)
+  {
+    static_assert(std::is_same<T*,R>::value, "Constructor lambda function must return a pointer to the constructed object, of the correct type");
+    FunctionWrapperBase &new_wrapper = method("dummy", [=](ArgsT... args)
+    {
+      jl_datatype_t* concrete_dt = julia_type<T>();
+      assert(jl_is_mutable_datatype(concrete_dt));
+      T* cpp_obj = lambda(std::forward<ArgsT>(args)...);
+      return boxed_cpp_pointer(cpp_obj, concrete_dt, finalize);
+    });
+    new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
+  }
+
   /// Loop over the functions
   template<typename F>
   void for_each_function(const F f) const
@@ -971,6 +985,14 @@ public:
     {
       m_module.constructor<T, ArgsT...>(m_dt, finalize);
     }
+    return *this;
+  }
+
+  /// Define a "constructor" using a lambda
+  template<typename LambdaT>
+  TypeWrapper<T>& constructor(LambdaT&& lambda, bool finalize = true)
+  {
+    m_module.constructor<T>(m_dt, std::forward<LambdaT>(lambda), &LambdaT::operator(), finalize);
     return *this;
   }
 
