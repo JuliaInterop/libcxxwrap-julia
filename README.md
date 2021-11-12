@@ -47,9 +47,9 @@ On Windows, building is easiest with [Visual Studio 2019](https://visualstudio.m
 
 See the [CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl) README for more info on the API.
 
-## Binaries for the master version
+## Binaries for the main branch
 
-Binaries for the master version are usually available at https://github.com/barche/libcxxwrap_julia_jll.jl, you can install them (in Pkg mode, hit `]`) using:
+Binaries for the main branch are published at https://github.com/barche/libcxxwrap_julia_jll.jl, you can install them (in Pkg mode, hit `]`) using:
 
 ```
 add https://github.com/barche/libcxxwrap_julia_jll.jl.git
