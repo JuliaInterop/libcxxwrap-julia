@@ -56,13 +56,15 @@ install_license $WORKSPACE/srcdir/libcxxwrap-julia*/LICENSE.md
 function libjulia_platforms(julia_version)
   platforms = supported_platforms(; experimental=julia_version ≥ v"1.7")
 
-  filter!(p -> !(Sys.islinux(p) && libc(p) == "musl" && arch(p) == "i686"), platforms)
+  filter!(p -> libc(p) != "musl" && arch(p) != "i686"  && !contains(arch(p), "arm") && arch(p) != "aarch64" && arch(p) != "powerpc64le" && !Sys.isfreebsd(p), platforms)
 
   for p in platforms
       p["julia_version"] = string(julia_version)
   end
 
   platforms = expand_cxxstring_abis(platforms)
+
+  filter!(p -> cxxstring_abi(p) != "cxx03", platforms)
 
   return platforms
 end
