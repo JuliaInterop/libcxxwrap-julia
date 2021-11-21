@@ -63,8 +63,6 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
   double,
   float,
   char,
-  long,
-  unsigned long,
   wchar_t,
   void*,
   std::string,
