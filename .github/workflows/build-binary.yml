@@ -27,6 +27,9 @@ jobs:
             ${{ runner.os }}-jll-${{ env.cache-name }}-
             ${{ runner.os }}-jll-
             ${{ runner.os }}-
+      - uses: fusion-engineering/setup-git-credentials@v2
+        with:
+          credentials: https://cxxwrapdeploy:${{secrets.DEPLOY_KEY}}@github.com/
       - name: Build JLLs
         env:
           GITHUB_TOKEN: ${{ secrets.DEPLOY_KEY }}

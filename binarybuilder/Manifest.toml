@@ -28,19 +28,19 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[BinaryBuilder]]
 deps = ["ArgParse", "BinaryBuilderBase", "Dates", "Downloads", "GitHub", "HTTP", "JLD2", "JSON", "LibGit2", "Libdl", "Logging", "LoggingExtras", "ObjectFile", "OutputCollectors", "Pkg", "PkgLicenses", "ProgressMeter", "REPL", "Random", "Registrator", "RegistryTools", "SHA", "Scratch", "Sockets", "UUIDs", "ghr_jll"]
-git-tree-sha1 = "4b4c9a11f078a1c121505935b32befaed098ac71"
-repo-rev = "master"
+git-tree-sha1 = "631f1a96c24553643ffa857224f7d608cbb2f67c"
+repo-rev = "631f1a96c24553643ffa857224f7d608cbb2f67c"
 repo-url = "https://github.com/JuliaPackaging/BinaryBuilder.jl.git"
 uuid = "12aac903-9f7c-5d81-afc2-d9565ea332ae"
-version = "0.4.2"
+version = "0.4.4"
 
 [[BinaryBuilderBase]]
 deps = ["CodecZlib", "Downloads", "InteractiveUtils", "JSON", "LibGit2", "Libdl", "Logging", "OutputCollectors", "Pkg", "Random", "SHA", "Scratch", "SimpleBufferStream", "TOML", "Tar", "UUIDs", "p7zip_jll", "pigz_jll"]
-git-tree-sha1 = "76fa7fd4b4f124031a5d905403f481fad41c76be"
-repo-rev = "master"
+git-tree-sha1 = "73a13427284bc99cecaf2fb26f67a1a199cc3a0e"
+repo-rev = "73a13427284bc99cecaf2fb26f67a1a199cc3a0e"
 repo-url = "https://github.com/JuliaPackaging/BinaryBuilderBase.jl.git"
 uuid = "7f725544-6523-48cd-82d1-3fa08ff4056e"
-version = "1.0.2"
+version = "1.2.0"
 
 [[CodecZlib]]
 deps = ["TranscodingStreams", "Zlib_jll"]
