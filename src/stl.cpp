@@ -71,17 +71,21 @@ JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
   stl.method("==", [] (const std::thread::id& a, const std::thread::id& b) { return a == b; });
   stl.unset_override_module();
 
+#ifndef __FreeBSD__
   // This is unsigned long on linux
   if(!has_julia_type<std::thread::native_handle_type>())
   {
     stl.add_bits<std::thread::native_handle_type>("StdThreadNativeHandleType");
   }
+#endif
 
   stl.add_type<std::thread>("StdThread")
     .constructor<void(*)()>()
     .method("joinable", &std::thread::joinable)
     .method("get_id", &std::thread::get_id)
+#ifndef __FreeBSD__
     .method("native_handle", &std::thread::native_handle)
+#endif
     .method("join", &std::thread::join)
     .method("detach", &std::thread::detach)
     .method("swap", &std::thread::swap);
