@@ -11,15 +11,12 @@ jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
     runs-on: ${{ matrix.os }}
-    continue-on-error: ${{ matrix.version == 'nightly' && matrix.os == 'macOS-latest' }}
-    env:
-      ALLOW_FAILURES: "${{ matrix.version == 'nightly' && matrix.os == 'macOS-latest' }}"
     strategy:
       fail-fast: false
       matrix:
         version:
           - '1.6'
-          - '^1.7.0-0'
+          - '1.7'
           - 'nightly'
         os:
           - ubuntu-latest
@@ -33,7 +30,7 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - name: Install libcxxwrap_julia_jll
-        run: julia -e 'using Pkg; pkg"add libcxxwrap_julia_jll"'
+        run: julia -e 'using Pkg; Pkg.Registry.add("General"); Pkg.Registry.add(RegistrySpec(url = "https://github.com/barche/CxxWrapTestRegistry.git")); pkg"add libcxxwrap_julia_jll"'
       - name: Build and test
         run: |
           if [[ "$OSTYPE" != "darwin"* ]]; then
@@ -41,12 +38,12 @@ jobs:
           fi
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DOVERRIDE_VERSION_TO_JLL=ON -DCMAKE_BUILD_TYPE=Debug ..
-          VERBOSE=ON cmake --build . --config Debug --target install || $ALLOW_FAILURES
-          julia -e 'using Pkg; pkg"add CxxWrap#testjll"; using CxxWrap' || $ALLOW_FAILURES
-          ctest -V || $ALLOW_FAILURES
+          VERBOSE=ON cmake --build . --config Debug --target install
+          julia -e 'using Pkg; pkg"add CxxWrap#testjll"; using CxxWrap'
+          ctest -V
       - name: Build testlib
         run: |
           cd testlib-builder
           mkdir build && cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/install ../src/testlib || $ALLOW_FAILURES
-          cmake --build . --config Release || $ALLOW_FAILURES
+          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$HOME/install ../src/testlib
+          cmake --build . --config Release
