@@ -406,6 +406,8 @@ JLCXX_API void register_core_cxxwrap_types()
   {
     set_julia_type<bool>((jl_datatype_t*)julia_type("CxxBool", g_cxxwrap_module));
     set_julia_type<char>((jl_datatype_t*)julia_type("CxxChar", g_cxxwrap_module));
+    set_julia_type<char16_t>((jl_datatype_t*)julia_type("CxxChar16", g_cxxwrap_module));
+    set_julia_type<char32_t>((jl_datatype_t*)julia_type("CxxChar32", g_cxxwrap_module));
     set_julia_type<wchar_t>((jl_datatype_t*)julia_type("CxxWchar", g_cxxwrap_module));
     
     jlcxx::detail::AddIntegerTypes<fundamental_int_types>()("", "Cxx");
