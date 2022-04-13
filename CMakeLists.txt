@@ -115,11 +115,12 @@ foreach(ver ${jlcxx_version_defines})
 endforeach()
 if(OVERRIDE_VERSION_TO_JLL)
   execute_process(
-    COMMAND ${Julia_EXECUTABLE} --startup-file=no -e "using libcxxwrap_julia_jll; println(unsafe_string(ccall((:cxxwrap_version_string, libcxxwrap_julia), Cstring, ())))"
+    COMMAND git describe --tags --abbrev=0
     OUTPUT_VARIABLE _JLL_VERSION
   )
-  string(REGEX REPLACE "\"" "" _JLL_VERSION "${_JLL_VERSION}")
-  string(REGEX REPLACE "\n" "" _JLL_VERSION "${_JLL_VERSION}")
+  string(STRIP "${_JLL_VERSION}" _JLL_VERSION)
+  message(STATUS "git version: ${_JLL_VERSION}")
+  string(REGEX REPLACE "v" "" _JLL_VERSION "${_JLL_VERSION}")
   string(REPLACE "." ";" _jlcxx_VERSION_LIST "${_JLL_VERSION}")
   list(GET _jlcxx_VERSION_LIST 0 JLCXX_VERSION_MAJOR)
   list(GET _jlcxx_VERSION_LIST 1 JLCXX_VERSION_MINOR)
