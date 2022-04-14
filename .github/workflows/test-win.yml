@@ -18,7 +18,7 @@ jobs:
           - '1.6'
           - '1.7'
           # - '1.8-nightly' # Disabled until https://github.com/JuliaLang/julia/pull/44842 is backported
-          # - 'nightly' # Disabled until https://github.com/JuliaLang/julia/pull/44976 is merged
+          - 'nightly'
         os:
           - windows-latest
         arch:
