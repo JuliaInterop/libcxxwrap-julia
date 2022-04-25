@@ -109,7 +109,7 @@ if(Julia_EXECUTABLE)
     set(Julia_LIBRARY "${Julia_LIBRARY}"
         CACHE PATH "Julia library")
 else()
-    find_library(Julia_LIBRARY NAMES libjulia.${Julia_VERSION_STRING}.dylib julia libjulia libjulia.dll.a CMAKE_FIND_ROOT_PATH_BOTH)
+    find_library(Julia_LIBRARY NAMES libjulia.${Julia_VERSION_STRING}.dylib julia libjulia.dll.a libjulia CMAKE_FIND_ROOT_PATH_BOTH)
 endif()
 
 get_filename_component(Julia_LIBRARY_DIR ${Julia_LIBRARY} DIRECTORY)
