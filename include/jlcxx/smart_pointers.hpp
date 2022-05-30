@@ -138,7 +138,7 @@ struct WrapSmartPointer
   {
     using WrappedT = typename TypeWrapperT::type;
     
-    wrapped.module().method("__cxxwrap_smartptr_dereference", DereferenceSmartPointer<WrappedT>::apply);
+    wrapped.module().method("__cxxwrap_smartptr_dereference", &DereferenceSmartPointer<WrappedT>::apply);
     wrapped.module().last_function().set_override_module(get_cxxwrap_module());
   }
 };
