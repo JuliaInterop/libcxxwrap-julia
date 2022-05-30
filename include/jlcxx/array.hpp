@@ -27,11 +27,18 @@ struct ValueExtractor<PointedT, PointedT>
 };
 
 template<typename PointedT, typename CppT>
-class array_iterator_base : public std::iterator<std::random_access_iterator_tag, CppT>
+class array_iterator_base
 {
 private:
   PointedT* m_ptr;
 public:
+
+  using iterator_category = std::random_access_iterator_tag;
+  using value_type = CppT;
+  using difference_type = ptrdiff_t;
+  using pointer = CppT*;
+  using reference = CppT&;
+
   array_iterator_base() : m_ptr(nullptr)
   {
   }
