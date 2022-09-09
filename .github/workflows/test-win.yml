@@ -17,7 +17,7 @@ jobs:
         version:
           - '1.6'
           - '1.7'
-          # - '1.8-nightly' # Disabled until https://github.com/JuliaLang/julia/pull/44842 is backported
+          - '1.8' # Disabled until https://github.com/JuliaLang/julia/pull/44842 is backported
           - 'nightly'
         os:
           - windows-latest
