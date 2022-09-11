@@ -326,7 +326,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_type<IntDerived>("IntDerived", jlcxx::julia_type("Integer", "Base"));
   types.set_override_module(jl_base_module);
   types.method("==", [](IntDerived& a, IntDerived& b) { return a == b; });
-  types.method("Int", [](IntDerived& a) { return a.val; });
+  types.method("Int", [](IntDerived& a) { return int_t(a.val); });
   types.unset_override_module();
 
   types.add_type<SingletonType>("SingeltonType")
