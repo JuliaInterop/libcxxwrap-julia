@@ -643,15 +643,16 @@ BoxedValue<T> boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalize
   assert(jl_datatype_size(jl_field_type(dt,0)) == sizeof(T*));
 
   jl_value_t *result = jl_new_struct_uninit(dt);
-  JL_GC_PUSH1(&result);
-  memcpy((void*)result, &cpp_ptr, sizeof(T*));
+  struct boxed_void_ptr { const void* ptr; } *presult = (struct boxed_void_ptr*)result, vresult = {cpp_ptr};
+  *presult = vresult;
 
   if(add_finalizer)
   {
+    JL_GC_PUSH1(&result);
     jl_gc_add_finalizer(result, detail::get_finalizer());
+    JL_GC_POP();
   }
   
-  JL_GC_POP();
   return {result};
 }
 
