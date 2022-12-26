@@ -1188,23 +1188,21 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
   protect_from_gc(box_dt);
 
   // Register the type
-  if(!is_parametric)
+  if(is_parametric)
+  {
+    set_const(name, std::forward<jl_value_t*>(base_dt->name->wrapper));
+    set_const(allocname, std::forward<jl_value_t*>(box_dt->name->wrapper));
+  }
+  else
   {
     set_julia_type<T>(box_dt);
     add_default_constructor<T>(base_dt);
     add_copy_constructor<T>(base_dt);
-  }
 
-  set_const(name, is_parametric ? base_dt->name->wrapper : (jl_value_t*)base_dt);
-  set_const(allocname, is_parametric ? box_dt->name->wrapper : (jl_value_t*)box_dt);
+    set_const(name, (jl_value_t*)base_dt);
+    set_const(allocname, (jl_value_t*)box_dt);
 
-  if(!is_parametric)
-  {
     this->register_type(box_dt);
-  }
-
-  if(!is_parametric)
-  {
     add_default_methods<T>(*this);
   }
 
