@@ -27,7 +27,7 @@ basepath = dirname(@__DIR__)
 name = "libcxxwrap_julia"
 version = getversion(joinpath(basepath, "include", "jlcxx", "jlcxx_config.hpp"))
 
-julia_versions = GITHUB_REF_NAME == "main" ? [v"1.6.0", v"1.7.0", v"1.8.0", v"1.9.0", v"1.10.0"] : [v"1.8.0"]
+julia_versions = GITHUB_REF_NAME == "main" ? [v"1.6.0", v"1.7.0", v"1.8.0", v"1.9.0", v"1.10.0"] : [v"1.6.0"]
 
 # Collection of sources required to complete build
 sources = [
