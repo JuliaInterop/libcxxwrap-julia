@@ -3,6 +3,8 @@
 # `julia build_tarballs.jl --help` to see a usage message.
 using BinaryBuilder, Pkg, TOML
 
+GITHUB_REF_NAME = haskey(ENV, "GITHUB_REF_NAME") ? ENV["GITHUB_REF_NAME"] : ""
+
 function getversion(headerfile)
     a = b = c = 0
     for l in readlines(headerfile)
@@ -25,7 +27,7 @@ basepath = dirname(@__DIR__)
 name = "libcxxwrap_julia"
 version = getversion(joinpath(basepath, "include", "jlcxx", "jlcxx_config.hpp"))
 
-julia_versions = [v"1.6.0", v"1.7.0", v"1.8.0", v"1.9.0", v"1.10.0"]
+julia_versions = GITHUB_REF_NAME == "main" ? [v"1.6.0", v"1.7.0", v"1.8.0", v"1.9.0", v"1.10.0"] : [v"1.8.0"]
 
 # Collection of sources required to complete build
 sources = [
@@ -68,6 +70,9 @@ function libjulia_platforms(julia_version)
 end
 
 platforms = vcat(libjulia_platforms.(julia_versions)...)
+if GITHUB_REF_NAME != "main"
+    filter!(Sys.islinux, platforms)
+end
 
 # The products that we will ensure are always built
 products = [
