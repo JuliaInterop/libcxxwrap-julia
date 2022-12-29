@@ -3,6 +3,11 @@
 # `julia build_tarballs.jl --help` to see a usage message.
 using BinaryBuilder, Pkg, TOML
 
+# See https://github.com/JuliaLang/Pkg.jl/issues/2942
+# Once this Pkg issue is resolved, this must be removed
+uuid = Base.UUID("a83860b7-747b-57cf-bf1f-3e79990d037f")
+delete!(Pkg.Types.get_last_stdlibs(v"1.6.3"), uuid)
+
 GITHUB_REF_NAME = haskey(ENV, "GITHUB_REF_NAME") ? ENV["GITHUB_REF_NAME"] : ""
 
 function getversion(headerfile)
@@ -27,7 +32,7 @@ basepath = dirname(@__DIR__)
 name = "libcxxwrap_julia"
 version = getversion(joinpath(basepath, "include", "jlcxx", "jlcxx_config.hpp"))
 
-julia_versions = GITHUB_REF_NAME == "main" ? [v"1.6.0", v"1.7.0", v"1.8.0", v"1.9.0", v"1.10.0"] : [v"1.8.0"]
+julia_versions = GITHUB_REF_NAME == "main" ? [v"1.6.3", v"1.7.0", v"1.8.0", v"1.9.0", v"1.10.0"] : [v"1.8.0"]
 
 # Collection of sources required to complete build
 sources = [
