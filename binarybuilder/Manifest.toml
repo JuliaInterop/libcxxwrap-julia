@@ -2,7 +2,7 @@
 
 julia_version = "1.8.4"
 manifest_format = "2.0"
-project_hash = "7663aad97e146517da350b22a837e65a7fef33ed"
+project_hash = "13a114303de30453c847f7a8e27dc330c6600288"
 
 [[deps.ArgParse]]
 deps = ["Logging", "TextWrap"]
@@ -215,6 +215,12 @@ uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+
+[[deps.LocalRegistry]]
+deps = ["Pkg", "Random", "RegistryTools", "UUIDs"]
+git-tree-sha1 = "9f0328205b2bdeedb734aa0a93488807ea3e2b99"
+uuid = "89398ba2-070a-4b16-a995-9893c55d93cf"
+version = "0.5.2"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
