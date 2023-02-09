@@ -240,4 +240,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
     jlcxx::for_each_type<jlcxx::fixed_int_types>(FixedIntTypeLister(typenames,datatypes));
     return std::make_tuple(typenames,datatypes);
   });
+
+  mod.method("test_argv", [] (int &argc, char** argv) {
+    std::stringstream out;
+    for(int i = 0; i != argc; ++i)
+    {
+      out << argv[i];
+    }
+
+    return out.str();
+  });
 }
