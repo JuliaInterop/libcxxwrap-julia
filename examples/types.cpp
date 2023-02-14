@@ -45,6 +45,13 @@ struct World
   ~World() { std::cout << "Destroying World with message " << msg << std::endl; }
 };
 
+std::string greet_overload(World w) { return w.msg + "_byval"; }
+std::string greet_overload(World& w) { return w.msg + "_byref"; }
+std::string greet_overload(const World& w) { return w.msg + "_byconstref"; }
+std::string greet_overload(World* w) { return w->msg + "_bypointer"; }
+std::string greet_overload(const World* w) { return w->msg + "_byconstpointer"; }
+std::string greet_overload(const std::shared_ptr<World> w) { return w->msg + "_bysharedptr"; }
+
 struct Array { Array() {} };
 
 struct NonCopyable
@@ -164,7 +171,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .constructor([] (const std::string& a, const std::string& b) { return new World(a + " " + b); })
     .method("set", &World::set)
     .method("greet_cref", &World::greet)
-    .method("greet_lambda", [] (const World& w) { return w.greet(); } );
+    .method("greet_lambda", [] (const World& w) { return w.greet(); } )
+    .method("greet_byvalue", [] (World w) { return w.greet(); } );
+
+  types.method("greet_overload", static_cast<std::string (*) (World)>(greet_overload));
+  types.method("greet_overload", static_cast<std::string (*) (World&)>(greet_overload));
+  types.method("greet_overload", static_cast<std::string (*) (const World&)>(greet_overload));
+  types.method("greet_overload", static_cast<std::string (*) (World*)>(greet_overload));
+  types.method("greet_overload", static_cast<std::string (*) (const World*)>(greet_overload));
+  types.method("greet_overload", static_cast<std::string (*) (std::shared_ptr<World>)>(greet_overload));
 
   types.method("test_unbox", [] ()
   {
