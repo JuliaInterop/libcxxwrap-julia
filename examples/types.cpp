@@ -45,7 +45,6 @@ struct World
   ~World() { std::cout << "Destroying World with message " << msg << std::endl; }
 };
 
-std::string greet_overload(World w) { return w.msg + "_byval"; }
 std::string greet_overload(World& w) { return w.msg + "_byref"; }
 std::string greet_overload(const World& w) { return w.msg + "_byconstref"; }
 std::string greet_overload(World* w) { return w->msg + "_bypointer"; }
@@ -174,7 +173,6 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     .method("greet_lambda", [] (const World& w) { return w.greet(); } )
     .method("greet_byvalue", [] (World w) { return w.greet(); } );
 
-  types.method("greet_overload", static_cast<std::string (*) (World)>(greet_overload));
   types.method("greet_overload", static_cast<std::string (*) (World&)>(greet_overload));
   types.method("greet_overload", static_cast<std::string (*) (const World&)>(greet_overload));
   types.method("greet_overload", static_cast<std::string (*) (World*)>(greet_overload));
