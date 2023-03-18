@@ -1,6 +1,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <deque>
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
