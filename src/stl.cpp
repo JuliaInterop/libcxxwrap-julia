@@ -1,6 +1,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <deque>
 
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
@@ -19,6 +20,7 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   m_instance.reset(new StlWrappers(mod));
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
   m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
+  m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
   smartptr::apply_smart_combination<std::shared_ptr, stltypes>(mod);
   smartptr::apply_smart_combination<std::weak_ptr, stltypes>(mod);
   smartptr::apply_smart_combination<std::unique_ptr, stltypes>(mod);
@@ -41,7 +43,8 @@ JLCXX_API StlWrappers& wrappers()
 JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   m_stl_mod(stl),
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))),
-  valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector")))
+  valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
+  deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector")))
 {
 }
 
