@@ -5,7 +5,6 @@
 #include <vector>
 #include <deque>
 #include <queue>
-#include <memory>
 
 #include "module.hpp"
 #include "smart_pointers.hpp"
