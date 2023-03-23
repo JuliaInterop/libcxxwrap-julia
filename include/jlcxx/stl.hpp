@@ -4,7 +4,6 @@
 #include <valarray>
 #include <vector>
 #include <deque>
-#include <memory>
 
 #include "module.hpp"
 #include "smart_pointers.hpp"
@@ -167,8 +166,6 @@ struct WrapDeque
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
     wrapped.template constructor<std::size_t>();
-    wrapped.template constructor<const std::allocator<T>&>();
-    wrapped.template constructor<std::size_t, const T&, const std::allocator<T>&>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("resize", [](WrappedT &v, const cxxint_t s) { v.resize(s); });

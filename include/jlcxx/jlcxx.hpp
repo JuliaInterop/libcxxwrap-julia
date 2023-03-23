@@ -9,8 +9,6 @@
 #include <sstream>
 #include <typeinfo>
 #include <vector>
-#include <valarray>
-#include <deque>
 
 #include "julia_headers.hpp"
 #include "array.hpp"
