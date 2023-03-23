@@ -18,6 +18,7 @@ int main()
   test_type<char16_t>("CxxChar16");
   test_type<char32_t>("CxxChar32");
   test_type<bool>("CxxBool");
+  test_type<wchar_t>("CxxWchar");
 
   jl_atexit_hook(0);
   return 0;
