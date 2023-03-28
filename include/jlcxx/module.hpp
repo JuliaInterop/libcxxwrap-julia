@@ -898,14 +898,19 @@ struct ApplyType
   template<typename... Types> using apply = TemplateT<Types...>;
 };
 
-namespace detail
+struct SpecializedFinalizer {};
+
+template<typename T, typename Specializer=SpecializedFinalizer>
+struct Finalizer
 {
-  template<typename T>
-  void finalize(T* to_delete)
+  static void finalize(T* to_delete)
   {
     delete to_delete;
   }
+};
 
+namespace detail
+{
   template<typename T>
   struct CreateParameterType
   {
@@ -950,7 +955,7 @@ inline void add_default_methods(Module& mod)
   }
   if constexpr(std::is_destructible<T>::value)
   {
-    mod.method("__delete", detail::finalize<T>);
+    mod.method("__delete", Finalizer<T>::finalize);
   }
   mod.last_function().set_override_module(get_cxxwrap_module());
 }

@@ -137,6 +137,42 @@ struct IntDerived
     bool operator == (IntDerived &other){ return this->val == other.val; }
 };
 
+// See https://stackoverflow.com/questions/257288/templated-check-for-the-existence-of-a-class-member-function
+
+template<class>
+struct sfinae_true : std::true_type{};
+
+namespace detail
+{
+  template<class T>
+  static auto test_getImpl(int)
+      -> sfinae_true<decltype(std::declval<T>().getImpl())>;
+  template<class>
+  static auto test_getImpl(long) -> std::false_type;
+}
+
+template<class T>
+struct has_getImpl : decltype(detail::test_getImpl<T>(0)){};
+
+class UseCustomDelete
+{
+  public:
+    UseCustomDelete() {}
+    void getImpl() const {}
+    static int nb_deleted;
+};
+
+int UseCustomDelete::nb_deleted = 0;
+
+class UseCustomClassDelete
+{
+  public:
+    UseCustomClassDelete() {}
+    static int nb_deleted;
+};
+
+int UseCustomClassDelete::nb_deleted = 0;
+
 } // namespace cpp_types
 
 namespace jlcxx
@@ -155,6 +191,35 @@ class SingletonType
     SingletonType() {}
     ~SingletonType() {}
 };
+
+namespace jlcxx
+{
+  template<typename T>
+  struct Finalizer<T, SpecializedFinalizer>
+  {
+    static void finalize(T* to_delete)
+    {
+      if constexpr(cpp_types::has_getImpl<T>::value) {
+        std::cout << "calling specialized delete" << std::endl;
+        delete to_delete;
+        T::nb_deleted += 1;
+      } else {
+        delete to_delete;
+      }
+    }
+  };
+
+  template<>
+  struct Finalizer<cpp_types::UseCustomClassDelete, SpecializedFinalizer>
+  {
+    static void finalize(cpp_types::UseCustomClassDelete* to_delete)
+    {
+      std::cout << "Class specific finalizer called" << std::endl;
+      cpp_types::UseCustomClassDelete::nb_deleted += 1;
+      delete to_delete;
+    }
+  };
+}
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 {
@@ -345,6 +410,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_type<SingletonType>("SingeltonType")
     .method("alive", &SingletonType::alive);
   types.method("singleton_instance", SingletonType::instance);
+
+  types.add_type<UseCustomDelete>("UseCustomDelete");
+  types.method("get_custom_nb_deletes", [] () { return UseCustomDelete::nb_deleted; });
+  types.add_type<UseCustomClassDelete>("UseCustomClassDelete");
+  types.method("get_custom_class_nb_deletes", [] () { return UseCustomClassDelete::nb_deleted; });
 }
 
 JLCXX_MODULE define_types2_module(jlcxx::Module& types2)
