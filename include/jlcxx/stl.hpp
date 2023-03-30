@@ -187,6 +187,44 @@ struct WrapDeque
   }
 };
 
+// GrandFather Iterator for all one dimensional containers
+template <template <typename> typename ContainerT, typename valueT>
+struct IteratorWrapper
+{
+  using iterator_type = typename ContainerT<valueT>::iterator;
+  using value_type = valueT;
+
+  iterator_type value;
+};
+
+template <typename valueT> struct DequeIteratorWrapper : IteratorWrapper<std::deque, valueT> {};
+
+// vlidaate_iterator is a safeguard against dereferencing an invalid iterator in Julia
+template <typename T>
+void validate_iterator(T it)
+{
+  using IteratorT = typename T::iterator_type;
+  if (it.value == IteratorT())
+  {
+    throw std::runtime_error("Invalid iterator");
+  }
+}
+
+struct WrapIterator
+{
+  template <typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using ValueT = typename WrappedT::value_type;
+
+    // wrapped.template constructor<typename WrappedT>();
+    wrapped.method("iterator_next", [](WrappedT it) -> WrappedT { ++(it.value); return it; });
+    wrapped.method("iterator_value", [](WrappedT it) -> ValueT& { validate_iterator(it); return *it.value; });
+    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) -> bool {return it1.value == it2.value; });
+  };
+};
+
 template<typename T>
 struct WrapQueueImpl
 {
@@ -239,6 +277,7 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
+  TypeWrapper1(mod, StlWrappers::instance().iterator).apply<stl::DequeIteratorWrapper<T>>(WrapIterator());
 }
 
 }
