@@ -307,6 +307,18 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.method("test_double2_pointer", [] () { return static_cast<double**>(nullptr); });
   mod.method("test_double3_pointer", [] () { return static_cast<double***>(nullptr); });
 
+  // Val
+  mod.method("test_val", [](jlcxx::Val<int, 1>) { return 1; });
+  mod.method("test_val", [](jlcxx::Val<int, 2>) { return jlcxx::Val<int, 2>::jl_value(); });
+  mod.method("test_val", [](jlcxx::Val<short, 3>) { return 3; });
+  mod.method("test_val", [](jlcxx::Val<int, 4>) { return jlcxx::Val<int, 4>(); });
+  JLCXX_VAL_SYM cst_sym_1 = "A";
+  JLCXX_VAL_SYM cst_sym_2 = "B";
+  JLCXX_VAL_SYM cst_sym_3 = "C";
+  mod.method("test_val", [](jlcxx::ValSym<cst_sym_1>) { return (jl_value_t*) jl_symbol("A"); });
+  mod.method("test_val", [](jlcxx::ValSym<cst_sym_2>) { return jlcxx::ValSym<cst_sym_2>::jl_value(); });
+  mod.method("test_val", [](jlcxx::ValSym<cst_sym_3>) { return jlcxx::ValSym<cst_sym_3>(); });
+
   // wstring
   mod.method("test_wstring_to_julia", [] () { return std::wstring(L"šČô_φ_привет_일보"); });
   mod.method("test_wstring_to_cpp", [] (const std::wstring& ws) { return ws == L"šČô_φ_привет_일보"; });

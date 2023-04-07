@@ -1038,6 +1038,80 @@ struct ConvertToJulia<SingletonType<T>, NoMappingTrait>
   }
 };
 
+/// Helper for Val{V} types
+template<typename T, T v>
+struct Val
+{
+  static constexpr T value = v;
+
+  static jl_value_t* jl_value()
+  {
+    if constexpr (std::is_same_v<T, const std::string_view&>) {
+      return (jl_value_t*) jl_symbol(v.data());
+    } else {
+      return ::jlcxx::box<T>(v);
+    }
+  }
+};
+
+template<const std::string_view& str>
+using ValSym = Val<const std::string_view&, str>;
+
+#define JLCXX_VAL_SYM static constexpr const std::string_view
+
+template<typename T, T v>
+struct static_type_mapping<Val<T, v>>
+{
+  using type = jl_datatype_t*;
+};
+
+template<typename T, T v>
+struct julia_type_factory<Val<T, v>>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) ::jlcxx::box<T>(v));
+  }
+};
+
+template<const std::string_view& str>
+struct julia_type_factory<Val<const std::string_view&, str>>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(str.data()));
+  }
+};
+
+template<typename T, T v>
+struct ConvertToCpp<Val<T, v>, NoMappingTrait>
+{
+  Val<T, v> operator()(jl_datatype_t*) const
+  {
+    return Val<T, v>();
+  }
+};
+
+template<typename T, T v>
+struct ConvertToJulia<Val<T, v>, NoMappingTrait>
+{
+  jl_datatype_t* operator()(Val<T, v>) const
+  {
+    static jl_datatype_t* type = apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) ::jlcxx::box<T>(v));
+    return type;
+  }
+};
+
+template<const std::string_view& str>
+struct ConvertToJulia<Val<const std::string_view&, str>, NoMappingTrait>
+{
+  jl_datatype_t* operator()(Val<const std::string_view&, str>) const
+  {
+    static jl_datatype_t* type = apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(str.data()));
+    return type;
+  }
+};
+
 /// Helper to encapsulate a strictly typed number type. Numbers typed like this will not be involved in the convenience-overloads that allow passing e.g. an Int to a Float64 argument
 template<typename NumberT>
 struct StrictlyTypedNumber
