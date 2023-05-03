@@ -48,7 +48,7 @@ namespace detail
         {
           concrete_types[i] = jl_typeof(args[i]);
         }
-        concrete_dt = jl_apply_tuple_type_v(concrete_types, tup_sz);
+        concrete_dt = (jl_datatype_t*) jl_apply_tuple_type_v(concrete_types, tup_sz);
         JL_GC_POP();
       }
       result = jl_new_structv(concrete_dt, args, tup_sz);
@@ -87,7 +87,7 @@ template<typename... TypesT> struct julia_type_factory<std::tuple<TypesT...>, Tu
     jl_datatype_t* result = nullptr;
     JL_GC_PUSH1(&params);
     params = jl_svec(sizeof...(TypesT), jlcxx::julia_type<TypesT>()...);
-    result = jl_apply_tuple_type(params);
+    result = (jl_datatype_t*) jl_apply_tuple_type(params);
     JL_GC_POP();
     return result;
   }
@@ -134,7 +134,7 @@ struct julia_type_factory<NTuple<N,T>>
     create_if_not_exists<T>();
     jl_value_t* t[2] = { ::jlcxx::julia_type<T>(), ::jlcxx::julia_type<N>() };
     jl_value_t* type = apply_type((jl_value_t*)jl_vararg_type, t, 2);
-    return jl_apply_tuple_type_v(&type, 1);
+    return (jl_datatype_t*) jl_apply_tuple_type_v(&type, 1);
   }
 };
 
