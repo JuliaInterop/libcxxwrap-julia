@@ -9,6 +9,7 @@
 #include <stack>
 #include <stdexcept>
 #include <string>
+#include <typeindex>
 #include <typeinfo>
 #include <type_traits>
 #include <iostream>
@@ -332,7 +333,7 @@ private:
 };
 
 // Work around the fact that references aren't part of the typeid result
-using type_hash_t = std::pair<std::size_t, std::size_t>;
+using type_hash_t = std::pair<std::type_index, std::size_t>;
 
 namespace detail
 {
@@ -342,7 +343,7 @@ struct TypeHash
 {
   static inline type_hash_t value()
   {
-    return std::make_pair(typeid(T).hash_code(), std::size_t(0));
+    return std::make_pair(std::type_index(typeid(T)), std::size_t(0));
   }
 };
 
@@ -351,7 +352,7 @@ struct TypeHash<T&>
 {
   static inline type_hash_t value()
   {
-    return std::make_pair(typeid(T).hash_code(), std::size_t(1));
+    return std::make_pair(std::type_index(typeid(T)), std::size_t(1));
   }
 };
 
@@ -360,7 +361,7 @@ struct TypeHash<const T&>
 {
   static inline type_hash_t value()
   {
-    return std::make_pair(typeid(T).hash_code(), std::size_t(2));
+    return std::make_pair(std::type_index(typeid(T)), std::size_t(2));
   }
 };
 
@@ -395,7 +396,7 @@ public:
     const auto insresult = jlcxx_type_map().insert(std::make_pair(type_hash<SourceT>(), CachedDatatype(dt, protect)));
     if(!insresult.second)
     {
-      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << " using hash " << insresult.first->first.first << " and const-ref indicator " << insresult.first->first.second << std::endl;
+      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << " using hash " << insresult.first->first.first.hash_code() << " and const-ref indicator " << insresult.first->first.second << std::endl;
       return;
     }
   }
