@@ -62,7 +62,7 @@ JLCXX_API void initialize_cxxwrap(jl_value_t* julia_module, jl_value_t* cppfunct
   {
     if((jl_module_t*)julia_module != g_cxxwrap_module)
     {
-      throw std::runtime_error("Two different CxxWrap modules are loaded, aborting.");
+      jl_error("Two different CxxWrap modules are loaded, aborting.");
     }
     return;
   }
