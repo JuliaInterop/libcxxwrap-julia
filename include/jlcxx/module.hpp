@@ -629,6 +629,7 @@ public:
   template<typename T>
   void set_const(const std::string& name, T&& value)
   {
+    static_assert(IsMirroredType<typename std::remove_reference<T>::type>::value, "set_const can only be applied to IsMirrored types (e.g. numbers or standard layout structs)");
     if(get_constant(name) != nullptr)
     {
       throw std::runtime_error("Duplicate registration of constant " + name);
