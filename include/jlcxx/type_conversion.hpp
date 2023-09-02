@@ -5,6 +5,7 @@
 
 #include <complex>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <stack>
 #include <stdexcept>
@@ -335,6 +336,27 @@ private:
 // Work around the fact that references aren't part of the typeid result
 using type_hash_t = std::pair<std::type_index, std::size_t>;
 
+} // namespace jlcxx
+
+namespace std {
+
+// Hash implementation from https://en.cppreference.com/w/cpp/utility/hash
+template<>
+struct hash<jlcxx::type_hash_t> 
+{
+  std::size_t operator()(const jlcxx::type_hash_t& h) const noexcept
+  {
+    std::size_t h1 = std::hash<std::type_index>{}(h.first);
+    std::size_t h2 = std::hash<std::size_t>{}(h.second);
+    return h1 ^ (h2 << 1);
+  }
+};
+
+}
+
+namespace jlcxx
+{
+
 namespace detail
 {
 
@@ -373,7 +395,7 @@ inline type_hash_t type_hash()
   return detail::TypeHash<T>::value();
 }
 
-JLCXX_API std::map<type_hash_t, CachedDatatype>& jlcxx_type_map();
+JLCXX_API std::unordered_map<type_hash_t, CachedDatatype>& jlcxx_type_map();
 
 /// Store the Julia datatype linked to SourceT
 template<typename SourceT>
@@ -393,10 +415,15 @@ public:
 
   static inline void set_julia_type(jl_datatype_t* dt, bool protect = true)
   {
-    const auto insresult = jlcxx_type_map().insert(std::make_pair(type_hash<SourceT>(), CachedDatatype(dt, protect)));
-    if(!insresult.second)
+    type_hash_t new_hash = type_hash<SourceT>();
+    const auto [inserted_it, insert_success] = jlcxx_type_map().insert(std::make_pair(new_hash, CachedDatatype(dt, protect)));
+    if(!insert_success)
     {
-      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as " << julia_type_name(insresult.first->second.get_dt()) << " using hash " << insresult.first->first.first.hash_code() << " and const-ref indicator " << insresult.first->first.second << std::endl;
+      type_hash_t old_hash = inserted_it->first;
+      std::cout << "Warning: Type " << new_hash.first.name() << " already had a mapped type set as "
+        << julia_type_name(inserted_it->second.get_dt()) << " and const-ref indicator " << old_hash.second << " and C++ type name " << old_hash.first.name()
+        << ". Hash comparison: old(" << old_hash.first.hash_code() << "," << old_hash.second << ") == new(" << old_hash.first.hash_code() << "," << old_hash.second << ") == "
+        << std::boolalpha << (old_hash == new_hash) << std::endl;
       return;
     }
   }
