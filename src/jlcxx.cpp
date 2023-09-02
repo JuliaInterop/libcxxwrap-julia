@@ -341,9 +341,9 @@ namespace detail
   };
 }
 
-JLCXX_API std::map<type_hash_t, CachedDatatype>& jlcxx_type_map()
+JLCXX_API std::unordered_map<type_hash_t, CachedDatatype>& jlcxx_type_map()
 {
-  static std::map<type_hash_t, CachedDatatype> m_map;
+  static std::unordered_map<type_hash_t, CachedDatatype> m_map;
   return m_map;
 }
 
