@@ -19,9 +19,9 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   m_instance.reset(new StlWrappers(mod));
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
   m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
-  m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
+  m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque<stl::DequeIteratorWrapper>());
   m_instance->queue.apply_combination<std::queue, stltypes>(stl::WrapQueue());
-  m_instance->iterator.apply_combination<stl::DequeIteratorWrapper, stltypes>(stl::WrapIterator());
+  m_instance->dequeIterator.apply_combination<stl::DequeIteratorWrapper, stltypes>(stl::WrapIterator());
   // m_instance->iterator.apply_combination<stl::VectorIteratorWrapper, stltypes>(stl::WrapIterator());
   smartptr::apply_smart_combination<std::shared_ptr, stltypes>();
   smartptr::apply_smart_combination<std::weak_ptr, stltypes>();
@@ -48,7 +48,7 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
   deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
   queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
-  iterator(stl.add_type<Parametric<TypeVar<1>>>("StdIterator", julia_type("StdAbstractIterator")))
+  dequeIterator(stl.add_type<Parametric<TypeVar<1>>>("StdIterator"))
 {
 }
 
