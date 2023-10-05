@@ -87,7 +87,11 @@ template<typename... TypesT> struct julia_type_factory<std::tuple<TypesT...>, Tu
     jl_datatype_t* result = nullptr;
     JL_GC_PUSH1(&params);
     params = jl_svec(sizeof...(TypesT), jlcxx::julia_type<TypesT>()...);
+  #if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 111
+    result = (jl_datatype_t*) jl_apply_tuple_type(params,1);
+  #else
     result = (jl_datatype_t*) jl_apply_tuple_type(params);
+  #endif
     JL_GC_POP();
     return result;
   }
