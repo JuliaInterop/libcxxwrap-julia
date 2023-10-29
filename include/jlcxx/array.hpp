@@ -7,6 +7,16 @@
 namespace jlcxx
 {
 
+/// wrapper for julia jl_array_data for different julia versions
+template <typename T>
+T* jlcxx_array_data(jl_array_t* arr) {
+#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 111
+  return jl_array_data(arr, T);
+#else
+  return static_cast<T*>(jl_array_data(arr));
+#endif
+}
+
 template<typename PointedT, typename CppT>
 struct ValueExtractor
 {
@@ -123,11 +133,10 @@ public:
     JL_GC_PUSH1(&m_array);
     const size_t pos = jl_array_len(m_array);
     jl_array_grow_end(m_array, 1);
-#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 111
-    jl_array_ptr_set(m_array, pos, box<ValueT>(val));
-#else
-    jl_arrayset(m_array, box<ValueT>(val), pos);
-#endif
+    jl_value_t** data = jlcxx_array_data<jl_value_t*>(m_array);
+    jl_value_t* jval = box<ValueT>(val);
+    data[pos] = jval;
+    jl_gc_wb(m_array, jval);
     JL_GC_POP();
   }
 
@@ -171,17 +180,6 @@ class ArrayRef
 public:
   using julia_t = typename detail::ArrayElementType<ValueT>::type;
 
-private:
-  /// wrapper for julia jl_array_data for different julia versions
-  static julia_t* jlcxx_array_data(jl_array_t* arr) {
-#if (JULIA_VERSION_MAJOR * 100 + JULIA_VERSION_MINOR) >= 111
-    return jl_array_data(arr, julia_t);
-#else
-    return static_cast<julia_t*>(jl_array_data(arr));
-#endif
-  }
-
-public:
   ArrayRef(jl_array_t* arr) : m_array(arr)
   {
     assert(wrapped() != nullptr);
@@ -205,22 +203,22 @@ public:
 
   iterator begin()
   {
-    return iterator(jlcxx_array_data(wrapped()));
+    return iterator(jlcxx_array_data<julia_t>(wrapped()));
   }
 
   const_iterator begin() const
   {
-    return const_iterator(jlcxx_array_data(wrapped()));
+    return const_iterator(jlcxx_array_data<julia_t>(wrapped()));
   }
 
   iterator end()
   {
-    return iterator(jlcxx_array_data(wrapped()) + jl_array_len(wrapped()));
+    return iterator(jlcxx_array_data<julia_t>(wrapped()) + jl_array_len(wrapped()));
   }
 
   const_iterator end() const
   {
-    return const_iterator(jlcxx_array_data(wrapped()) + jl_array_len(wrapped()));
+    return const_iterator(jlcxx_array_data<julia_t>(wrapped()) + jl_array_len(wrapped()));
   }
 
   void push_back(const ValueT& val)
@@ -237,12 +235,12 @@ public:
 
   const julia_t* data() const
   {
-    return jlcxx_array_data(wrapped());
+    return jlcxx_array_data<julia_t>(wrapped());
   }
 
   julia_t* data()
   {
-    return jlcxx_array_data(wrapped());
+    return jlcxx_array_data<julia_t>(wrapped());
   }
 
   std::size_t size() const
