@@ -367,6 +367,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.set_const("EnumClassBlue", EnumClass::blue);
   types.method("check_red", [] (const EnumClass c) { return c == EnumClass::red; });
 
+  static const EnumClass stored_blue = EnumClass::blue;
+  types.method("check_enum_byref", [] (const EnumClass& c) { return c == EnumClass::red; });
+  types.set_const("StoredBlue", stored_blue);
+
   types.add_type<Foo>("Foo")
     .constructor<const std::wstring&, jlcxx::ArrayRef<double,1>>()
     .method("name", [](Foo& f) { return f.name; })
