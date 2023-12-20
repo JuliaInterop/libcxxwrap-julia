@@ -156,7 +156,8 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
       julia_return_type,
       boxed_f,
       boxed_thunk,
-      f.override_module()
+      f.override_module(),
+      f.doc()
     ));
 
     JL_GC_POP();

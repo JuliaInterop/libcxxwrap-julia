@@ -9,5 +9,5 @@ std::string greet()
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& mod)
 {
-  mod.method("greet", &greet);
+  mod.method("greet", &greet, "documentation for greet");
 }
