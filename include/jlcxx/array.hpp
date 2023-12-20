@@ -131,8 +131,10 @@ public:
   void push_back(VT&& val)
   {
     JL_GC_PUSH1(&m_array);
+    const size_t pos = jl_array_len(m_array);
+    jl_array_grow_end(m_array, 1);
     jl_value_t* jval = box<ValueT>(val);
-    jl_array_ptr_1d_push(m_array, jval);
+    jl_array_ptr_set(m_array, pos, jval);
     JL_GC_POP();
   }
 
