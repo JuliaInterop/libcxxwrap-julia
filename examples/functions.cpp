@@ -207,7 +207,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.method("test_int64_array", test_int64_array);
   mod.method("test_float_array", test_float_array);
   mod.method("test_double_array", test_double_array);
-  mod.method("test_exception", test_exception, "", true);
+  mod.method("test_exception", test_exception, jlcxx::calling_policy::std_function);
   mod.method("test_array_len", test_array_len);
   mod.method("test_array_set", test_array_set);
   mod.method("test_array_get", test_array_get);

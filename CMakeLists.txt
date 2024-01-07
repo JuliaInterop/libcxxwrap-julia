@@ -75,6 +75,7 @@ set(JLCXX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(JLCXX_HEADERS
     ${JLCXX_INCLUDE_DIR}/jlcxx/array.hpp
+    ${JLCXX_INCLUDE_DIR}/jlcxx/attr.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/const_array.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx_config.hpp

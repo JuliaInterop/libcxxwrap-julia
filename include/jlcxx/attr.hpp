@@ -1,0 +1,163 @@
+#ifndef JLCXX_ATTR_HPP
+#define JLCXX_ATTR_HPP
+
+#include <string>
+#include <vector>
+#include <any>
+#include <type_traits>
+#include <optional>
+
+#include "jlcxx_config.hpp"
+
+
+// This header provides internal helper functionality for providing additional information like argument names and default arguments for C++ functions (method in module.hpp)
+
+namespace jlcxx
+{
+
+namespace detail
+{
+  /// Helper type for function arguments
+  template <bool IsKwArg>
+  struct JLCXX_API BasicArg
+  {
+    static constexpr bool isKeywordArgument = IsKwArg;
+
+    const char *name;
+    std::any defaultValue;
+
+    BasicArg(const char *name_) : name(name_) {}
+
+    template <typename T>
+    inline BasicArg &operator=(T value)
+    {
+      defaultValue.emplace<T>(std::forward<T>(value));
+      return *this;
+    }
+  };
+}
+
+/// use jlcxx::arg("argumentName") to add function argument names, and jlcxx::arg("name")=value to define an argument with a default value
+using arg = detail::BasicArg<false>;
+
+///! use jlcxx::kwarg("argumentName") to define a keyword argument and with jlcxx::kwarg("name")=value you can add a default value for the argument
+using kwarg = detail::BasicArg<true>;
+
+/// enum for the force_convert parameter for raw function pointers
+enum class calling_policy : bool
+{
+  ccall = false,
+  std_function = true
+};
+/// default value for the calling_policy argument for Module::method with raw C++ function pointers
+constexpr auto default_calling_policy = calling_policy::ccall;
+
+/// enum for finalize parameter for constructors
+enum class finalize_policy : bool
+{
+    no = false,
+    yes = true
+};
+/// default value for the finalize_policy argument for Module::constructor
+constexpr auto default_finalize_policy = finalize_policy::yes;
+
+
+namespace detail
+{
+  /// SFINEA for argument processing, inspired/copied from pybind11 code (pybind11/attr.h)
+  template<typename T, typename SFINEA = void>
+  struct process_attribute;
+
+  /// helper type for parsing argument and docstrings
+  struct ExtraFunctionData
+  {
+    std::vector<arg> positionalArguments;
+    std::vector<kwarg> keywordArguments;
+    std::string doc;
+    calling_policy force_convert = default_calling_policy;
+    finalize_policy finalize = default_finalize_policy;
+
+  };
+
+  /// process docstring
+  template<>
+  struct process_attribute<const char*>
+  {
+    static inline void init(const char* s, ExtraFunctionData& f)
+    {
+      f.doc = s;
+    }
+  };
+
+  template<>
+  struct process_attribute<char*> : public process_attribute<const char*> {};
+
+  /// process positional argument
+  template<>
+  struct process_attribute<arg>
+  {
+    static inline void init(arg&& a, ExtraFunctionData& f)
+    {
+      f.positionalArguments.emplace_back(std::move(a));
+    }
+  };
+
+  /// process keyword argument
+  template<>
+  struct process_attribute<kwarg>
+  {
+    static inline void init(kwarg&& a, ExtraFunctionData& f)
+    {
+      f.keywordArguments.emplace_back(std::move(a));
+    }
+  };
+
+  /// process calling_policy argument
+  template<>
+  struct process_attribute<calling_policy>
+  {
+    static inline void init(calling_policy force_convert, ExtraFunctionData& f)
+    {
+      f.force_convert = force_convert;
+    }
+  };
+
+  /// process finalize_policy argument
+  template<>
+  struct process_attribute<finalize_policy>
+  {
+    static inline void init(finalize_policy finalize, ExtraFunctionData& f)
+    {
+        f.finalize = finalize;
+    }
+  };
+
+  /// initialize ExtraFunctionData from argument list
+  template<bool AllowCallingPolicy = false, bool AllowFinalizePolicy = false, typename... Extra>
+  ExtraFunctionData parse_attributes(Extra... extra)
+  {
+    // check that the calling_policy is only set if explicitly allowed
+    constexpr bool contains_calling_policy = (std::is_same_v<calling_policy, Extra> || ... );
+    static_assert( (!contains_calling_policy) || AllowCallingPolicy, "calling_policy can only be set for raw function pointers!");
+
+    // chat that the finalize_policy is only set if explicitly allowed
+    constexpr bool contains_finalize_policy = (std::is_same_v<finalize_policy, Extra> || ... );
+    static_assert( (!contains_finalize_policy) || AllowFinalizePolicy, "finalize_policy can only be set for constructors!");
+
+    ExtraFunctionData result;
+
+    // helper lambda
+    [[maybe_unused]] constexpr auto handleExtraArgs = [](ExtraFunctionData& f, auto argi)
+    {
+      using T = typename std::decay_t<decltype(argi)>;
+      process_attribute<T>::init(std::forward<T>(argi), f);
+    };
+    (handleExtraArgs(result, std::move(extra)), ...);
+
+    return result;
+  }
+}
+
+}
+
+#endif
