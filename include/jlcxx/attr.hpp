@@ -157,6 +157,26 @@ namespace detail
     return result;
   }
 
+  /// count occurences of specific type in parameter pack
+  template<typename T, typename... Extra>
+  constexpr int count_attributes()
+  {
+    return (0 + ... + int(std::is_same_v<T,Extra>));
+  }
+
+  static_assert(count_attributes<float, int, float, int, double>() == 1);
+  static_assert(count_attributes<int, int, float, int, double, int, int>() == 4);
+
+  /// check number of arguments matches annotated arguments if annotations for keyword arguments are present
+  template<typename...  Extra>
+  constexpr bool check_extra_argument_count(int n_arg)
+  {
+    // with keyword arguments, the number of annotated arguments must match the number of actual arguments
+    constexpr auto n_extra_arg = count_attributes<arg, Extra...>();
+    constexpr auto n_extra_kwarg = count_attributes<kwarg, Extra...>();
+    return n_extra_kwarg == 0 || n_arg == n_extra_arg + n_extra_kwarg;
+  }
+
   /// simple helper for checking if a template argument has a call operator (e.g. is a lambda)
   template<class T, typename SFINEA = void>
   struct has_call_operator : std::false_type {};

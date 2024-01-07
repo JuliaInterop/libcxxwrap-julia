@@ -212,13 +212,15 @@ public:
 private:
   jl_value_t* m_name = nullptr;
   jl_value_t* m_doc = nullptr;
-  std::vector<arg> m_positional_arguments;
-  std::vector<kwarg> m_keyword_arguments;
   Module* m_module;
   std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
   // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
   jl_value_t* m_override_module = nullptr;
+
+  // annotations and default values for positional and keyword arguments
+  std::vector<arg> m_positional_arguments;
+  std::vector<kwarg> m_keyword_arguments;
 };
 
 /// Implementation of function storage, case of std::function
@@ -566,6 +568,8 @@ public:
   template<typename R, typename... Args, typename... Extra>
   FunctionWrapperBase& method(const std::string& name,  R(*f)(Args...), Extra... extra)
   {
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(Args)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
     detail::ExtraFunctionData extraData = detail::parse_attributes<true>(extra...);
     const bool need_convert = bool(extraData.force_convert) || detail::NeedConvertHelper<R, Args...>()();
 
@@ -598,6 +602,8 @@ public:
   template<typename T, typename... ArgsT, typename... Extra>
   void constructor(jl_datatype_t* dt, Extra... extra)
   {
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(ArgsT)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
     detail::ExtraFunctionData extraData = detail::parse_attributes<false,true>(extra...);
     FunctionWrapperBase &new_wrapper = bool(extraData.finalize) ? add_lambda("dummy", [](ArgsT... args) { return create<T, true>(args...); }, std::move(extraData)) : add_lambda("dummy", [](ArgsT... args) { return create<T, false>(args...); }, std::move(extraData));
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
@@ -755,6 +761,8 @@ private:
   template<typename R, typename... Args, typename... Extra>
   FunctionWrapperBase& method_helper(const std::string& name,  std::function<R(Args...)> f, detail::ExtraFunctionData&& extraData)
   {
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(Args)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
     auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
