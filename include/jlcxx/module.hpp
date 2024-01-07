@@ -180,6 +180,26 @@ public:
     return m_doc;
   }
 
+  void set_positional_arguments(std::vector<arg>&& posArgs)
+  {
+    m_positional_arguments = std::move(posArgs);
+  }
+
+  const std::vector<arg>& positional_arguments() const
+  {
+    return m_positional_arguments;
+  }
+
+  void set_keyword_arguments(std::vector<kwarg>&& kwArgs)
+  {
+    m_keyword_arguments = std::move(kwArgs);
+  }
+
+  const std::vector<kwarg>& keyword_arguments() const
+  {
+    return m_keyword_arguments;
+  }
+
   inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
   inline jl_value_t* override_module() const { return m_override_module; }
 
@@ -192,6 +212,8 @@ public:
 private:
   jl_value_t* m_name = nullptr;
   jl_value_t* m_doc = nullptr;
+  std::vector<arg> m_positional_arguments;
+  std::vector<kwarg> m_keyword_arguments;
   Module* m_module;
   std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
@@ -550,13 +572,15 @@ public:
     // Conversion is automatic when using the std::function calling method, so if we need conversion we use that
     if(need_convert)
     {
-      return method_helper(name, std::function<R(Args...)>(f), extraData);
+      return method_helper(name, std::function<R(Args...)>(f), std::move(extraData));
     }
 
     // No conversion needed -> call can be through a naked function pointer
     auto* new_wrapper = new FunctionPtrWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
+    new_wrapper->set_positional_arguments(std::move(extraData.positionalArguments));
+    new_wrapper->set_keyword_arguments(std::move(extraData.keywordArguments));
     append_function(new_wrapper);
     return *new_wrapper;
   }
@@ -567,7 +591,7 @@ public:
   FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
-    return lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), extraData);
+    return lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData));
   }
 
   /// Add a constructor with the given argument types for the given datatype (used to get the name)
@@ -575,9 +599,11 @@ public:
   void constructor(jl_datatype_t* dt, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes<false,true>(extra...);
-    FunctionWrapperBase &new_wrapper = bool(extraData.finalize) ? add_lambda("dummy", [](ArgsT... args) { return create<T, true>(args...); }, extraData) : add_lambda("dummy", [](ArgsT... args) { return create<T, false>(args...); }, extraData);
+    FunctionWrapperBase &new_wrapper = bool(extraData.finalize) ? add_lambda("dummy", [](ArgsT... args) { return create<T, true>(args...); }, std::move(extraData)) : add_lambda("dummy", [](ArgsT... args) { return create<T, false>(args...); }, std::move(extraData));
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
     new_wrapper.set_doc(jl_cstr_to_string(extraData.doc.c_str()));
+    new_wrapper.set_positional_arguments(std::move(extraData.positionalArguments));
+    new_wrapper.set_keyword_arguments(std::move(extraData.keywordArguments));
   }
 
   template<typename T, typename R, typename LambdaT, typename... ArgsT, typename... Extra>
@@ -591,7 +617,7 @@ public:
       assert(jl_is_mutable_datatype(concrete_dt));
       T* cpp_obj = lambda(std::forward<ArgsT>(args)...);
       return boxed_cpp_pointer(cpp_obj, concrete_dt, bool(extraData.finalize));
-    }, extraData);
+    }, std::move(extraData));
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
   }
 
@@ -715,23 +741,25 @@ private:
   TypeWrapper<T> add_type_internal(const std::string& name, JLSuperT* super);
 
   template<typename LambdaT>
-  FunctionWrapperBase& add_lambda(const std::string& name, LambdaT&& lambda, const detail::ExtraFunctionData& extraData)
+  FunctionWrapperBase& add_lambda(const std::string& name, LambdaT&& lambda, detail::ExtraFunctionData&& extraData)
   {
-    return lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), extraData);
+    return lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData));
   }
 
   template<typename R, typename LambdaT, typename... ArgsT>
-  FunctionWrapperBase& lambda_helper(const std::string& name, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, const detail::ExtraFunctionData& extraData)
+  FunctionWrapperBase& lambda_helper(const std::string& name, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, detail::ExtraFunctionData&& extraData)
   {
-    return method_helper(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)), extraData);
+    return method_helper(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)), std::move(extraData));
   }
 
   template<typename R, typename... Args, typename... Extra>
-  FunctionWrapperBase& method_helper(const std::string& name,  std::function<R(Args...)> f, const detail::ExtraFunctionData& extraData)
+  FunctionWrapperBase& method_helper(const std::string& name,  std::function<R(Args...)> f, detail::ExtraFunctionData&& extraData)
   {
     auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
+    new_wrapper->set_positional_arguments(std::move(extraData.positionalArguments));
+    new_wrapper->set_keyword_arguments(std::move(extraData.keywordArguments));
     append_function(new_wrapper);
     return *new_wrapper;
   }
@@ -1062,7 +1090,7 @@ public:
   TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
-    m_module.lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), extraData);
+    m_module.lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData));
     return *this;
   }
 
@@ -1088,7 +1116,7 @@ public:
   TypeWrapper<T>& method(LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
-    m_module.lambda_helper("operator()", std::forward<LambdaT>(lambda), &LambdaT::operator(), extraData)
+    m_module.lambda_helper("operator()", std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData))
       .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
