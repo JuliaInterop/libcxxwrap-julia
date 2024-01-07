@@ -563,8 +563,7 @@ public:
 
   /// Define a new function. Overload for lambda
   template<typename LambdaT, typename... Extra,
-           decltype(&LambdaT::operator(), bool()) = true,       // <- checks if LambaT::operator() exists
-           std::enable_if_t<!std::is_member_function_pointer<LambdaT>::value, bool> = true>
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer<LambdaT>::value, bool> = true>
   FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
@@ -1032,7 +1031,7 @@ public:
 
   /// Define a "constructor" using a lambda
   template<typename LambdaT, typename... Extra,
-           decltype(&LambdaT::operator(), bool()) = true>       // <- checks if LambaT::operator() exists
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value, bool> = true>
   TypeWrapper<T>& constructor(LambdaT&& lambda, Extra... extra)
   {
     m_module.constructor<T>(m_dt, std::forward<LambdaT>(lambda), &LambdaT::operator(), extra...);
@@ -1059,8 +1058,7 @@ public:
 
   /// Define a "member" function using a lambda
   template<typename LambdaT, typename... Extra,
-           decltype(&LambdaT::operator(), bool()) = true,       // <- checks if LambaT::operator() exists
-           std::enable_if_t<!std::is_member_function_pointer<LambdaT>::value, bool> = true>
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer<LambdaT>::value, bool> = true>
   TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
@@ -1086,7 +1084,7 @@ public:
 
   /// Overload operator() using a lambda
   template<typename LambdaT, typename... Extra,
-           decltype(&LambdaT::operator(), bool()) = true>       // <- checks if LambaT::operator() exists
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value, bool> = true>
   TypeWrapper<T>& method(LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
