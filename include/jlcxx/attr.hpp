@@ -31,7 +31,7 @@ namespace detail
     template <typename T>
     inline BasicArg &operator=(T value)
     {
-      defaultValue = convert_to_julia(std::forward<T>(value));
+      defaultValue = box<T>(std::forward<T>(value));
       return *this;
     }
   };
