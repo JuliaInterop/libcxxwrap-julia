@@ -3,11 +3,11 @@
 
 #include <string>
 #include <vector>
-#include <any>
 #include <type_traits>
 #include <functional>
 
 #include "jlcxx_config.hpp"
+#include "type_conversion.hpp"
 
 
 // This header provides internal helper functionality for providing additional information like argument names and default arguments for C++ functions (method in module.hpp)
@@ -23,15 +23,15 @@ namespace detail
   {
     static constexpr bool isKeywordArgument = IsKwArg;
 
-    const char *name;
-    std::any defaultValue;
+    const char *name = nullptr;
+    jl_value_t* defaultValue = nullptr;
 
     BasicArg(const char *name_) : name(name_) {}
 
     template <typename T>
     inline BasicArg &operator=(T value)
     {
-      defaultValue.emplace<T>(std::forward<T>(value));
+      defaultValue = convert_to_julia(std::forward<T>(value));
       return *this;
     }
   };

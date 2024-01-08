@@ -202,6 +202,10 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   mod.method("boxednumber_nb_deleted", [] () { return BoxedNumber::m_nb_deleted; });
 
   mod.method("concatenate_numbers", &concatenate_numbers);
+  mod.method("concatenate_numbers_with_named_args", &concatenate_numbers, jlcxx::arg("i"), jlcxx::arg("d"));
+  // wrong number of arguments doesn't compile
+  // mod.method("concatenate_numbers_with_kwargs", &concatenate_numbers, jlcxx::kwarg("i"));
+  mod.method("concatenate_numbers_with_kwargs", &concatenate_numbers, jlcxx::kwarg("i"), jlcxx::kwarg("d"));
   mod.method("concatenate_strings", &concatenate_strings);
   mod.method("test_int32_array", test_int32_array);
   mod.method("test_int64_array", test_int64_array);

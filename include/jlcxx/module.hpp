@@ -184,31 +184,27 @@ public:
   {
     m_number_of_keyword_args = kwArgs.size();
 
-    // helper lambda to avoid code duplication
-    constexpr auto appendNames = [](auto Args, std::vector<jl_value_t*>& argNames)
-    {
-      for(const auto& a: Args)
-      {
-        jl_value_t* s = jl_cstr_to_string(a.name);
-        protect_from_gc(s);
-        argNames.push_back(s);
-      }
-    };
-
     // gather all argument names
     m_argument_names.clear();
-    appendNames(posArgs, m_argument_names);
-    appendNames(kwArgs, m_argument_names);
+    for(auto& a: posArgs)
+      m_argument_names.push_back(jl_cstr_to_string(a.name));
+    for(auto& a: kwArgs)
+      m_argument_names.push_back(jl_cstr_to_string(a.name));
+    // ensure the Julia GC doesn't throw away our strings:
+    for(auto& s: m_argument_names)
+      protect_from_gc(s);
 
+    // gather all default values
     m_argument_default_values.clear();
     for(auto& a: posArgs)
-      m_argument_default_values.emplace_back(std::move(a.defaultValue));
+      m_argument_default_values.push_back(a.defaultValue);
     for(auto& a: kwArgs)
-      m_argument_default_values.emplace_back(std::move(a.defaultValue));
+      m_argument_default_values.push_back(a.defaultValue);
   }
 
   const std::vector<jl_value_t*>& argument_names() const {return m_argument_names;}
   int number_of_keyword_arguments() const {return m_number_of_keyword_args;}
+  const std::vector<jl_value_t*>& argument_default_values() const {return m_argument_default_values;}
 
   inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
   inline jl_value_t* override_module() const { return m_override_module; }
@@ -224,14 +220,13 @@ private:
   jl_value_t* m_doc = nullptr;
   std::vector<jl_value_t*> m_argument_names;
   int m_number_of_keyword_args = 0;
+  std::vector<jl_value_t*> m_argument_default_values;
   Module* m_module;
   std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
   // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
   jl_value_t* m_override_module = nullptr;
 
-  // the original C++ data for the default values (so they don't go out of scope)
-  std::vector<std::any> m_argument_default_values;
 };
 
 /// Implementation of function storage, case of std::function
