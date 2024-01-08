@@ -180,25 +180,35 @@ public:
     return m_doc;
   }
 
-  void set_positional_arguments(std::vector<arg>&& posArgs)
+  void set_extra_argument_data(std::vector<arg>&& posArgs, std::vector<kwarg>&& kwArgs)
   {
-    m_positional_arguments = std::move(posArgs);
+    m_number_of_keyword_args = kwArgs.size();
+
+    // helper lambda to avoid code duplication
+    constexpr auto appendNames = [](auto Args, std::vector<jl_value_t*>& argNames)
+    {
+      for(const auto& a: Args)
+      {
+        jl_value_t* s = jl_cstr_to_string(a.name);
+        protect_from_gc(s);
+        argNames.push_back(s);
+      }
+    };
+
+    // gather all argument names
+    m_argument_names.clear();
+    appendNames(posArgs, m_argument_names);
+    appendNames(kwArgs, m_argument_names);
+
+    m_argument_default_values.clear();
+    for(auto& a: posArgs)
+      m_argument_default_values.emplace_back(std::move(a.defaultValue));
+    for(auto& a: kwArgs)
+      m_argument_default_values.emplace_back(std::move(a.defaultValue));
   }
 
-  const std::vector<arg>& positional_arguments() const
-  {
-    return m_positional_arguments;
-  }
-
-  void set_keyword_arguments(std::vector<kwarg>&& kwArgs)
-  {
-    m_keyword_arguments = std::move(kwArgs);
-  }
-
-  const std::vector<kwarg>& keyword_arguments() const
-  {
-    return m_keyword_arguments;
-  }
+  const std::vector<jl_value_t*>& argument_names() const {return m_argument_names;}
+  int number_of_keyword_arguments() const {return m_number_of_keyword_args;}
 
   inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
   inline jl_value_t* override_module() const { return m_override_module; }
@@ -212,15 +222,16 @@ public:
 private:
   jl_value_t* m_name = nullptr;
   jl_value_t* m_doc = nullptr;
+  std::vector<jl_value_t*> m_argument_names;
+  int m_number_of_keyword_args = 0;
   Module* m_module;
   std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
   // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
   jl_value_t* m_override_module = nullptr;
 
-  // annotations and default values for positional and keyword arguments
-  std::vector<arg> m_positional_arguments;
-  std::vector<kwarg> m_keyword_arguments;
+  // the original C++ data for the default values (so they don't go out of scope)
+  std::vector<std::any> m_argument_default_values;
 };
 
 /// Implementation of function storage, case of std::function
@@ -583,8 +594,7 @@ public:
     auto* new_wrapper = new FunctionPtrWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
-    new_wrapper->set_positional_arguments(std::move(extraData.positionalArguments));
-    new_wrapper->set_keyword_arguments(std::move(extraData.keywordArguments));
+    new_wrapper->set_extra_argument_data(std::move(extraData.positionalArguments), std::move(extraData.keywordArguments));
     append_function(new_wrapper);
     return *new_wrapper;
   }
@@ -608,8 +618,7 @@ public:
     FunctionWrapperBase &new_wrapper = bool(extraData.finalize) ? add_lambda("dummy", [](ArgsT... args) { return create<T, true>(args...); }, std::move(extraData)) : add_lambda("dummy", [](ArgsT... args) { return create<T, false>(args...); }, std::move(extraData));
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
     new_wrapper.set_doc(jl_cstr_to_string(extraData.doc.c_str()));
-    new_wrapper.set_positional_arguments(std::move(extraData.positionalArguments));
-    new_wrapper.set_keyword_arguments(std::move(extraData.keywordArguments));
+    new_wrapper.set_extra_argument_data(std::move(extraData.positionalArguments), std::move(extraData.keywordArguments));
   }
 
   template<typename T, typename R, typename LambdaT, typename... ArgsT, typename... Extra>
@@ -766,8 +775,7 @@ private:
     auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
-    new_wrapper->set_positional_arguments(std::move(extraData.positionalArguments));
-    new_wrapper->set_keyword_arguments(std::move(extraData.keywordArguments));
+    new_wrapper->set_extra_argument_data(std::move(extraData.positionalArguments), std::move(extraData.keywordArguments));
     append_function(new_wrapper);
     return *new_wrapper;
   }
