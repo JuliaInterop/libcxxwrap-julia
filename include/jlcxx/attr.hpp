@@ -132,6 +132,13 @@ namespace detail
     }
   };
 
+  template<typename T>
+  void parse_attributes_helper(ExtraFunctionData& f, T argi)
+  {
+    using T_ = typename std::decay_t<T>;
+    process_attribute<T>::init(std::forward<T_>(argi), f);
+  }
+
   /// initialize ExtraFunctionData from argument list
   template<bool AllowCallingPolicy = false, bool AllowFinalizePolicy = false, typename... Extra>
   ExtraFunctionData parse_attributes(Extra... extra)
@@ -146,13 +153,7 @@ namespace detail
 
     ExtraFunctionData result;
 
-    // helper lambda
-    [[maybe_unused]] constexpr auto handleExtraArgs = [](ExtraFunctionData& f, auto argi)
-    {
-      using T = typename std::decay_t<decltype(argi)>;
-      process_attribute<T>::init(std::forward<T>(argi), f);
-    };
-    (handleExtraArgs(result, std::move(extra)), ...);
+    (parse_attributes_helper(result, std::move(extra)), ...);
 
     return result;
   }
