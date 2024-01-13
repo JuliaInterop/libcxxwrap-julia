@@ -11,6 +11,7 @@
 #include <vector>
 
 #include "array.hpp"
+#include "attr.hpp"
 #include "type_conversion.hpp"
 
 namespace jlcxx
@@ -179,6 +180,32 @@ public:
     return m_doc;
   }
 
+  void set_extra_argument_data(std::vector<arg>&& posArgs, std::vector<kwarg>&& kwArgs)
+  {
+    m_number_of_keyword_args = kwArgs.size();
+
+    // gather all argument names
+    m_argument_names.clear();
+    for(auto& a: posArgs)
+      m_argument_names.push_back(jl_cstr_to_string(a.name));
+    for(auto& a: kwArgs)
+      m_argument_names.push_back(jl_cstr_to_string(a.name));
+    // ensure the Julia GC doesn't throw away our strings:
+    for(auto& s: m_argument_names)
+      protect_from_gc(s);
+
+    // gather all default values
+    m_argument_default_values.clear();
+    for(auto& a: posArgs)
+      m_argument_default_values.push_back(a.defaultValue);
+    for(auto& a: kwArgs)
+      m_argument_default_values.push_back(a.defaultValue);
+  }
+
+  const std::vector<jl_value_t*>& argument_names() const {return m_argument_names;}
+  int number_of_keyword_arguments() const {return m_number_of_keyword_args;}
+  const std::vector<jl_value_t*>& argument_default_values() const {return m_argument_default_values;}
+
   inline void set_override_module(jl_module_t* mod) { m_override_module = (jl_value_t*)mod; }
   inline jl_value_t* override_module() const { return m_override_module; }
 
@@ -191,11 +218,15 @@ public:
 private:
   jl_value_t* m_name = nullptr;
   jl_value_t* m_doc = nullptr;
+  std::vector<jl_value_t*> m_argument_names;
+  int m_number_of_keyword_args = 0;
+  std::vector<jl_value_t*> m_argument_default_values;
   Module* m_module;
   std::pair<jl_datatype_t*,jl_datatype_t*> m_return_type = std::make_pair(nullptr,nullptr);
 
   // The module in which the function is overridden, e.g. jl_base_module when trying to override Base.getindex.
   jl_value_t* m_override_module = nullptr;
+
 };
 
 /// Implementation of function storage, case of std::function
@@ -532,63 +563,73 @@ public:
   }
 
   /// Define a new function
-  template<typename R, typename... Args>
-  FunctionWrapperBase& method(const std::string& name,  std::function<R(Args...)> f, const std::string& doc = std::string())
+  template<typename R, typename... Args, typename... Extra>
+  FunctionWrapperBase& method(const std::string& name,  std::function<R(Args...)> f, Extra... extra)
   {
-    auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
-    new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
-    new_wrapper->set_doc(jl_cstr_to_string(doc.c_str()));
-    append_function(new_wrapper);
-    return *new_wrapper;
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(Args)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
+    detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
+    return method_helper(name, f, extraData);
   }
 
   /// Define a new function. Overload for pointers
-  template<typename R, typename... Args>
-  FunctionWrapperBase& method(const std::string& name,  R(*f)(Args...), const std::string& doc = std::string(), const bool force_convert = false)
+  template<typename R, typename... Args, typename... Extra>
+  FunctionWrapperBase& method(const std::string& name,  R(*f)(Args...), Extra... extra)
   {
-    const bool need_convert = force_convert || detail::NeedConvertHelper<R, Args...>()();
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(Args)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
+    detail::ExtraFunctionData extraData = detail::parse_attributes<true>(extra...);
+    const bool need_convert = bool(extraData.force_convert) || detail::NeedConvertHelper<R, Args...>()();
 
     // Conversion is automatic when using the std::function calling method, so if we need conversion we use that
     if(need_convert)
     {
-      return method(name, std::function<R(Args...)>(f), doc);
+      return method_helper(name, std::function<R(Args...)>(f), std::move(extraData));
     }
 
     // No conversion needed -> call can be through a naked function pointer
     auto* new_wrapper = new FunctionPtrWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
-    new_wrapper->set_doc(jl_cstr_to_string(doc.c_str()));
+    new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
+    new_wrapper->set_extra_argument_data(std::move(extraData.positionalArguments), std::move(extraData.keywordArguments));
     append_function(new_wrapper);
     return *new_wrapper;
   }
 
   /// Define a new function. Overload for lambda
-  template<typename LambdaT>
-  FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda, const std::string& doc = std::string(), typename std::enable_if<!std::is_member_function_pointer<LambdaT>::value, bool>::type = true)
+  template<typename LambdaT, typename... Extra,
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer<LambdaT>::value, bool> = true>
+  FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
-    return add_lambda(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), doc);
+    detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
+    return lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData));
   }
 
   /// Add a constructor with the given argument types for the given datatype (used to get the name)
-  template<typename T, typename... ArgsT>
-  void constructor(jl_datatype_t* dt, bool finalize=true, const std::string& doc = std::string())
+  template<typename T, typename... ArgsT, typename... Extra>
+  void constructor(jl_datatype_t* dt, Extra... extra)
   {
-    FunctionWrapperBase &new_wrapper = finalize ? method("dummy", [](ArgsT... args) { return create<T, true>(args...); }) : method("dummy", [](ArgsT... args) { return create<T, false>(args...); });
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(ArgsT)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
+    detail::ExtraFunctionData extraData = detail::parse_attributes<false,true>(extra...);
+    FunctionWrapperBase &new_wrapper = bool(extraData.finalize) ? add_lambda("dummy", [](ArgsT... args) { return create<T, true>(args...); }, std::move(extraData)) : add_lambda("dummy", [](ArgsT... args) { return create<T, false>(args...); }, std::move(extraData));
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
-    new_wrapper.set_doc(jl_cstr_to_string(doc.c_str()));
+    new_wrapper.set_doc(jl_cstr_to_string(extraData.doc.c_str()));
+    new_wrapper.set_extra_argument_data(std::move(extraData.positionalArguments), std::move(extraData.keywordArguments));
   }
 
-  template<typename T, typename R, typename LambdaT, typename... ArgsT>
-  void constructor(jl_datatype_t* dt, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, bool finalize, const std::string& doc = std::string())
+  template<typename T, typename R, typename LambdaT, typename... ArgsT, typename... Extra>
+  void constructor(jl_datatype_t* dt, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, Extra... extra)
   {
     static_assert(std::is_same<T*,R>::value, "Constructor lambda function must return a pointer to the constructed object, of the correct type");
-    FunctionWrapperBase &new_wrapper = method("dummy", [=](ArgsT... args)
+    detail::ExtraFunctionData extraData = detail::parse_attributes<false,true>(extra...);
+    FunctionWrapperBase &new_wrapper = add_lambda("dummy", [=](ArgsT... args)
     {
       jl_datatype_t* concrete_dt = julia_type<T>();
       assert(jl_is_mutable_datatype(concrete_dt));
       T* cpp_obj = lambda(std::forward<ArgsT>(args)...);
-      return boxed_cpp_pointer(cpp_obj, concrete_dt, finalize);
-    }, doc);
+      return boxed_cpp_pointer(cpp_obj, concrete_dt, bool(extraData.finalize));
+    }, std::move(extraData));
     new_wrapper.set_name(detail::make_fname("ConstructorFname", dt));
   }
 
@@ -711,10 +752,27 @@ private:
   template<typename T, typename SuperParametersT, typename JLSuperT>
   TypeWrapper<T> add_type_internal(const std::string& name, JLSuperT* super);
 
-  template<typename R, typename LambdaT, typename... ArgsT>
-  FunctionWrapperBase& add_lambda(const std::string& name, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, const std::string& doc = std::string())
+  template<typename LambdaT>
+  FunctionWrapperBase& add_lambda(const std::string& name, LambdaT&& lambda, detail::ExtraFunctionData&& extraData)
   {
-    return method(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)), doc);
+    return lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData));
+  }
+
+  template<typename R, typename LambdaT, typename... ArgsT>
+  FunctionWrapperBase& lambda_helper(const std::string& name, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, detail::ExtraFunctionData&& extraData)
+  {
+    return method_helper(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)), std::move(extraData));
+  }
+
+  template<typename R, typename... Args>
+  FunctionWrapperBase& method_helper(const std::string& name,  std::function<R(Args...)> f, detail::ExtraFunctionData&& extraData)
+  {
+    auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
+    new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
+    new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
+    new_wrapper->set_extra_argument_data(std::move(extraData.positionalArguments), std::move(extraData.keywordArguments));
+    append_function(new_wrapper);
+    return *new_wrapper;
   }
 
   void set_constant(const std::string& name, jl_value_t* boxed_const);
@@ -999,72 +1057,77 @@ public:
   }
 
   /// Add a constructor with the given argument types
-  template<typename... ArgsT>
-  TypeWrapper<T>& constructor(bool finalize=true)
+  template<typename... ArgsT, typename... Extra>
+  TypeWrapper<T>& constructor(Extra... extra)
   {
     // Only add the default constructor if it wasn't added automatically
     if constexpr (!(DefaultConstructible<T>::value && sizeof...(ArgsT) == 0))
     {
-      m_module.constructor<T, ArgsT...>(m_dt, finalize);
+      m_module.constructor<T, ArgsT...>(m_dt, extra...);
     }
     return *this;
   }
 
   /// Define a "constructor" using a lambda
-  template<typename LambdaT>
-  TypeWrapper<T>& constructor(LambdaT&& lambda, bool finalize = true)
+  template<typename LambdaT, typename... Extra,
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value, bool> = true>
+  TypeWrapper<T>& constructor(LambdaT&& lambda, Extra... extra)
   {
-    m_module.constructor<T>(m_dt, std::forward<LambdaT>(lambda), &LambdaT::operator(), finalize);
+    m_module.constructor<T>(m_dt, std::forward<LambdaT>(lambda), &LambdaT::operator(), extra...);
     return *this;
   }
 
   /// Define a member function
-  template<typename R, typename CT, typename... ArgsT>
-  TypeWrapper<T>& method(const std::string& name, R(CT::*f)(ArgsT...), const std::string& doc = std::string())
+  template<typename R, typename CT, typename... ArgsT, typename... Extra>
+  TypeWrapper<T>& method(const std::string& name, R(CT::*f)(ArgsT...), Extra... extra)
   {
-    m_module.method(name, [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, doc );
-    m_module.method(name, [f](T* obj, ArgsT... args) -> R { return ((*obj).*f)(args...); }, doc );
+    m_module.method(name, [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, extra... );
+    m_module.method(name, [f](T* obj, ArgsT... args) -> R { return ((*obj).*f)(args...); }, extra... );
     return *this;
   }
 
   /// Define a member function, const version
-  template<typename R, typename CT, typename... ArgsT>
-  TypeWrapper<T>& method(const std::string& name, R(CT::*f)(ArgsT...) const, const std::string& doc = std::string())
+  template<typename R, typename CT, typename... ArgsT, typename... Extra>
+  TypeWrapper<T>& method(const std::string& name, R(CT::*f)(ArgsT...) const, Extra... extra)
   {
-    m_module.method(name, [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, doc );
-    m_module.method(name, [f](const T* obj, ArgsT... args) -> R { return ((*obj).*f)(args...); }, doc );
+    m_module.method(name, [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, extra... );
+    m_module.method(name, [f](const T* obj, ArgsT... args) -> R { return ((*obj).*f)(args...); }, extra... );
     return *this;
   }
 
   /// Define a "member" function using a lambda
-  template<typename LambdaT>
-  TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda, const std::string& doc = std::string(), typename std::enable_if<!std::is_member_function_pointer<LambdaT>::value, bool>::type = true)
+  template<typename LambdaT, typename... Extra,
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer<LambdaT>::value, bool> = true>
+  TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
-    m_module.method(name, std::forward<LambdaT>(lambda), doc);
+    detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
+    m_module.lambda_helper(name, std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData));
     return *this;
   }
 
   /// Call operator overload. For concrete type box to work around https://github.com/JuliaLang/julia/issues/14919
-  template<typename R, typename CT, typename... ArgsT>
-  TypeWrapper<T>& method(R(CT::*f)(ArgsT...), const std::string& doc = std::string())
+  template<typename R, typename CT, typename... ArgsT, typename... Extra>
+  TypeWrapper<T>& method(R(CT::*f)(ArgsT...), Extra... extra)
   {
-    m_module.method("operator()", [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, doc )
+    m_module.method("operator()", [f](T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, extra... )
       .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
-  template<typename R, typename CT, typename... ArgsT>
-  TypeWrapper<T>& method(R(CT::*f)(ArgsT...) const, const std::string& doc = std::string())
+  template<typename R, typename CT, typename... ArgsT, typename... Extra>
+  TypeWrapper<T>& method(R(CT::*f)(ArgsT...) const, Extra... extra)
   {
-    m_module.method("operator()", [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, doc )
+    m_module.method("operator()", [f](const T& obj, ArgsT... args) -> R { return (obj.*f)(args...); }, extra... )
       .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
 
   /// Overload operator() using a lambda
-  template<typename LambdaT>
-  TypeWrapper<T>& method(LambdaT&& lambda, const std::string& doc = std::string())
+  template<typename LambdaT, typename... Extra,
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value, bool> = true>
+  TypeWrapper<T>& method(LambdaT&& lambda, Extra... extra)
   {
-    m_module.method("operator()", std::forward<LambdaT>(lambda), doc)
+    detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
+    m_module.lambda_helper("operator()", std::forward<LambdaT>(lambda), &LambdaT::operator(), std::move(extraData))
       .set_name(detail::make_fname("CallOpOverload", m_box_dt));
     return *this;
   }
