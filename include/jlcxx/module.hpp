@@ -566,6 +566,8 @@ public:
   template<typename R, typename... Args, typename... Extra>
   FunctionWrapperBase& method(const std::string& name,  std::function<R(Args...)> f, Extra... extra)
   {
+    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(Args)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
+
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
     return method_helper(name, f, extraData);
   }
@@ -762,11 +764,9 @@ private:
     return method_helper(name, std::function<R(ArgsT...)>(std::forward<LambdaT>(lambda)), std::move(extraData));
   }
 
-  template<typename R, typename... Args, typename... Extra>
+  template<typename R, typename... Args>
   FunctionWrapperBase& method_helper(const std::string& name,  std::function<R(Args...)> f, detail::ExtraFunctionData&& extraData)
   {
-    static_assert(detail::check_extra_argument_count<Extra...>(sizeof...(Args)), "Wrong number of annotated arguments (jlcxx::arg and jlcxx::kwarg arguments)!");
-
     auto* new_wrapper = new FunctionWrapper<R, Args...>(this, f);
     new_wrapper->set_name((jl_value_t*)jl_symbol(name.c_str()));
     new_wrapper->set_doc(jl_cstr_to_string(extraData.doc.c_str()));
