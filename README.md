@@ -92,3 +92,14 @@ Binaries for the main branch are published at https://github.com/barche/libcxxwr
 ```
 add https://github.com/barche/libcxxwrap_julia_jll.jl.git
 ```
+
+## Using libcxxwrap-julia as a dependency for downstream packages
+When developing Julia bindings for a C++ package using libcxxwrap-julia, you need to
+build against the correct version of libcxxwrap-julia. Specifically, to make sure that your
+wrapper works correctly with
+[CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl), check the compat
+settings for `libcxxwrap_jll` in the `Project.toml` file of the
+[latest release](https://github.com/JuliaInterop/CxxWrap.jl/releases/latest) of CxxWrap.jl.
+It may happen that the latest release of libcxxwrap-julia is not yet supported by
+CxxWrap.jl, in which case you should build against an older release (see also
+[this comment](https://github.com/JuliaInterop/libcxxwrap-julia/issues/143#issuecomment-1910915193).
