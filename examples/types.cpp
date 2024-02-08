@@ -336,6 +336,26 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     return w;
   });
 
+  types.method("shared_vector_factory", []() -> std::vector<std::shared_ptr<World>>
+  {
+    return {std::shared_ptr<World>(new World("shared vector hello"))};
+  });
+
+  types.method("shared_const_vector_factory", []() -> std::vector<std::shared_ptr<const World>>
+  {
+    return {std::shared_ptr<const World>(new World("shared vector const hello"))};
+  });
+
+  types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<World>>& v)
+  {
+    return v[0]->greet();
+  });
+
+  types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<const World>>& v)
+  {
+    return v[0]->greet() + " from const overload";
+  });
+
   types.add_type<NonCopyable>("NonCopyable");
 
   types.add_type<AConstRef>("AConstRef").method("value", &AConstRef::value);

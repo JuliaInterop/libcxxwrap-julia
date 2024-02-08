@@ -344,6 +344,15 @@ struct GetJlType<std::integral_constant<T, Val>>
 };
 
 template<typename T>
+struct GetJlType<const T>
+{
+  jl_value_t* operator()() const
+  {
+    return (jl_value_t*)apply_type(jlcxx::julia_type("CxxConst"), (jl_datatype_t*)GetJlType<T>()());
+  }
+};
+
+template<typename T>
 struct IsParametric
 {
   static constexpr bool value = false;
