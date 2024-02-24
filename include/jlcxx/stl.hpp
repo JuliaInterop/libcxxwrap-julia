@@ -4,6 +4,7 @@
 #include <valarray>
 #include <vector>
 #include <deque>
+#include <queue>
 
 #include "module.hpp"
 #include "smart_pointers.hpp"
@@ -47,6 +48,7 @@ public:
   TypeWrapper1 vector;
   TypeWrapper1 valarray;
   TypeWrapper1 deque;
+  TypeWrapper1 queue;
 
   static void instantiate(Module& mod);
   static StlWrappers& instance();
@@ -179,12 +181,30 @@ struct WrapDeque
   }
 };
 
+struct WrapQueue
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+    wrapped.template constructor();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("front", [] (WrappedT& v) -> const T { return v.front(); });
+    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
 template<typename T>
 inline void apply_stl(jlcxx::Module& mod)
 {
   TypeWrapper1(mod, StlWrappers::instance().vector).apply<std::vector<T>>(WrapVector());
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
+  TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
 }
 
 }
