@@ -173,6 +173,10 @@ class UseCustomClassDelete
 
 int UseCustomClassDelete::nb_deleted = 0;
 
+void int_vec_arg(std::vector<std::shared_ptr<int>>){}
+void const_int_vec_arg(std::vector<std::shared_ptr<const int>>){}
+
+
 } // namespace cpp_types
 
 namespace jlcxx
@@ -278,6 +282,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return w->greet();
   });
+
+  types.method("int_vec_arg", cpp_types::int_vec_arg);
+  types.method("const_int_vec_arg", cpp_types::const_int_vec_arg);
 
   types.method("shared_world_ref", []() -> std::shared_ptr<World>&
   {

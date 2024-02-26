@@ -214,12 +214,6 @@ struct WrapSmartPointer
   }
 };
 
-template<template<typename...> class PtrT, typename TypeListT>
-inline void apply_smart_combination(Module& mod)
-{
-  smart_ptr_wrapper<PtrT>(mod).template apply_combination<PtrT, TypeListT>(WrapSmartPointer());
-}
-
 } // namespace smartptr
 
 template<template<typename...> class T>
@@ -293,6 +287,27 @@ struct julia_type_factory<T, CxxWrappedTrait<SmartPointerTrait>>
     return JuliaTypeCache<T>::julia_type();
   }
 };
+
+namespace smartptr
+{
+
+template<template<typename...> class PtrT>
+struct WrapSmartPointerCombo
+{
+  template<typename PointeeT>
+  void operator()()
+  {
+    create_julia_type<PtrT<PointeeT>>();
+  }
+};
+
+template<template<typename...> class PtrT, typename TypeListT>
+inline void apply_smart_combination()
+{
+  jlcxx::for_each_type<TypeListT>(WrapSmartPointerCombo<PtrT>());
+}
+
+}
 
 }
 
