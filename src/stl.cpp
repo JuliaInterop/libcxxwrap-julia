@@ -20,9 +20,9 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
   m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
   m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
-  smartptr::apply_smart_combination<std::shared_ptr, stltypes>(mod);
-  smartptr::apply_smart_combination<std::weak_ptr, stltypes>(mod);
-  smartptr::apply_smart_combination<std::unique_ptr, stltypes>(mod);
+  smartptr::apply_smart_combination<std::shared_ptr, stltypes>();
+  smartptr::apply_smart_combination<std::weak_ptr, stltypes>();
+  smartptr::apply_smart_combination<std::unique_ptr, stltypes>();
 }
 
 JLCXX_API StlWrappers& StlWrappers::instance()

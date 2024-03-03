@@ -137,7 +137,22 @@ struct SuperType
   typedef T type;
 };
 
-template<typename T> using supertype = typename SuperType<T>::type;
+namespace detail
+{
+  template<typename T>
+  struct _get_supertype
+  {
+    typedef typename SuperType<T>::type type;
+  };
+
+  template<typename T>
+  struct _get_supertype<const T>
+  {
+    typedef const typename SuperType<T>::type type;
+  };
+}
+
+template<typename T> using supertype = typename detail::_get_supertype<T>::type;
 
 /// Remove reference and const from a type
 template<typename T> using remove_const_ref = typename std::remove_const<typename std::remove_reference<T>::type>::type;
