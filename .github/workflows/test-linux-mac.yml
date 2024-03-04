@@ -39,7 +39,7 @@ jobs:
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DOVERRIDE_VERSION_TO_JLL=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install
-          julia -e 'using Pkg; pkg"add CxxWrap#testjll"; using CxxWrap'
+          julia -e 'using Pkg; pkg"add ${{github.event.pull_request.body}}"; using CxxWrap'
           ctest -V
       - name: Build testlib
         run: |
