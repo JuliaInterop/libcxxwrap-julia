@@ -47,5 +47,5 @@ jobs:
             cd build
             cmake --build . --config Release
             julia -e "using Pkg; Pkg.Registry.add(\"General\"); Pkg.Registry.add(RegistrySpec(url = \"https://github.com/barche/CxxWrapTestRegistry.git\"))"
-            julia -e "using Pkg; pkg\"add CxxWrap#testjll\"; using CxxWrap;"
+            julia -e "using Pkg; pkg\"add ${{github.event.pull_request.body}}\"; using CxxWrap;"
             ctest -j 1 -C Release -V
