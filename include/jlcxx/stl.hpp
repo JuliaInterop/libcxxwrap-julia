@@ -181,6 +181,40 @@ struct WrapDeque
   }
 };
 
+template<typename T>
+struct WrapQueueImpl
+{
+  template<typename TypeWrapperT>
+  static void wrap(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = std::queue<T>;
+    
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("front", [] (WrappedT& v) -> const T { return v.front(); });
+    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
+template<>
+struct WrapQueueImpl<bool>
+{
+  template<typename TypeWrapperT>
+  static void wrap(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = std::queue<bool>;
+
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("push_back!", [] (WrappedT& v, const bool val) { v.push(val); });
+    wrapped.method("front", [] (WrappedT& v) -> bool { return v.front(); });
+    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
 struct WrapQueue
 {
   template<typename TypeWrapperT>
@@ -188,13 +222,7 @@ struct WrapQueue
   {
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
-    wrapped.template constructor();
-    wrapped.module().set_override_module(StlWrappers::instance().module());
-    wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
-    wrapped.method("front", [] (WrappedT& v) -> const T { return v.front(); });
-    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
-    wrapped.module().unset_override_module();
+    WrapQueueImpl<T>::wrap(wrapped);
   }
 };
 
