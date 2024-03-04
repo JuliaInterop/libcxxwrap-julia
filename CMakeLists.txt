@@ -14,7 +14,6 @@ endif()
 # ============
 
 set(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-set(Julia_PREFIX "/home/bp87/julia-1.10.1")
 find_package(Julia REQUIRED)
 
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib;${Julia_LIBRARY_DIR}")

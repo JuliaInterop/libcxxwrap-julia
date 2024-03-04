@@ -22,12 +22,16 @@ endif()
 # Julia Version #
 #################
 
-
-execute_process(
-    COMMAND " /home/bp87/julia-1.10.1/bin/julia" --startup-file=no --version
-    OUTPUT_VARIABLE Julia_VERSION_STRING
-)
-
+if(Julia_EXECUTABLE)
+    execute_process(
+        COMMAND "${Julia_EXECUTABLE}" --startup-file=no --version
+        OUTPUT_VARIABLE Julia_VERSION_STRING
+    )
+else()
+    find_file(Julia_VERSION_INCLUDE julia_version.h PATH_SUFFIXES include/julia)
+    file(READ ${Julia_VERSION_INCLUDE} Julia_VERSION_STRING)
+    string(REGEX MATCH "JULIA_VERSION_STRING.*" Julia_VERSION_STRING ${Julia_VERSION_STRING})
+endif()
 
 string(
     REGEX REPLACE ".*([0-9]+\\.[0-9]+\\.[0-9]+).*" "\\1"
@@ -41,7 +45,7 @@ MESSAGE(STATUS "Julia_VERSION_STRING: ${Julia_VERSION_STRING}")
 ##################
 
 set(JULIA_HOME_NAME "Sys.BINDIR")
-if("1.10.1" VERSION_LESS "0.7.0")
+if(${Julia_VERSION_STRING} VERSION_LESS "0.7.0")
     set(JULIA_HOME_NAME "JULIA_HOME")
 else()
     set(USING_LIBDL "using Libdl")
