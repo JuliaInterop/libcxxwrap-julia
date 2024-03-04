@@ -173,6 +173,10 @@ class UseCustomClassDelete
 
 int UseCustomClassDelete::nb_deleted = 0;
 
+void int_vec_arg(std::vector<std::shared_ptr<int>>){}
+void const_int_vec_arg(std::vector<std::shared_ptr<const int>>){}
+
+
 } // namespace cpp_types
 
 namespace jlcxx
@@ -279,6 +283,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     return w->greet();
   });
 
+  types.method("int_vec_arg", cpp_types::int_vec_arg);
+  types.method("const_int_vec_arg", cpp_types::const_int_vec_arg);
+
   types.method("shared_world_ref", []() -> std::shared_ptr<World>&
   {
     static std::shared_ptr<World> refworld(new World("shared factory hello ref"));
@@ -334,6 +341,26 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     static World w("reffed world");
     return w;
+  });
+
+  types.method("shared_vector_factory", []() -> std::vector<std::shared_ptr<World>>
+  {
+    return {std::shared_ptr<World>(new World("shared vector hello"))};
+  });
+
+  types.method("shared_const_vector_factory", []() -> std::vector<std::shared_ptr<const World>>
+  {
+    return {std::shared_ptr<const World>(new World("shared vector const hello"))};
+  });
+
+  types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<World>>& v)
+  {
+    return v[0]->greet();
+  });
+
+  types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<const World>>& v)
+  {
+    return v[0]->greet() + " from const overload";
   });
 
   types.add_type<NonCopyable>("NonCopyable");
