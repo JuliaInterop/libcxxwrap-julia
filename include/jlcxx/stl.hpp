@@ -75,22 +75,12 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
 >, fundamental_int_types>, fixed_int_types>>;
 
 template<typename TypeWrapperT>
-void wrap_common(TypeWrapperT& wrapped)
+void wrap_range_based_algorithms(TypeWrapperT& wrapped)
 {
   using WrappedT = typename TypeWrapperT::type;
   using T = typename WrappedT::value_type;
   wrapped.module().set_override_module(StlWrappers::instance().module());
-  wrapped.method("cppsize", &WrappedT::size);
-  wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
-  wrapped.method("append", [] (WrappedT& v, jlcxx::ArrayRef<T> arr)
-  {
-    const std::size_t addedlen = arr.size();
-    v.reserve(v.size() + addedlen);
-    for(size_t i = 0; i != addedlen; ++i)
-    {
-      v.push_back(arr[i]);
-    }
-  });
+  wrapped.method("StdFill", [] (WrappedT& v, const T& val) { std::ranges::fill(v, val); });
   wrapped.module().unset_override_module();
 }
 
@@ -102,7 +92,7 @@ struct WrapVectorImpl
   {
     using WrappedT = std::vector<T>;
     
-    wrap_common(wrapped);
+    wrap_range_based_algorithms(wrapped);
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&)>(&WrappedT::push_back));
     wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> typename WrappedT::const_reference { return v[i-1]; });
@@ -120,7 +110,6 @@ struct WrapVectorImpl<bool>
   {
     using WrappedT = std::vector<bool>;
 
-    wrap_common(wrapped);
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("push_back", [] (WrappedT& v, const bool val) { v.push_back(val); });
     wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) { return bool(v[i-1]); });
@@ -136,6 +125,19 @@ struct WrapVector
   {
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
+    wrapped.method("append", [] (WrappedT& v, jlcxx::ArrayRef<T> arr)
+    {
+      const std::size_t addedlen = arr.size();
+      v.reserve(v.size() + addedlen);
+      for(size_t i = 0; i != addedlen; ++i)
+      {
+        v.push_back(arr[i]);
+      }
+    });
+    wrapped.module().unset_override_module();
     WrapVectorImpl<T>::wrap(wrapped);
   }
 };
@@ -147,6 +149,8 @@ struct WrapValArray
   {
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
+
+    wrap_range_based_algorithms(wrapped); 
     wrapped.template constructor<std::size_t>();
     wrapped.template constructor<const T&, std::size_t>();
     wrapped.template constructor<const T*, std::size_t>();
@@ -167,6 +171,8 @@ struct WrapDeque
   {
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
+
+    wrap_range_based_algorithms(wrapped);
     wrapped.template constructor<std::size_t>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
