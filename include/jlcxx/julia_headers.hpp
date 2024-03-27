@@ -2,6 +2,7 @@
 #define JLCXX_JULIA_HEADERS_HPP
 
 #ifdef _MSC_VER
+    #include <uv.h>
     #include <windows.h>
 #endif
 
