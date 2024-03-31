@@ -2,11 +2,11 @@ name: test-linux-mac
 on:
   - push
   - pull_request
-    
+
 defaults:
   run:
     shell: bash
-    
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
@@ -15,12 +15,12 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.6'
-          - '1.10'
-          - 'nightly'
+          - "1.6"
+          - "1.10"
+          - "nightly"
         os:
           - ubuntu-latest
-          - macOS-latest
+          - macos-13
         arch:
           - x64
     steps:
