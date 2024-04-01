@@ -198,7 +198,7 @@ struct WrapQueueImpl
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
-    wrapped.method("front", [] (WrappedT& v) -> const T { return v.front(); });
+    wrapped.method("front", [] (WrappedT& v) { return v.front(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
     wrapped.module().unset_override_module();
   }
