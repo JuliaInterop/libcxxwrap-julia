@@ -33,12 +33,16 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - name: Config and Test
+        env:
+          body: ${{ github.event.pull_request.body }}
         run: |
           mkdir build
           cd build
           cmake -G "Visual Studio 17 2022" -A x64 -DOVERRIDES_PATH=$HOMEDRIVE/$HOMEPATH/.julia/artifacts/Overrides.toml -DOVERRIDE_ROOT=./ -DAPPEND_OVERRIDES_TOML=ON ..
-          body="${{github.event.pull_request.body}}"
           package="$(echo "$body" | sed -n '1p')"
+          if [ -z "${package}" ]; then
+            package="CxxWrap"
+          fi
           cmake --build . --config Release
           julia -e "using Pkg; Pkg.Registry.add(\"General\"); Pkg.Registry.add(RegistrySpec(url = \"https://github.com/barche/CxxWrapTestRegistry.git\"))"
           julia -e "using Pkg; pkg\"add ${package}\"; using CxxWrap"

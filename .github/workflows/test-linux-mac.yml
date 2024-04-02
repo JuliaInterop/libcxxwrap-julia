@@ -32,9 +32,13 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - name: Build and test
+        env:
+          body: ${{ github.event.pull_request.body }}
         run: |
-          body="${{github.event.pull_request.body}}"
           package="$(echo "$body" | sed -n '1p')"
+          if [ -z "${package}" ]; then
+            package="CxxWrap"
+          fi
           if [[ "$OSTYPE" != "darwin"* ]]; then
             rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
           fi
