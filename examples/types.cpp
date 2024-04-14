@@ -353,6 +353,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     return {std::shared_ptr<const World>(new World("shared vector const hello"))};
   });
 
+  types.method("world_ptr_vector", []() { static World w; return std::vector({&w}); });
+
   types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<World>>& v)
   {
     return v[0]->greet();
