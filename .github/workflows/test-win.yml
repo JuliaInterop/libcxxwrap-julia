@@ -43,7 +43,7 @@ jobs:
           if [ -z "${package}" ]; then
             package="CxxWrap"
           fi
-          cmake --build . --config Release
+          cmake --build . --config Debug
           julia -e "using Pkg; Pkg.Registry.add(\"General\"); Pkg.Registry.add(RegistrySpec(url = \"https://github.com/barche/CxxWrapTestRegistry.git\"))"
           julia -e "using Pkg; pkg\"add ${package}\"; using CxxWrap"
-          ctest -j 1 -C Release -V
+          ctest -j 1 -C Debug -V
