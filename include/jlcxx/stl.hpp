@@ -48,7 +48,7 @@ public:
   TypeWrapper1 vector;
   TypeWrapper1 valarray;
   TypeWrapper1 deque;
-  TypeWrapper1 iterator;
+  TypeWrapper1 queue;
   TypeWrapper1 dequeIterator;
 
   static void instantiate(Module& mod);
