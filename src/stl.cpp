@@ -19,9 +19,9 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   m_instance.reset(new StlWrappers(mod));
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
   m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
-  m_instance->dequeIterator.apply_combination<stl::DequeIteratorWrapper, stltypes>(stl::WrapIterator());
-  m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque<stl::DequeIteratorWrapper>());
+    m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
   m_instance->queue.apply_combination<std::queue, stltypes>(stl::WrapQueue());
+  m_instance->dequeIterator.apply_combination<stl::DequeIteratorWrapper, stltypes>(stl::WrapIterator());
   smartptr::apply_smart_combination<std::shared_ptr, stltypes>();
   smartptr::apply_smart_combination<std::weak_ptr, stltypes>();
   smartptr::apply_smart_combination<std::unique_ptr, stltypes>();
