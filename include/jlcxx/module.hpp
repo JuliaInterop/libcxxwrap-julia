@@ -130,9 +130,9 @@ BoxedValue<T> create(ArgsT&&... args)
 template<typename T>
 struct UpCast
 {
-  static inline supertype<T>& apply(T& base)
+  static inline supertype<T>& apply(T& derived)
   {
-    return static_cast<supertype<T>&>(base);
+    return static_cast<supertype<T>&>(derived);
   }
 };
 
@@ -1029,19 +1029,35 @@ namespace detail
 
 }
 
+/// Attempt downcast to derived type
+template<typename SuperT, typename DerivedT>
+struct DownCast
+{
+  static inline void apply(Module& mod)
+  {
+    mod.method("cxxdowncast", [](SingletonType<DerivedT>, SuperT* base) { return dynamic_cast<DerivedT*>(base); });
+    using newsuper_t = supertype<SuperT>;
+    if constexpr (!std::is_same<newsuper_t,SuperT>::value)
+    {
+      DownCast<supertype<SuperT>, DerivedT>::apply(mod);
+    }
+  }
+};
+
 template<typename T>
 inline void add_default_methods(Module& mod)
 {
+  mod.set_override_module(get_cxxwrap_module());
   if (!std::is_same<supertype<T>, T>::value)
   {
     mod.method("cxxupcast", UpCast<T>::apply);
-    mod.last_function().set_override_module(get_cxxwrap_module());
+    DownCast<supertype<T>,T>::apply(mod);
   }
   if constexpr(std::is_destructible<T>::value)
   {
     mod.method("__delete", Finalizer<T>::finalize);
   }
-  mod.last_function().set_override_module(get_cxxwrap_module());
+  mod.unset_override_module();
 }
 
 /// Helper class to wrap type methods
