@@ -77,11 +77,13 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
 template<typename TypeWrapperT>
 void wrap_range_based_algorithms(TypeWrapperT& wrapped)
 {
+#ifdef JLCXX_HAS_RANGES
   using WrappedT = typename TypeWrapperT::type;
   using T = typename WrappedT::value_type;
   wrapped.module().set_override_module(StlWrappers::instance().module());
   wrapped.method("StdFill", [] (WrappedT& v, const T& val) { std::ranges::fill(v, val); });
   wrapped.module().unset_override_module();
+#endif
 }
 
 template<typename T>

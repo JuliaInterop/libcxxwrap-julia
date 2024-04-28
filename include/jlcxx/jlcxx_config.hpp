@@ -22,4 +22,10 @@
 #define __JLCXX_STR(x) __JLCXX_STR_HELPER(x)
 #define JLCXX_VERSION_STRING __JLCXX_STR(JLCXX_VERSION_MAJOR) "." __JLCXX_STR(JLCXX_VERSION_MINOR) "." __JLCXX_STR(JLCXX_VERSION_PATCH)
 
+#if defined __has_include
+#  if __has_include (<ranges>)
+#    define JLCXX_HAS_RANGES
+#  endif
+#endif
+
 #endif
