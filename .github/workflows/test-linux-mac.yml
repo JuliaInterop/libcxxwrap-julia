@@ -37,7 +37,7 @@ jobs:
         run: |
           package="$(echo "$body" | sed -n '1p')"
           if [ -z "${package}" ]; then
-            package="CxxWrap"
+            package="https://github.com/JuliaInterop/CxxWrap.jl.git"
           fi
           if [[ "$OSTYPE" != "darwin"* ]]; then
             rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
