@@ -65,6 +65,9 @@ void wrap_string(TypeWrapper<string_t>&& wrapper)
 
 JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
 {
+#ifdef JLCXX_HAS_RANGES
+  stl.set_const("HAS_RANGES", 1);
+#endif
   jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
   jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
 
