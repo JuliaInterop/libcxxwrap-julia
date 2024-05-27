@@ -247,9 +247,10 @@ struct WrapSet
     wrapped.template constructor<>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("set_insert", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("set_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
     wrapped.method("set_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("set_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("set_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
     wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
     wrapped.module().unset_override_module();
   }
