@@ -1,7 +1,7 @@
 #ifndef JLCXX_STL_HPP
 #define JLCXX_STL_HPP
 
-#include <concepts>
+#include <type_traits>
 #include <valarray>
 #include <vector>
 #include <deque>
@@ -257,6 +257,37 @@ struct WrapSet
   }
 };
 
+template <typename T, typename = void>
+struct has_less_than_operator : std::false_type {};
+
+template <typename T>
+struct has_less_than_operator<T, std::void_t<decltype(std::declval<T>() < std::declval<T>())>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool has_less_than_operator_v = has_less_than_operator<T>::value;
+
+template <typename T, typename = void>
+struct is_container : std::false_type {};
+
+template <typename T>
+struct is_container<T, std::void_t<typename T::value_type>> : std::true_type {};
+
+template <typename T, typename = void>
+struct container_has_less_than_operator : std::false_type {};
+
+template <typename T>
+struct container_has_less_than_operator<T, std::enable_if_t<is_container<T>::value>>
+    : std::conditional_t<
+          has_less_than_operator<typename T::value_type>::value || 
+          container_has_less_than_operator<typename T::value_type>::value,
+          std::true_type, 
+          std::false_type> {};
+
+template <typename T>
+struct container_has_less_than_operator<T, std::enable_if_t<!is_container<T>::value>>
+    : has_less_than_operator<T> {};
+
 template<typename T>
 inline void apply_stl(jlcxx::Module& mod)
 {
@@ -264,7 +295,7 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
-  if constexpr (std::totally_ordered<T>) 
+  if constexpr (container_has_less_than_operator<T>::value)
   {
     TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
   }
