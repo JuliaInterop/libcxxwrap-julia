@@ -45,11 +45,6 @@ struct World
   ~World() { std::cout << "Destroying World with message " << msg << std::endl; }
 };
 
-inline bool operator<(const World &lhs, const World &rhs)
-{
-  return lhs.msg > rhs.msg;
-}
-
 std::string greet_overload(World& w) { return w.msg + "_byref"; }
 std::string greet_overload(const World& w) { return w.msg + "_byconstref"; }
 std::string greet_overload(World* w) { return w->msg + "_bypointer"; }

@@ -1,6 +1,7 @@
 #ifndef JLCXX_STL_HPP
 #define JLCXX_STL_HPP
 
+#include <concepts>
 #include <valarray>
 #include <vector>
 #include <deque>
@@ -263,7 +264,10 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
-  TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
+  if constexpr (std::totally_ordered<T>) 
+  {
+    TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
+  }
 }
 
 }
