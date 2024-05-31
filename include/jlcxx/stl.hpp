@@ -52,6 +52,7 @@ public:
   TypeWrapper1 deque;
   TypeWrapper1 queue;
   TypeWrapper1 set;
+  TypeWrapper1 multiset;
 
   static void instantiate(Module& mod);
   static StlWrappers& instance();
@@ -257,6 +258,27 @@ struct WrapSet
   }
 };
 
+struct WrapMultiset
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("multiset_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("multiset_empty!", [] (WrappedT& v) { v.clear(); });
+    wrapped.method("multiset_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("multiset_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
+    wrapped.method("multiset_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.method("multiset_count", [] (WrappedT& v, const T& val) { return v.count(val); });
+    wrapped.module().unset_override_module();
+  }
+};
+
 template <typename T, typename = void>
 struct has_less_than_operator : std::false_type {};
 
@@ -298,6 +320,7 @@ inline void apply_stl(jlcxx::Module& mod)
   if constexpr (container_has_less_than_operator<T>::value)
   {
     TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
+    TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultiset());
   }
 }
 
