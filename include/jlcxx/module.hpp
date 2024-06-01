@@ -1035,7 +1035,17 @@ struct DownCast
 {
   static inline void apply(Module& mod)
   {
-    mod.method("cxxdowncast", [](SingletonType<DerivedT>, SuperT* base) { return dynamic_cast<DerivedT*>(base); });
+    mod.method("cxxdowncast", [](SingletonType<DerivedT>, SuperT* base)
+    {
+      if constexpr (std::is_polymorphic<DerivedT>::value)
+      {
+        return dynamic_cast<DerivedT*>(base);
+      }
+      else
+      {
+        return static_cast<DerivedT*>(base);
+      }
+    });
     using newsuper_t = supertype<SuperT>;
     if constexpr (!std::is_same<newsuper_t,SuperT>::value)
     {
