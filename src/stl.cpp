@@ -19,6 +19,7 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   m_instance.reset(new StlWrappers(mod));
   m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
   m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
+  m_instance->dequeIterator.apply_combination<stl::DequeIteratorWrapper, stltypes>(stl::WrapIterator());
   m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
   m_instance->queue.apply_combination<std::queue, stltypes>(stl::WrapQueue());
   m_instance->set.apply_combination<std::set, stltypes>(stl::WrapSet());
@@ -46,6 +47,7 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   m_stl_mod(stl),
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))),
   valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
+  dequeIterator(stl.add_type<Parametric<TypeVar<1>>>("StdDequeIterator")),
   deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
   queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
@@ -100,7 +102,7 @@ JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
     .method("swap", &std::thread::swap);
 
   stl.method("hardware_concurrency", [] () { return std::thread::hardware_concurrency(); });
-  
+
   jlcxx::add_smart_pointer<std::shared_ptr>(stl, "SharedPtr");
   jlcxx::add_smart_pointer<std::weak_ptr>(stl, "WeakPtr");
   jlcxx::add_smart_pointer<std::unique_ptr>(stl, "UniquePtr");

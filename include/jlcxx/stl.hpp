@@ -47,8 +47,10 @@ private:
   static std::unique_ptr<StlWrappers> m_instance;
   Module& m_stl_mod;
 public:
+  // TypeWrapper<Parametric<TypeVar<1>, TypeVar<2>>> iterator;
   TypeWrapper1 vector;
   TypeWrapper1 valarray;
+  TypeWrapper1 dequeIterator;
   TypeWrapper1 deque;
   TypeWrapper1 queue;
   TypeWrapper1 set;
@@ -170,6 +172,43 @@ struct WrapValArray
   }
 };
 
+
+template <typename valueT, template <typename, typename=std::allocator<valueT>> typename ContainerT>
+struct IteratorWrapper
+{
+  using value_type = valueT;
+  using iterator_type = typename ContainerT<value_type>::iterator;
+
+  iterator_type value;
+};
+
+template <typename valueT>
+struct DequeIteratorWrapper : IteratorWrapper<valueT, std::deque> {};
+
+template <typename T>
+void validate_iterator(T it)
+{
+  using IteratorT = typename T::iterator_type;
+  if (it.value == IteratorT())
+  {
+    throw std::runtime_error("Invalid iterator");
+  }
+}
+
+struct WrapIterator
+{
+  template <typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using ValueT = typename WrappedT::value_type;
+    
+    wrapped.method("iterator_next", [](WrappedT it) -> WrappedT { ++(it.value); return it; });
+    wrapped.method("iterator_value", [](WrappedT it) -> ValueT { validate_iterator(it); return *it.value; });
+    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) -> bool {return it1.value == it2.value; });
+  };
+};
+
 struct WrapDeque
 {
   template<typename TypeWrapperT>
@@ -184,11 +223,15 @@ struct WrapDeque
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("resize", [](WrappedT &v, const cxxint_t s) { v.resize(s); });
     wrapped.method("cxxgetindex", [](const WrappedT& v, cxxint_t i) -> const T& { return v[i - 1]; });
-    wrapped.method("cxxsetindex!", [](WrappedT& v, const T& val, cxxint_t i) { v[i - 1] = val; });
-    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push_back(val); });
-    wrapped.method("push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
-    wrapped.method("pop_back!", [] (WrappedT& v) { v.pop_back(); });
-    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.method("cxxsetindex", [](WrappedT& v, const T& val, cxxint_t i) { v[i - 1] = val; });
+    wrapped.method("push_back", [] (WrappedT& v, const T& val) { v.push_back(val); });
+    wrapped.method("push_front", [] (WrappedT& v, const T& val) { v.push_front(val); });
+    wrapped.method("pop_back", [] (WrappedT& v) { v.pop_back(); });
+    wrapped.method("pop_front", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.method("isEmpty", &WrappedT::empty);
+    wrapped.method("clear", &WrappedT::clear);
+    wrapped.method("iteratorbegin", [] (WrappedT& v) { return DequeIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v)   { return DequeIteratorWrapper<T>{v.end()  }; });
     wrapped.module().unset_override_module();
   }
 };
@@ -203,9 +246,9 @@ struct WrapQueueImpl
     
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("push_back", [] (WrappedT& v, const T& val) { v.push(val); });
     wrapped.method("front", [] (WrappedT& v) { return v.front(); });
-    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
+    wrapped.method("pop_front", [] (WrappedT& v) { v.pop(); });
     wrapped.module().unset_override_module();
   }
 };
@@ -220,9 +263,9 @@ struct WrapQueueImpl<bool>
 
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("push_back!", [] (WrappedT& v, const bool val) { v.push(val); });
+    wrapped.method("push_back", [] (WrappedT& v, const bool val) { v.push(val); });
     wrapped.method("front", [] (WrappedT& v) -> bool { return v.front(); });
-    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
+    wrapped.method("pop_front", [] (WrappedT& v) { v.pop(); });
     wrapped.module().unset_override_module();
   }
 };
@@ -315,6 +358,8 @@ inline void apply_stl(jlcxx::Module& mod)
 {
   TypeWrapper1(mod, StlWrappers::instance().vector).apply<std::vector<T>>(WrapVector());
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
+  // TypeWrapper(mod, StlWrappers::instance().iterator).apply<stl::IteratorWrapper<T, >>(WrapIterator());
+  TypeWrapper1(mod, StlWrappers::instance().dequeIterator).apply<stl::DequeIteratorWrapper<T>>(WrapIterator());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
   if constexpr (container_has_less_than_operator<T>::value)
