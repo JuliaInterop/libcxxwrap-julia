@@ -94,6 +94,15 @@ set(JLCXX_STL_HEADERS
 
 set(JLCXX_STL_SOURCES
     ${JLCXX_SOURCE_DIR}/stl.cpp
+    ${JLCXX_SOURCE_DIR}/stl_vector.cpp
+    ${JLCXX_SOURCE_DIR}/stl_valarray.cpp
+    ${JLCXX_SOURCE_DIR}/stl_deque.cpp
+    ${JLCXX_SOURCE_DIR}/stl_queue.cpp
+    ${JLCXX_SOURCE_DIR}/stl_set.cpp
+    ${JLCXX_SOURCE_DIR}/stl_multiset.cpp
+    ${JLCXX_SOURCE_DIR}/stl_shared_ptr.cpp
+    ${JLCXX_SOURCE_DIR}/stl_unique_ptr.cpp
+    ${JLCXX_SOURCE_DIR}/stl_weak_ptr.cpp
 )
 
 set(JLCXX_SOURCES
