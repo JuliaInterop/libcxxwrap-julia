@@ -114,8 +114,6 @@ set(JLCXX_SOURCES
 # Versioning
 # ==========
 
-option(OVERRIDE_VERSION_TO_JLL "Override the version info to match the installed JLL, so the filenames match for the Overrides.toml" OFF)
-
 file(STRINGS "${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx_config.hpp" jlcxx_version_defines
     REGEX "#define JLCXX_VERSION_(MAJOR|MINOR|PATCH)")
 foreach(ver ${jlcxx_version_defines})
@@ -123,19 +121,6 @@ foreach(ver ${jlcxx_version_defines})
         set(JLCXX_VERSION_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE INTERNAL "")
     endif()
 endforeach()
-if(OVERRIDE_VERSION_TO_JLL)
-  execute_process(
-    COMMAND git describe --tags --abbrev=0
-    OUTPUT_VARIABLE _JLL_VERSION
-  )
-  string(STRIP "${_JLL_VERSION}" _JLL_VERSION)
-  message(STATUS "git version: ${_JLL_VERSION}")
-  string(REGEX REPLACE "v" "" _JLL_VERSION "${_JLL_VERSION}")
-  string(REPLACE "." ";" _jlcxx_VERSION_LIST "${_JLL_VERSION}")
-  list(GET _jlcxx_VERSION_LIST 0 JLCXX_VERSION_MAJOR)
-  list(GET _jlcxx_VERSION_LIST 1 JLCXX_VERSION_MINOR)
-  list(GET _jlcxx_VERSION_LIST 2 JLCXX_VERSION_PATCH)
-endif()
 set(${PROJECT_NAME}_VERSION
     ${JLCXX_VERSION_MAJOR}.${JLCXX_VERSION_MINOR}.${JLCXX_VERSION_PATCH})
 message(STATUS "${PROJECT_NAME} version: v${${PROJECT_NAME}_VERSION}")
