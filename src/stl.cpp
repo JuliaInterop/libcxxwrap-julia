@@ -17,15 +17,15 @@ JLCXX_API std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr
 JLCXX_API void StlWrappers::instantiate(Module& mod)
 {
   m_instance.reset(new StlWrappers(mod));
-  m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
-  m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
-  m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
-  m_instance->queue.apply_combination<std::queue, stltypes>(stl::WrapQueue());
-  m_instance->set.apply_combination<std::set, stltypes>(stl::WrapSet());
-  m_instance->multiset.apply_combination<std::multiset, stltypes>(stl::WrapMultiset());
-  smartptr::apply_smart_combination<std::shared_ptr, stltypes>();
-  smartptr::apply_smart_combination<std::weak_ptr, stltypes>();
-  smartptr::apply_smart_combination<std::unique_ptr, stltypes>();
+  apply_vector(m_instance->vector);
+  apply_valarray(m_instance->valarray);
+  apply_deque(m_instance->deque);
+  apply_queue(m_instance->queue);
+  apply_set(m_instance->set);
+  apply_multiset(m_instance->multiset);
+  apply_shared_ptr();
+  apply_weak_ptr();
+  apply_unique_ptr();
 }
 
 JLCXX_API StlWrappers& StlWrappers::instance()

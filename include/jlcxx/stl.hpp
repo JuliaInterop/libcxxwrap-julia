@@ -63,6 +63,17 @@ public:
   }
 };
 
+// Separate per-container functions to split up the compilation over multiple C++ files
+void apply_vector(TypeWrapper1& vector);
+void apply_valarray(TypeWrapper1& valarray);
+void apply_deque(TypeWrapper1& deque);
+void apply_queue(TypeWrapper1& queue);
+void apply_set(TypeWrapper1& set);
+void apply_multiset(TypeWrapper1& multiset);
+void apply_shared_ptr();
+void apply_weak_ptr();
+void apply_unique_ptr();
+
 JLCXX_API StlWrappers& wrappers();
 
 using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists<ParameterList
