@@ -7,6 +7,7 @@
 #include <deque>
 #include <queue>
 #include <set>
+#include <unordered_set>
 
 #include "module.hpp"
 #include "smart_pointers.hpp"
@@ -53,6 +54,8 @@ public:
   TypeWrapper1 queue;
   TypeWrapper1 set;
   TypeWrapper1 multiset;
+  TypeWrapper1 unordered_set;
+  TypeWrapper1 unordered_multiset;
 
   static void instantiate(Module& mod);
   static StlWrappers& instance();
@@ -70,6 +73,8 @@ void apply_deque(TypeWrapper1& deque);
 void apply_queue(TypeWrapper1& queue);
 void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
+void apply_unordered_set(TypeWrapper1& unordered_set);
+void apply_unordered_multiset(TypeWrapper1& unordered_multiset);
 void apply_shared_ptr();
 void apply_weak_ptr();
 void apply_unique_ptr();
@@ -249,7 +254,7 @@ struct WrapQueue
   }
 };
 
-struct WrapSet
+struct WrapSetType
 {
   template<typename TypeWrapperT>
   void operator()(TypeWrapperT&& wrapped)
@@ -269,7 +274,7 @@ struct WrapSet
   }
 };
 
-struct WrapMultiset
+struct WrapMultisetType
 {
   template<typename TypeWrapperT>
   void operator()(TypeWrapperT&& wrapped)
@@ -321,6 +326,12 @@ template <typename T>
 struct container_has_less_than_operator<T, std::enable_if_t<!is_container<T>::value>>
     : has_less_than_operator<T> {};
 
+template <typename T, typename = void>
+struct is_hashable : std::false_type {};
+
+template <typename T>
+struct is_hashable<T, std::void_t<decltype(std::hash<T>{}(std::declval<T>()))>> : std::true_type {};
+
 template<typename T>
 inline void apply_stl(jlcxx::Module& mod)
 {
@@ -330,8 +341,13 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
   if constexpr (container_has_less_than_operator<T>::value)
   {
-    TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
-    TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultiset());
+    TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSetType());
+    TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultisetType());
+  }
+  if constexpr (is_hashable<T>::value)
+  {
+    TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapSetType());
+    TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapMultisetType());
   }
 }
 

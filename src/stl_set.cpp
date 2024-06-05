@@ -8,7 +8,7 @@ namespace stl
 
 void apply_set(TypeWrapper1& set)
 {
-  set.apply_combination<std::set, stltypes>(stl::WrapSet());
+  set.apply_combination<std::set, stltypes>(stl::WrapSetType());
 }
 
 }

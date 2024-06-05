@@ -23,6 +23,8 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   apply_queue(m_instance->queue);
   apply_set(m_instance->set);
   apply_multiset(m_instance->multiset);
+  apply_unordered_set(m_instance->unordered_set);
+  apply_unordered_multiset(m_instance->unordered_multiset);
   apply_shared_ptr();
   apply_weak_ptr();
   apply_unique_ptr();
@@ -49,7 +51,9 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
   queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
-  multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset"))
+  multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
+  unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),
+  unordered_multiset(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultiset"))
 {
 }
 
