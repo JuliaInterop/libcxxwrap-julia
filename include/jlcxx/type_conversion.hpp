@@ -349,7 +349,28 @@ private:
 };
 
 // Work around the fact that references aren't part of the typeid result
-using type_hash_t = std::pair<std::type_index, std::size_t>;
+using type_hash_t = std::pair<std::size_t, std::size_t>;
+
+namespace detail
+{
+  // See http://www.cse.yorku.ca/~oz/hash.html
+  inline std::size_t djb2_hash(const char* str)
+  {
+      std::size_t hash = 5381;
+      while(auto c = static_cast<unsigned char>(*str++))
+      {
+        hash = ((hash << 5) + hash) ^ c; /* hash * 33 ^ c */
+      }
+
+      return hash;
+  }
+
+  template<typename T>
+  inline std::size_t type_hash()
+  {
+    return djb2_hash(typeid(T).name());
+  }
+}
 
 } // namespace jlcxx
 
@@ -361,7 +382,7 @@ struct hash<jlcxx::type_hash_t>
 {
   std::size_t operator()(const jlcxx::type_hash_t& h) const noexcept
   {
-    std::size_t h1 = std::hash<std::type_index>{}(h.first);
+    std::size_t h1 = std::hash<std::size_t>{}(h.first);
     std::size_t h2 = std::hash<std::size_t>{}(h.second);
     return h1 ^ (h2 << 1);
   }
@@ -380,7 +401,7 @@ struct TypeHash
 {
   static inline type_hash_t value()
   {
-    return std::make_pair(std::type_index(typeid(T)), std::size_t(0));
+    return std::make_pair(detail::type_hash<T>(), std::size_t(0));
   }
 };
 
@@ -389,7 +410,7 @@ struct TypeHash<T&>
 {
   static inline type_hash_t value()
   {
-    return std::make_pair(std::type_index(typeid(T)), std::size_t(1));
+    return std::make_pair(detail::type_hash<T>(), std::size_t(1));
   }
 };
 
@@ -398,7 +419,7 @@ struct TypeHash<const T&>
 {
   static inline type_hash_t value()
   {
-    return std::make_pair(std::type_index(typeid(T)), std::size_t(2));
+    return std::make_pair(detail::type_hash<T>(), std::size_t(2));
   }
 };
 
@@ -435,9 +456,9 @@ public:
     if(!insert_success)
     {
       type_hash_t old_hash = inserted_it->first;
-      std::cout << "Warning: Type " << new_hash.first.name() << " already had a mapped type set as "
-        << julia_type_name(inserted_it->second.get_dt()) << " and const-ref indicator " << old_hash.second << " and C++ type name " << old_hash.first.name()
-        << ". Hash comparison: old(" << old_hash.first.hash_code() << "," << old_hash.second << ") == new(" << old_hash.first.hash_code() << "," << old_hash.second << ") == "
+      std::cout << "Warning: Type " << typeid(SourceT).name() << " already had a mapped type set as "
+        << julia_type_name(inserted_it->second.get_dt()) << " and const-ref indicator " << old_hash.second
+        << ". Hash comparison: old(" << old_hash.first << "," << old_hash.second << ") == new(" << old_hash.first << "," << old_hash.second << ") == "
         << std::boolalpha << (old_hash == new_hash) << std::endl;
       return;
     }
