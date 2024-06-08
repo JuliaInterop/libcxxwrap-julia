@@ -4,6 +4,13 @@
 #include "jlcxx/jlcxx.hpp"
 #include "jlcxx/functions.hpp"
 
+// test for name clashes
+struct global_ns_struct {};
+
+namespace {
+  struct anon_ns_struct {};
+}
+
 // Dummy base class to test multiple inheritance.
 // See https://stackoverflow.com/questions/5445105/conversion-from-void-to-the-pointer-of-the-base-class
 struct FirstBase
@@ -111,6 +118,9 @@ namespace jlcxx
   template<> struct IsMirroredType<StaticBase> : std::false_type { };
   template<> struct IsMirroredType<StaticDerived> : std::false_type { };
   template<> struct SuperType<StaticDerived> { typedef StaticBase type; };
+
+  template<> struct IsMirroredType<global_ns_struct> : std::false_type { };
+  template<> struct IsMirroredType<anon_ns_struct> : std::false_type { };
 }
 
 JLCXX_MODULE define_types_module(jlcxx::Module& types)
@@ -120,6 +130,8 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
   types.add_type<C>("C", jlcxx::julia_base_type<B>());
   types.add_type<D>("D", jlcxx::julia_base_type<A>());
   types.method("create_abstract", create_abstract);
+  types.add_type<global_ns_struct>("global_ns_struct");
+  types.add_type<anon_ns_struct>("anon_ns_struct");
 
   types.method("shared_b", []() { return std::make_shared<B>(); });
   types.method("shared_c", []() { return std::make_shared<C>(); });

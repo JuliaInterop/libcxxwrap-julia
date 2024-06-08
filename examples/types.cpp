@@ -7,6 +7,13 @@
 #include "jlcxx/functions.hpp"
 #include "jlcxx/stl.hpp"
 
+// test for name clashes
+struct global_ns_struct {};
+
+namespace {
+  struct anon_ns_struct {};
+}
+
 namespace cpp_types
 {
 
@@ -184,6 +191,8 @@ namespace jlcxx
   template<> struct IsMirroredType<cpp_types::DoubleData> : std::false_type { };
   template<typename T> struct IsSmartPointerType<cpp_types::MySmartPointer<T>> : std::true_type { };
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
+  template<> struct IsMirroredType<global_ns_struct> : std::false_type { };
+  template<> struct IsMirroredType<anon_ns_struct> : std::false_type { };
 }
 
 class SingletonType
@@ -232,6 +241,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.method("call_testtype_function", call_testtype_function);
 
   types.add_type<DoubleData>("DoubleData");
+  types.add_type<global_ns_struct>("global_ns_struct");
+  types.add_type<anon_ns_struct>("anon_ns_struct");
+
+  std::cout << "potential name conflicts: " << typeid(global_ns_struct).name() << ", " << typeid(anon_ns_struct).name() << std::endl;
 
   types.add_type<World>("World")
     .constructor<const std::string&>()
