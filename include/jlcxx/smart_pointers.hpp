@@ -186,13 +186,30 @@ struct SmartPtrMethods<PtrT<PointeeT, ExtraArgs...>, OtherPtrT>
 
 }
 
-JLCXX_API void set_smartpointer_type(const type_hash_t& hash, TypeWrapper1* new_wrapper);
-JLCXX_API TypeWrapper1* get_smartpointer_type(const type_hash_t& hash);
+template<typename T>
+inline std::shared_ptr<TypeWrapper1>& stored_smartpointer_type()
+{
+  static std::shared_ptr<TypeWrapper1> m_ptr;
+  return m_ptr;
+}
+
+template<typename T>
+void set_smartpointer_type(TypeWrapper1* new_wrapper)
+{
+  assert(stored_smartpointer_type<T>().get() == nullptr);
+  stored_smartpointer_type<T>().reset(new_wrapper);
+}
+
+template<typename T>
+TypeWrapper1* get_smartpointer_type()
+{
+  return stored_smartpointer_type<T>().get();
+}
 
 template<template<typename...> class T>
 TypeWrapper1 smart_ptr_wrapper(Module& module)
 {
-  static TypeWrapper1* stored_wrapper = get_smartpointer_type(type_hash<T<int>>());
+  static TypeWrapper1* stored_wrapper = get_smartpointer_type<T<int>>();
   if(stored_wrapper == nullptr)
   {
     std::cerr << "Smart pointer type has no wrapper" << std::endl;
@@ -220,7 +237,7 @@ template<template<typename...> class T>
 TypeWrapper1& add_smart_pointer(Module& mod, const std::string& name)
 {
   TypeWrapper1* tw = new TypeWrapper1(mod.add_type<Parametric<TypeVar<1>>>(name, julia_type("SmartPointer", get_cxxwrap_module())));
-  smartptr::set_smartpointer_type(type_hash<T<int>>(), tw);
+  smartptr::set_smartpointer_type<T<int>>(tw);
   return *tw;
 }
 
@@ -284,7 +301,7 @@ struct julia_type_factory<T, CxxWrappedTrait<SmartPointerTrait>>
     detail::apply_smart_ptr_type<ConstMappedT>()(curmod);
     smartptr::detail::SmartPtrMethods<NonConstMappedT, typename ConstructorPointerType<NonConstMappedT>::type>::apply(curmod);
     assert(has_julia_type<T>());
-    return JuliaTypeCache<T>::julia_type();
+    return stored_type<T>().get_dt();
   }
 };
 

@@ -341,38 +341,6 @@ namespace detail
   };
 }
 
-JLCXX_API std::unordered_map<type_hash_t, CachedDatatype>& jlcxx_type_map()
-{
-  static std::unordered_map<type_hash_t, CachedDatatype> m_map;
-  return m_map;
-}
-
-namespace smartptr
-{
-
-std::map<type_hash_t, std::shared_ptr<TypeWrapper1>>& jlcxx_smartpointer_types()
-{
-  static std::map<type_hash_t, std::shared_ptr<TypeWrapper1>> m_map;
-  return m_map;
-}
-
-JLCXX_API void set_smartpointer_type(const type_hash_t& hash, TypeWrapper1* new_wrapper)
-{
-  jlcxx_smartpointer_types()[hash] = std::shared_ptr<TypeWrapper1>(new_wrapper);
-}
-
-JLCXX_API TypeWrapper1* get_smartpointer_type(const type_hash_t& hash)
-{
-  auto result = jlcxx_smartpointer_types().find(hash);
-  if(result == jlcxx_smartpointer_types().end())
-  {
-    return nullptr;
-  }
-  return result->second.get();
-}
-
-}
-
 JLCXX_API void register_core_types()
 {
   if(jl_base_module == nullptr)

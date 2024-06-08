@@ -351,7 +351,7 @@ struct julia_type_factory<std::vector<T>>
     Module& curmod = registry().current_module();
     stl::apply_stl<T>(curmod);
     assert(has_julia_type<MappedT>());
-    return JuliaTypeCache<MappedT>::julia_type();
+    return stored_type<MappedT>().get_dt();
   }
 };
 

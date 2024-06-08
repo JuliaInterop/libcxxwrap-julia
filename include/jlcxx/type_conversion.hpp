@@ -322,7 +322,7 @@ struct static_type_mapping<BoxedValue<T>>
 template<typename T> using static_julia_type = typename static_type_mapping<T>::type;
 
 // Store a data type pointer, ensuring GC safety
-struct CachedDatatype
+struct JLCXX_API CachedDatatype
 {
   explicit CachedDatatype() : m_dt(nullptr) {}
   explicit CachedDatatype(jl_datatype_t* dt, bool protect = true)
@@ -348,112 +348,24 @@ private:
   jl_datatype_t* m_dt = nullptr;
 };
 
-// Work around the fact that references aren't part of the typeid result
-using type_hash_t = std::pair<std::type_index, std::size_t>;
-
-} // namespace jlcxx
-
-namespace std {
-
-// Hash implementation from https://en.cppreference.com/w/cpp/utility/hash
-template<>
-struct hash<jlcxx::type_hash_t> 
+template<typename CppT>
+inline CachedDatatype& stored_type()
 {
-  std::size_t operator()(const jlcxx::type_hash_t& h) const noexcept
-  {
-    std::size_t h1 = std::hash<std::type_index>{}(h.first);
-    std::size_t h2 = std::hash<std::size_t>{}(h.second);
-    return h1 ^ (h2 << 1);
-  }
-};
-
+  static CachedDatatype m_dt;
+  return m_dt;
 }
-
-namespace jlcxx
-{
-
-namespace detail
-{
-
-template<typename T>
-struct TypeHash
-{
-  static inline type_hash_t value()
-  {
-    return std::make_pair(std::type_index(typeid(T)), std::size_t(0));
-  }
-};
-
-template<typename T>
-struct TypeHash<T&>
-{
-  static inline type_hash_t value()
-  {
-    return std::make_pair(std::type_index(typeid(T)), std::size_t(1));
-  }
-};
-
-template<typename T>
-struct TypeHash<const T&>
-{
-  static inline type_hash_t value()
-  {
-    return std::make_pair(std::type_index(typeid(T)), std::size_t(2));
-  }
-};
-
-}
-
-template<typename T>
-inline type_hash_t type_hash()
-{
-  return detail::TypeHash<T>::value();
-}
-
-JLCXX_API std::unordered_map<type_hash_t, CachedDatatype>& jlcxx_type_map();
-
-/// Store the Julia datatype linked to SourceT
-template<typename SourceT>
-class JuliaTypeCache
-{
-public:
-
-  static inline jl_datatype_t* julia_type()
-  {
-    const auto result = jlcxx_type_map().find(type_hash<SourceT>());
-    if(result == jlcxx_type_map().end())
-    {
-      throw std::runtime_error("Type " + std::string(typeid(SourceT).name()) + " has no Julia wrapper");
-    }
-    return result->second.get_dt();
-  }
-
-  static inline void set_julia_type(jl_datatype_t* dt, bool protect = true)
-  {
-    type_hash_t new_hash = type_hash<SourceT>();
-    const auto [inserted_it, insert_success] = jlcxx_type_map().insert(std::make_pair(new_hash, CachedDatatype(dt, protect)));
-    if(!insert_success)
-    {
-      type_hash_t old_hash = inserted_it->first;
-      std::cout << "Warning: Type " << new_hash.first.name() << " already had a mapped type set as "
-        << julia_type_name(inserted_it->second.get_dt()) << " and const-ref indicator " << old_hash.second << " and C++ type name " << old_hash.first.name()
-        << ". Hash comparison: old(" << old_hash.first.hash_code() << "," << old_hash.second << ") == new(" << old_hash.first.hash_code() << "," << old_hash.second << ") == "
-        << std::boolalpha << (old_hash == new_hash) << std::endl;
-      return;
-    }
-  }
-
-  static inline bool has_julia_type()
-  {
-    const std::size_t nb_hits = jlcxx_type_map().count(type_hash<SourceT>());
-    return nb_hits != 0;
-  }
-};
 
 template<typename T>
 void set_julia_type(jl_datatype_t* dt, bool protect = true)
 {
-  JuliaTypeCache<typename std::remove_const<T>::type>::set_julia_type(dt, protect);
+  using nonconst_t = typename std::remove_const<T>::type;
+  CachedDatatype& cache = stored_type<nonconst_t>();
+  if(cache.get_dt() != nullptr)
+  {
+    std::cout << "Warning: Type " << typeid(T).name() << " already had a mapped type set as " << julia_type_name(cache.get_dt()) << std::endl;
+    return;
+  }
+  cache.set_dt(dt, protect);
 }
 
 /// Store the Julia datatype linked to SourceT
@@ -473,7 +385,11 @@ template<typename T>
 inline jl_datatype_t* julia_type()
 {
   using nonconst_t = typename std::remove_const<T>::type;
-  static jl_datatype_t* dt = JuliaTypeCache<nonconst_t>::julia_type();
+  jl_datatype_t* dt = stored_type<nonconst_t>().get_dt();
+  if(dt == nullptr)
+  {
+    throw std::runtime_error("Type " + std::string(typeid(nonconst_t).name()) + " has no Julia wrapper");
+  }
   return dt;
 }
 
@@ -482,7 +398,7 @@ template <typename T>
 bool has_julia_type()
 {
   using nonconst_t = typename std::remove_const<T>::type;
-  return JuliaTypeCache<nonconst_t>::has_julia_type();
+  return stored_type<nonconst_t>().get_dt() != nullptr;
 }
 
 /// Create the julia type associated with the given C++ type
