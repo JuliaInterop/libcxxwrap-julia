@@ -348,11 +348,51 @@ private:
   jl_datatype_t* m_dt = nullptr;
 };
 
-template<typename CppT>
-inline CachedDatatype& stored_type()
+
+#ifdef JLCXX_USE_TYPE_MAP
+
+JLCXX_API CachedDatatype& jlcxx_type(std::type_index idx);
+JLCXX_API CachedDatatype& jlcxx_reftype(std::type_index idx);
+JLCXX_API CachedDatatype& jlcxx_constreftype(std::type_index idx);
+
+template<typename T>
+struct HashedCache
 {
+  static inline CachedDatatype& value()
+  {
+    return jlcxx_type(typeid(T));
+  }
+};
+
+template<typename T>
+struct HashedCache<T&>
+{
+  static inline CachedDatatype& value()
+  {
+    return jlcxx_reftype(typeid(T));
+  }
+};
+
+template<typename T>
+struct HashedCache<const T&>
+{
+  static inline CachedDatatype& value()
+  {
+    return jlcxx_constreftype(typeid(T));
+  }
+};
+
+#endif
+
+template<typename CppT>
+CachedDatatype& stored_type()
+{
+#ifdef JLCXX_USE_TYPE_MAP
+  return HashedCache<CppT>::value();
+#else
   static CachedDatatype m_dt;
   return m_dt;
+#endif
 }
 
 template<typename T>

@@ -2,6 +2,7 @@
 #define JLCXX_CONFIG_HPP
 
 #ifdef _WIN32
+  #define JLCXX_USE_TYPE_MAP
   #ifdef JLCXX_EXPORTS
       #define JLCXX_API __declspec(dllexport)
   #else
