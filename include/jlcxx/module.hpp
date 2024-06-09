@@ -1235,6 +1235,10 @@ private:
 
 using TypeWrapper1 = TypeWrapper<Parametric<TypeVar<1>>>;
 
+#ifdef JLCXX_USE_TYPE_MAP
+JLCXX_API std::shared_ptr<TypeWrapper1>& jlcxx_smartpointer_type(std::type_index idx);
+#endif
+
 template<typename ApplyT, typename... TypeLists> using combine_types = typename CombineTypes<ApplyT, TypeLists...>::type;
 
 template<typename T>

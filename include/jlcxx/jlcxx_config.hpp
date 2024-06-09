@@ -2,6 +2,7 @@
 #define JLCXX_CONFIG_HPP
 
 #ifdef _WIN32
+  #define JLCXX_USE_TYPE_MAP
   #ifdef JLCXX_EXPORTS
       #define JLCXX_API __declspec(dllexport)
   #else
@@ -14,8 +15,8 @@
 #endif
 
 #define JLCXX_VERSION_MAJOR 0
-#define JLCXX_VERSION_MINOR 12
-#define JLCXX_VERSION_PATCH 5
+#define JLCXX_VERSION_MINOR 13
+#define JLCXX_VERSION_PATCH 0
 
 // From https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
 #define __JLCXX_STR_HELPER(x) #x
