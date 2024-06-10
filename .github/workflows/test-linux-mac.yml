@@ -23,6 +23,13 @@ jobs:
           - macos-13
         arch:
           - x64
+        include:
+          - os: macos-14
+            arch: aarch64
+            version: "1.10"
+          - os: macos-14
+            arch: aarch64
+            version: "nightly"
     steps:
       - uses: actions/checkout@v3
         with:
