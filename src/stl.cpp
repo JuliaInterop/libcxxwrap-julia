@@ -21,6 +21,7 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   apply_valarray(m_instance->valarray);
   apply_deque(m_instance->deque);
   apply_queue(m_instance->queue);
+  apply_priority_queue(m_instance->priority_queue);
   apply_set(m_instance->set);
   apply_multiset(m_instance->multiset);
   apply_unordered_set(m_instance->unordered_set);
@@ -50,6 +51,7 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
   deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
   queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
+  priority_queue(stl.add_type<Parametric<TypeVar<1>>>("StdPriorityQueue")),
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
   multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
   unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),

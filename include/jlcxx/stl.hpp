@@ -52,6 +52,7 @@ public:
   TypeWrapper1 valarray;
   TypeWrapper1 deque;
   TypeWrapper1 queue;
+  TypeWrapper1 priority_queue;
   TypeWrapper1 set;
   TypeWrapper1 multiset;
   TypeWrapper1 unordered_set;
@@ -71,6 +72,7 @@ void apply_vector(TypeWrapper1& vector);
 void apply_valarray(TypeWrapper1& valarray);
 void apply_deque(TypeWrapper1& deque);
 void apply_queue(TypeWrapper1& queue);
+void apply_priority_queue(TypeWrapper1& priority_queue);
 void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
 void apply_unordered_set(TypeWrapper1& unordered_set);
@@ -254,6 +256,25 @@ struct WrapQueue
   }
 };
 
+struct WrapPriorityQueue
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("pq_push!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("pq_pop!", [] (WrappedT& v) { v.pop(); });
+    wrapped.method("pq_top", [] (WrappedT& v) { return v.top(); });
+    wrapped.method("pq_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
 struct WrapSetType
 {
   template<typename TypeWrapperT>
@@ -343,6 +364,7 @@ inline void apply_stl(jlcxx::Module& mod)
   {
     TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSetType());
     TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultisetType());
+    TypeWrapper1(mod, StlWrappers::instance().priority_queue).apply<std::priority_queue<T>>(WrapPriorityQueue());
   }
   if constexpr (is_hashable<T>::value)
   {
