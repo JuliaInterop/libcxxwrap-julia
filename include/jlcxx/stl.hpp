@@ -340,18 +340,31 @@ template <typename T>
 struct is_container<T, std::void_t<typename T::value_type>> : std::true_type {};
 
 template <typename T, typename = void>
+struct is_pair : std::false_type {};
+
+template <typename T>
+struct is_pair<T, std::void_t<typename T::first_type, typename T::second_type>> : std::true_type {};
+
+template <typename T, typename = void>
 struct container_has_less_than_operator : std::false_type {};
 
 template <typename T>
 struct container_has_less_than_operator<T, std::enable_if_t<is_container<T>::value>>
     : std::conditional_t<
-          has_less_than_operator<typename T::value_type>::value || 
           container_has_less_than_operator<typename T::value_type>::value,
-          std::true_type, 
+          std::true_type,
           std::false_type> {};
 
 template <typename T>
-struct container_has_less_than_operator<T, std::enable_if_t<!is_container<T>::value>>
+struct container_has_less_than_operator<T, std::enable_if_t<is_pair<T>::value>>
+    : std::conditional_t<
+          container_has_less_than_operator<typename T::first_type>::value &&
+              container_has_less_than_operator<typename T::second_type>::value,
+          std::true_type,
+          std::false_type> {};
+
+template <typename T>
+struct container_has_less_than_operator<T, std::enable_if_t<!is_container<T>::value && !is_pair<T>::value>>
     : has_less_than_operator<T> {};
 
 template <typename T, typename = void>
