@@ -50,7 +50,8 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))),
   valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
   deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
-  queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
+  // Assign appropriate parent types after iterators are implemented
+  queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue")),
   priority_queue(stl.add_type<Parametric<TypeVar<1>>>("StdPriorityQueue")),
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
   multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
