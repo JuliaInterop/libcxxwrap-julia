@@ -341,37 +341,49 @@ namespace detail
   };
 }
 
-JLCXX_API std::unordered_map<type_hash_t, CachedDatatype>& jlcxx_type_map()
+#ifdef JLCXX_USE_TYPE_MAP
+
+// On windows, we can't store a mapping from the C++ type to the Julia type
+// in a static variable declared in a template function, since each DLL
+// will have its onw copy of that variable, making it impossible to share
+// type definitions between the CxxWrap base library and other libraries.
+// The workaround is to store the types in a map, but this is more fragile
+// because the guarantees on std::type_index are not very strong either
+// in the context of sharing information between shared libraries. This is
+// why we fall back to this approach only on Windows. Using type names is
+// also not a solution because types in anonymous namespaces will clash.
+// Refs:
+// https://stackoverflow.com/questions/398069/static-member-variable-in-template-with-multiple-dlls
+// https://developercommunity.visualstudio.com/t/template-static-members-and-multiple-definitions-a/1202888
+// https://github.com/pybind/pybind11/pull/4319
+// https://bugs.llvm.org/show_bug.cgi?id=33542
+// https://github.com/pybind/pybind11/issues/3289
+
+JLCXX_API CachedDatatype& jlcxx_type(std::type_index idx)
 {
-  static std::unordered_map<type_hash_t, CachedDatatype> m_map;
-  return m_map;
+  static std::unordered_map<std::type_index, CachedDatatype> m_map;
+  return m_map.insert(std::make_pair(idx,CachedDatatype())).first->second;
 }
 
-namespace smartptr
+JLCXX_API CachedDatatype& jlcxx_reftype(std::type_index idx)
 {
-
-std::map<type_hash_t, std::shared_ptr<TypeWrapper1>>& jlcxx_smartpointer_types()
-{
-  static std::map<type_hash_t, std::shared_ptr<TypeWrapper1>> m_map;
-  return m_map;
+  static std::unordered_map<std::type_index, CachedDatatype> m_map;
+  return m_map.insert(std::make_pair(idx,CachedDatatype())).first->second;
 }
 
-JLCXX_API void set_smartpointer_type(const type_hash_t& hash, TypeWrapper1* new_wrapper)
+JLCXX_API CachedDatatype& jlcxx_constreftype(std::type_index idx)
 {
-  jlcxx_smartpointer_types()[hash] = std::shared_ptr<TypeWrapper1>(new_wrapper);
+  static std::unordered_map<std::type_index, CachedDatatype> m_map;
+  return m_map.insert(std::make_pair(idx,CachedDatatype())).first->second;
 }
 
-JLCXX_API TypeWrapper1* get_smartpointer_type(const type_hash_t& hash)
+JLCXX_API std::shared_ptr<TypeWrapper1>& jlcxx_smartpointer_type(std::type_index idx)
 {
-  auto result = jlcxx_smartpointer_types().find(hash);
-  if(result == jlcxx_smartpointer_types().end())
-  {
-    return nullptr;
-  }
-  return result->second.get();
+  static std::unordered_map<std::type_index, std::shared_ptr<TypeWrapper1>> m_map;
+  return m_map.insert(std::make_pair(idx, nullptr)).first->second;
 }
 
-}
+#endif
 
 JLCXX_API void register_core_types()
 {

@@ -42,7 +42,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU" 
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wunused-parameter -Wextra -Wreorder -fPIC")
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 add_definitions(-DJULIA_ENABLE_THREADING)
 
@@ -75,6 +75,7 @@ set(JLCXX_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
 set(JLCXX_HEADERS
     ${JLCXX_INCLUDE_DIR}/jlcxx/array.hpp
+    ${JLCXX_INCLUDE_DIR}/jlcxx/attr.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/const_array.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx.hpp
     ${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx_config.hpp
@@ -93,6 +94,17 @@ set(JLCXX_STL_HEADERS
 
 set(JLCXX_STL_SOURCES
     ${JLCXX_SOURCE_DIR}/stl.cpp
+    ${JLCXX_SOURCE_DIR}/stl_vector.cpp
+    ${JLCXX_SOURCE_DIR}/stl_valarray.cpp
+    ${JLCXX_SOURCE_DIR}/stl_deque.cpp
+    ${JLCXX_SOURCE_DIR}/stl_queue.cpp
+    ${JLCXX_SOURCE_DIR}/stl_set.cpp
+    ${JLCXX_SOURCE_DIR}/stl_multiset.cpp
+    ${JLCXX_SOURCE_DIR}/stl_unordered_set.cpp
+    ${JLCXX_SOURCE_DIR}/stl_unordered_multiset.cpp
+    ${JLCXX_SOURCE_DIR}/stl_shared_ptr.cpp
+    ${JLCXX_SOURCE_DIR}/stl_unique_ptr.cpp
+    ${JLCXX_SOURCE_DIR}/stl_weak_ptr.cpp
 )
 
 set(JLCXX_SOURCES
@@ -104,8 +116,6 @@ set(JLCXX_SOURCES
 # Versioning
 # ==========
 
-option(OVERRIDE_VERSION_TO_JLL "Override the version info to match the installed JLL, so the filenames match for the Overrides.toml" OFF)
-
 file(STRINGS "${JLCXX_INCLUDE_DIR}/jlcxx/jlcxx_config.hpp" jlcxx_version_defines
     REGEX "#define JLCXX_VERSION_(MAJOR|MINOR|PATCH)")
 foreach(ver ${jlcxx_version_defines})
@@ -113,19 +123,6 @@ foreach(ver ${jlcxx_version_defines})
         set(JLCXX_VERSION_${CMAKE_MATCH_1} "${CMAKE_MATCH_2}" CACHE INTERNAL "")
     endif()
 endforeach()
-if(OVERRIDE_VERSION_TO_JLL)
-  execute_process(
-    COMMAND git describe --tags --abbrev=0
-    OUTPUT_VARIABLE _JLL_VERSION
-  )
-  string(STRIP "${_JLL_VERSION}" _JLL_VERSION)
-  message(STATUS "git version: ${_JLL_VERSION}")
-  string(REGEX REPLACE "v" "" _JLL_VERSION "${_JLL_VERSION}")
-  string(REPLACE "." ";" _jlcxx_VERSION_LIST "${_JLL_VERSION}")
-  list(GET _jlcxx_VERSION_LIST 0 JLCXX_VERSION_MAJOR)
-  list(GET _jlcxx_VERSION_LIST 1 JLCXX_VERSION_MINOR)
-  list(GET _jlcxx_VERSION_LIST 2 JLCXX_VERSION_PATCH)
-endif()
 set(${PROJECT_NAME}_VERSION
     ${JLCXX_VERSION_MAJOR}.${JLCXX_VERSION_MINOR}.${JLCXX_VERSION_PATCH})
 message(STATUS "${PROJECT_NAME} version: v${${PROJECT_NAME}_VERSION}")
@@ -168,8 +165,8 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${JLCXX_TARGET}_MAJOR_VERSION
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
-target_compile_features(${JLCXX_TARGET} PUBLIC cxx_std_17)
-target_compile_features(${JLCXX_STL_TARGET} PUBLIC cxx_std_17)
+target_compile_features(${JLCXX_TARGET} PUBLIC cxx_std_20)
+target_compile_features(${JLCXX_STL_TARGET} PUBLIC cxx_std_20)
 
 generate_export_header(${JLCXX_TARGET})
 

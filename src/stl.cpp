@@ -17,12 +17,17 @@ JLCXX_API std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr
 JLCXX_API void StlWrappers::instantiate(Module& mod)
 {
   m_instance.reset(new StlWrappers(mod));
-  m_instance->vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
-  m_instance->valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
-  m_instance->deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
-  smartptr::apply_smart_combination<std::shared_ptr, stltypes>(mod);
-  smartptr::apply_smart_combination<std::weak_ptr, stltypes>(mod);
-  smartptr::apply_smart_combination<std::unique_ptr, stltypes>(mod);
+  apply_vector(m_instance->vector);
+  apply_valarray(m_instance->valarray);
+  apply_deque(m_instance->deque);
+  apply_queue(m_instance->queue);
+  apply_set(m_instance->set);
+  apply_multiset(m_instance->multiset);
+  apply_unordered_set(m_instance->unordered_set);
+  apply_unordered_multiset(m_instance->unordered_multiset);
+  apply_shared_ptr();
+  apply_weak_ptr();
+  apply_unique_ptr();
 }
 
 JLCXX_API StlWrappers& StlWrappers::instance()
@@ -43,7 +48,12 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   m_stl_mod(stl),
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))),
   valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
-  deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector")))
+  deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
+  queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
+  set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
+  multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
+  unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),
+  unordered_multiset(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultiset"))
 {
 }
 
@@ -63,6 +73,9 @@ void wrap_string(TypeWrapper<string_t>&& wrapper)
 
 JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
 {
+#ifdef JLCXX_HAS_RANGES
+  stl.set_const("HAS_RANGES", 1);
+#endif
   jlcxx::stl::wrap_string(stl.add_type<std::string>("StdString", julia_type("CppBasicString")));
   jlcxx::stl::wrap_string(stl.add_type<std::wstring>("StdWString", julia_type("CppBasicString")));
 

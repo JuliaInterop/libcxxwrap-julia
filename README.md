@@ -1,6 +1,6 @@
 # JlCxx
 
-![test-linux-mac](https://github.com/JuliaInterop/libcxxwrap-julia/workflows/test-linux-mac/badge.svg) ![test-win](https://github.com/JuliaInterop/libcxxwrap-julia/workflows/test-win/badge.svg)
+[![test-linux-mac](https://github.com/JuliaInterop/libcxxwrap-julia/actions/workflows/test-linux-mac.yml/badge.svg)](https://github.com/JuliaInterop/libcxxwrap-julia/actions/workflows/test-linux-mac.yml) [![test-win](https://github.com/JuliaInterop/libcxxwrap-julia/actions/workflows/test-win.yml/badge.svg)](https://github.com/JuliaInterop/libcxxwrap-julia/actions/workflows/test-win.yml)
 
 This is the C++ library component of the [CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl) package, distributed as a regular CMake library
 for use in other C++ projects. To build a Julia interface to a C++ library, you need to build against this library and supply the resulting library as a binary dependency to your Julia package. The `testlib-builder` directory contains a complete example of how to build and distribute these binaries, or you can use the [BinaryBuilder.jl](https://github.com/JuliaPackaging/BinaryBuilder.jl) wizard to generate the builder repository.
@@ -92,3 +92,14 @@ Binaries for the main branch are published at https://github.com/barche/libcxxwr
 ```
 add https://github.com/barche/libcxxwrap_julia_jll.jl.git
 ```
+
+## Using libcxxwrap-julia as a dependency for downstream packages
+When developing Julia bindings for a C++ package using libcxxwrap-julia, you need to
+build against the correct version of libcxxwrap-julia. Specifically, to make sure that your
+wrapper works correctly with
+[CxxWrap.jl](https://github.com/JuliaInterop/CxxWrap.jl), check the compat
+settings for `libcxxwrap_jll` in the `Project.toml` file of the
+[latest release](https://github.com/JuliaInterop/CxxWrap.jl/releases/latest) of CxxWrap.jl.
+It may happen that the latest release of libcxxwrap-julia is not yet supported by
+CxxWrap.jl, in which case you should build against an older release (see also
+[this comment](https://github.com/JuliaInterop/libcxxwrap-julia/issues/143#issuecomment-1910915193).

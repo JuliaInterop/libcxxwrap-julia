@@ -120,6 +120,14 @@ void fill_types_vec(Array<jl_datatype_t*>& types_array, const std::vector<jl_dat
   }
 }
 
+void fill_values_vec(Array<jl_value_t*>& types_array, const std::vector<jl_value_t*>& types_vec)
+{
+  for(const auto& t : types_vec)
+  {
+    types_array.push_back(t);
+  }
+}
+
 /// Get the functions defined in the modules. Any classes used by these functions must be defined on the Julia side first
 JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
 {
@@ -132,12 +140,20 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
     Array<jl_datatype_t*> arg_types_array;
     jl_value_t* boxed_f = nullptr;
     jl_value_t* boxed_thunk = nullptr;
-    JL_GC_PUSH3(arg_types_array.gc_pointer(), &boxed_f, &boxed_thunk);
+    Array<jl_value_t*> arg_names_array;
+    Array<jl_value_t*> arg_default_values_array;
+    jl_value_t* boxed_n_kwargs;
+    JL_GC_PUSH6(arg_types_array.gc_pointer(), &boxed_f, &boxed_thunk, arg_names_array.gc_pointer(), arg_default_values_array.gc_pointer(), &boxed_n_kwargs);
 
     fill_types_vec(arg_types_array, f.argument_types());
 
     boxed_f = jlcxx::box<void*>(f.pointer());
     boxed_thunk = jlcxx::box<void*>(f.thunk());
+
+    fill_values_vec(arg_names_array, f.argument_names());
+    fill_values_vec(arg_default_values_array, f.argument_default_values());
+
+    boxed_n_kwargs = jlcxx::box<int>(f.number_of_keyword_arguments());
 
     auto returntypes = f.return_type();
 
@@ -156,7 +172,11 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
       julia_return_type,
       boxed_f,
       boxed_thunk,
-      f.override_module()
+      f.override_module(),
+      f.doc(),
+      arg_names_array.wrapped(),
+      arg_default_values_array.wrapped(),
+      boxed_n_kwargs
     ));
 
     JL_GC_POP();

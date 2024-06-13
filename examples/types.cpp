@@ -173,6 +173,10 @@ class UseCustomClassDelete
 
 int UseCustomClassDelete::nb_deleted = 0;
 
+void int_vec_arg(std::vector<std::shared_ptr<int>>){}
+void const_int_vec_arg(std::vector<std::shared_ptr<const int>>){}
+
+
 } // namespace cpp_types
 
 namespace jlcxx
@@ -231,7 +235,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   types.add_type<World>("World")
     .constructor<const std::string&>()
-    .constructor<jlcxx::cxxint_t>(false) // no finalizer
+    .constructor<jlcxx::cxxint_t>(jlcxx::finalize_policy::no) // no finalizer
     .constructor([] (const std::string& a, const std::string& b) { return new World(a + " " + b); })
     .method("set", &World::set)
     .method("greet_cref", &World::greet)
@@ -278,6 +282,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   {
     return w->greet();
   });
+
+  types.method("int_vec_arg", cpp_types::int_vec_arg);
+  types.method("const_int_vec_arg", cpp_types::const_int_vec_arg);
 
   types.method("shared_world_ref", []() -> std::shared_ptr<World>&
   {
@@ -336,6 +343,28 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
     return w;
   });
 
+  types.method("shared_vector_factory", []() -> std::vector<std::shared_ptr<World>>
+  {
+    return {std::shared_ptr<World>(new World("shared vector hello"))};
+  });
+
+  types.method("shared_const_vector_factory", []() -> std::vector<std::shared_ptr<const World>>
+  {
+    return {std::shared_ptr<const World>(new World("shared vector const hello"))};
+  });
+
+  types.method("world_ptr_vector", []() { static World w; return std::vector({&w}); });
+
+  types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<World>>& v)
+  {
+    return v[0]->greet();
+  });
+
+  types.method("get_shared_vector_msg", [](const std::vector<std::shared_ptr<const World>>& v)
+  {
+    return v[0]->greet() + " from const overload";
+  });
+
   types.add_type<NonCopyable>("NonCopyable");
 
   types.add_type<AConstRef>("AConstRef").method("value", &AConstRef::value);
@@ -366,6 +395,10 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.set_const("EnumClassRed", EnumClass::red);
   types.set_const("EnumClassBlue", EnumClass::blue);
   types.method("check_red", [] (const EnumClass c) { return c == EnumClass::red; });
+
+  static const EnumClass stored_blue = EnumClass::blue;
+  types.method("check_enum_byref", [] (const EnumClass& c) { return c == EnumClass::red; });
+  types.set_const("StoredBlue", stored_blue);
 
   types.add_type<Foo>("Foo")
     .constructor<const std::wstring&, jlcxx::ArrayRef<double,1>>()

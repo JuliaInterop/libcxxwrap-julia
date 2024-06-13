@@ -59,6 +59,13 @@ std::string take_ref(A& a)
   return a.message();
 }
 
+// Static inheritance test (issue #156)
+struct StaticBase {
+};
+
+struct StaticDerived: public StaticBase {
+};
+
 // Example based on https://discourse.julialang.org/t/simplest-way-to-wrap-virtual-c-class/4977
 namespace virtualsolver
 {
@@ -100,6 +107,10 @@ namespace jlcxx
 
   template<> struct SuperType<virtualsolver::E> { typedef virtualsolver::Base type; };
   template<> struct SuperType<virtualsolver::F> { typedef virtualsolver::Base type; };
+
+  template<> struct IsMirroredType<StaticBase> : std::false_type { };
+  template<> struct IsMirroredType<StaticDerived> : std::false_type { };
+  template<> struct SuperType<StaticDerived> { typedef StaticBase type; };
 }
 
 JLCXX_MODULE define_types_module(jlcxx::Module& types)
@@ -115,12 +126,15 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
   types.method("shared_d", []() { return std::make_shared<const D>(); });
   types.method("shared_ptr_message", [](const std::shared_ptr<const A>& x) { return x->message(); });
 
-  types.method("weak_ptr_message_a", [](const std::weak_ptr<A>& x) { return x.lock()->message(); });
+  types.method("weak_ptr_message_a", [](const std::weak_ptr<const A>& x) { return x.lock()->message(); });
   types.method("weak_ptr_message_b", [](const std::weak_ptr<B>& x) { return x.lock()->message(); });
 
   types.method("dynamic_message_c", [](const A& c) { return dynamic_cast<const C*>(&c)->data; });
 
   types.method("take_ref", take_ref);
+
+  types.add_type<StaticBase>("StaticBase");
+  types.add_type<StaticDerived>("StaticDerived", jlcxx::julia_base_type<StaticBase>());
 }
 
 JLCXX_MODULE define_vsolver_module(jlcxx::Module& vsolver_mod)

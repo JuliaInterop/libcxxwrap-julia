@@ -2,11 +2,11 @@ name: test-linux-mac
 on:
   - push
   - pull_request
-    
+
 defaults:
   run:
     shell: bash
-    
+
 jobs:
   test:
     name: Julia ${{ matrix.version }} - ${{ matrix.os }} - ${{ matrix.arch }}
@@ -15,14 +15,21 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - '1.6'
-          - '1.8'
-          - 'nightly'
+          - "1.6"
+          - "1.10"
+          - "nightly"
         os:
           - ubuntu-latest
-          - macOS-latest
+          - macos-13
         arch:
           - x64
+        include:
+          - os: macos-14
+            arch: aarch64
+            version: "1.10"
+          - os: macos-14
+            arch: aarch64
+            version: "nightly"
     steps:
       - uses: actions/checkout@v3
         with:
@@ -32,14 +39,28 @@ jobs:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
       - name: Build and test
+        env:
+          body: ${{ github.event.pull_request.body }}
         run: |
+          package="$(echo "$body" | sed -n '1p')"
+          if [ -z "${package}" ]; then
+            package="https://github.com/JuliaInterop/CxxWrap.jl.git"
+          fi
           if [[ "$OSTYPE" != "darwin"* ]]; then
             rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
           fi
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DOVERRIDE_VERSION_TO_JLL=ON -DCMAKE_BUILD_TYPE=Debug ..
+          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install
-          julia -e 'using Pkg; pkg"add CxxWrap#testjll"; using CxxWrap'
+          wget https://github.com/JuliaBinaryWrappers/libcxxwrap_julia_jll.jl/raw/main/Project.toml
+          jllversion=$(grep "version" Project.toml | sed -r 's/.* = "(.*)\+.*/\1/')
+          cd lib
+          if [ ! -f libcxxwrap_julia.${jllversion}.dylib ]; then
+            ln -s libcxxwrap_julia.*.*.*.* libcxxwrap_julia.${jllversion}.dylib
+          fi
+          cd ..
+          ls -al lib
+          julia -e "using Pkg; pkg\"add ${package}\"; using CxxWrap"
           ctest -V
       - name: Build testlib
         run: |
