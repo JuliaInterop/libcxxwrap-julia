@@ -6,6 +6,7 @@
 #include <vector>
 #include <deque>
 #include <queue>
+#include <stack>
 #include <set>
 #include <unordered_set>
 
@@ -53,6 +54,7 @@ public:
   TypeWrapper1 deque;
   TypeWrapper1 queue;
   TypeWrapper1 priority_queue;
+  TypeWrapper1 stack;
   TypeWrapper1 set;
   TypeWrapper1 multiset;
   TypeWrapper1 unordered_set;
@@ -73,6 +75,7 @@ void apply_valarray(TypeWrapper1& valarray);
 void apply_deque(TypeWrapper1& deque);
 void apply_queue(TypeWrapper1& queue);
 void apply_priority_queue(TypeWrapper1& priority_queue);
+void apply_stack(TypeWrapper1& stack);
 void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
 void apply_unordered_set(TypeWrapper1& unordered_set);
@@ -284,6 +287,25 @@ struct WrapPriorityQueue
   }
 };
 
+struct WrapStack
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("stack_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("stack_push!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("stack_top", [] (WrappedT& v) { return v.top(); });
+    wrapped.method("stack_pop!", [] (WrappedT& v) { v.pop(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
 struct WrapSetType
 {
   template<typename TypeWrapperT>
@@ -382,6 +404,7 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
+  TypeWrapper1(mod, StlWrappers::instance().stack).apply<std::stack<T>>(WrapStack());
   if constexpr (container_has_less_than_operator<T>::value)
   {
     TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSetType());
