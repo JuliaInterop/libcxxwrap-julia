@@ -221,6 +221,7 @@ struct WrapQueueImpl
     
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("q_empty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
     wrapped.method("front", [] (WrappedT& v) { return v.front(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
@@ -238,6 +239,7 @@ struct WrapQueueImpl<bool>
 
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("q_empty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("push_back!", [] (WrappedT& v, const bool val) { v.push(val); });
     wrapped.method("front", [] (WrappedT& v) -> bool { return v.front(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
