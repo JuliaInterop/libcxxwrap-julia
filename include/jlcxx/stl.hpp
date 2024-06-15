@@ -269,7 +269,14 @@ struct WrapPriorityQueue
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("pq_push!", [] (WrappedT& v, const T& val) { v.push(val); });
     wrapped.method("pq_pop!", [] (WrappedT& v) { v.pop(); });
-    wrapped.method("pq_top", [] (WrappedT& v) { return v.top(); });
+    if constexpr(std::is_same<T,bool>::value)
+    {
+      wrapped.method("pq_top", [] (WrappedT& v) { return bool(v.top()); });
+    }
+    else
+    {
+      wrapped.method("pq_top", [] (WrappedT& v) { return v.top(); });
+    }
     wrapped.method("pq_isempty", [] (WrappedT& v) { return v.empty(); });
     wrapped.module().unset_override_module();
   }
