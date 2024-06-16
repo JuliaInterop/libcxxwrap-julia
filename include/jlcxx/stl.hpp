@@ -95,7 +95,7 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
 >, fundamental_int_types>, fixed_int_types>>;
 
 template<typename TypeWrapperT>
-void wrap_range_based_algorithms(TypeWrapperT& wrapped)
+void wrap_range_based_algorithms([[maybe_unused]] TypeWrapperT& wrapped)
 {
 #ifdef JLCXX_HAS_RANGES
   using WrappedT = typename TypeWrapperT::type;

@@ -1,7 +1,8 @@
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(test_module test_module.cpp)
-target_link_libraries(test_module ${JLCXX_TARGET} ${Julia_LIBRARY})
+set_property(TARGET test_module PROPERTY COMPILE_FLAGS "-std=c++17")
+target_link_libraries(test_module ${JLCXX_TARGET} ${JLCXX_STL_TARGET} ${Julia_LIBRARY})
 add_test(NAME test_module COMMAND test_module)
 
 add_executable(test_type_init test_type_init.cpp)
