@@ -44,6 +44,8 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
   mod.add_type<Foo>("Foo")
     .method("getx", &Foo::getx);
 
+  mod.add_type<std::pair<int,Foo>>("FooPair");
+
   mod.method("vectortest", [] (std::vector<Foo>) {});
   mod.method("pairtest", [] (std::vector<std::pair<int,Foo>>) {});
 
