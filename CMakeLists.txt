@@ -244,10 +244,11 @@ if(WIN32)
         DEPENDS install
         WORKING_DIRECTORY ${CMAKE_INSTALL_PREFIX}/..
         )
+	set(ENV{HOME} $ENV{USERPROFILE})	#on windows the home directory is in USERPROFILE, but libcxxwrap-julia doesn't know this and uses HOME instead.
 endif()
 
 set(OVERRIDES_PATH "$ENV{HOME}/.julia/artifacts/Overrides.toml" CACHE FILEPATH "Path to the Overrides file")
-set(OVERRIDE_ROOT "${CMAKE_CURRENT_BINARY_DIR}" CACHE PATH "Path to the installation or build directory to use")
+set(OVERRIDE_ROOT "${CMAKE_BINARY_DIR}" CACHE PATH "Path to the installation or build directory to use")  #DLLs are output to CMAKE_BINARY_DIR not CMAKE_CURRENT_BINARY_DIR
 option(APPEND_OVERRIDES_TOML "Append an entry to the Overrides.toml file to make Julia use the libcxxwrap in the current dir" OFF)
 
 if(APPEND_OVERRIDES_TOML)
@@ -255,4 +256,11 @@ if(APPEND_OVERRIDES_TOML)
 [3eaa8342-bff7-56a5-9981-c04077f7cee7]
 libcxxwrap_julia = \"${OVERRIDE_ROOT}\"
   " APPEND)
+  message("Entry added to ${OVERRIDES_PATH}: CxxWrap will use ${OVERRIDE_ROOT}")
 endif()
+
+set(JlCxx_DIR ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)		#this allows find_package(JlCxx) to work from the top level CMake file
+
+# include(CMakePrintHelpers) 
+# cmake_print_variables(CMAKE_BINARY_DIR CMAKE_CURRENT_BINARY_DIR OVERRIDE_ROOT) 
+# cmake_print_properties(TARGETS cxxwrap_julia cxxwrap_julia_stl PROPERTIES BINARY_DIR INCLUDE_DIRECTORIES LINK_LIBRARIES) 
