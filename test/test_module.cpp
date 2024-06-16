@@ -1,5 +1,7 @@
+#define JLCXX_FORCE_RANGES_OFF
 #include <jlcxx/jlcxx.hpp>
 #include <jlcxx/functions.hpp>
+#include <jlcxx/stl.hpp>
 
 namespace test_module
 {
@@ -41,6 +43,9 @@ JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 
   mod.add_type<Foo>("Foo")
     .method("getx", &Foo::getx);
+
+  mod.method("vectortest", [] (std::vector<Foo>) {});
+  mod.method("pairtest", [] (std::vector<std::pair<int,Foo>>) {});
 
   using namespace jlcxx;
 
