@@ -9,6 +9,8 @@
 #include <stack>
 #include <set>
 #include <unordered_set>
+#include <list>
+#include <forward_list>
 
 #include "module.hpp"
 #include "smart_pointers.hpp"
@@ -59,6 +61,8 @@ public:
   TypeWrapper1 multiset;
   TypeWrapper1 unordered_set;
   TypeWrapper1 unordered_multiset;
+  TypeWrapper1 list;
+  TypeWrapper1 forward_list;
 
   static void instantiate(Module& mod);
   static StlWrappers& instance();
@@ -80,6 +84,8 @@ void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
 void apply_unordered_set(TypeWrapper1& unordered_set);
 void apply_unordered_multiset(TypeWrapper1& unordered_multiset);
+void apply_list(TypeWrapper1& list);
+void apply_forward_list(TypeWrapper1& forward_list);
 void apply_shared_ptr();
 void apply_weak_ptr();
 void apply_unique_ptr();
@@ -347,6 +353,48 @@ struct WrapMultisetType
   }
 };
 
+struct WrapList
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("list_empty!", [] (WrappedT& v) { v.clear(); });
+    wrapped.method("list_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("list_front", [] (WrappedT& v) { return v.front(); });
+    wrapped.method("list_back", [] (WrappedT& v) { return v.back(); });
+    wrapped.method("list_push_back!", [] (WrappedT& v, const T& val) { v.push_back(val); });
+    wrapped.method("list_push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
+    wrapped.method("list_pop_back!", [] (WrappedT& v) { v.pop_back(); });
+    wrapped.method("list_pop_front!", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
+struct WrapForwardList
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("flist_empty!", [] (WrappedT& v) { v.clear(); });
+    wrapped.method("flist_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("flist_front", [] (WrappedT& v) { return v.front(); });
+    wrapped.method("flist_push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
+    wrapped.method("flist_pop_front!", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.module().unset_override_module();
+  }
+};
+
 template <typename T, typename = void>
 struct has_less_than_operator : std::false_type {};
 
@@ -416,6 +464,8 @@ inline void apply_stl(jlcxx::Module& mod)
     TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapSetType());
     TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapMultisetType());
   }
+  TypeWrapper1(mod, StlWrappers::instance().list).apply<std::list<T>>(WrapList());
+  TypeWrapper1(mod, StlWrappers::instance().forward_list).apply<std::forward_list<T>>(WrapForwardList());
 }
 
 }

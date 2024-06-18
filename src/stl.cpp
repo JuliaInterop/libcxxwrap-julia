@@ -27,6 +27,8 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   apply_multiset(m_instance->multiset);
   apply_unordered_set(m_instance->unordered_set);
   apply_unordered_multiset(m_instance->unordered_multiset);
+  apply_list(m_instance->list);
+  apply_forward_list(m_instance->forward_list);
   apply_shared_ptr();
   apply_weak_ptr();
   apply_unique_ptr();
@@ -58,7 +60,9 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
   multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
   unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),
-  unordered_multiset(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultiset"))
+  unordered_multiset(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultiset")),
+  list(stl.add_type<Parametric<TypeVar<1>>>("StdList")),
+  forward_list(stl.add_type<Parametric<TypeVar<1>>>("StdForwardList"))
 {
 }
 
