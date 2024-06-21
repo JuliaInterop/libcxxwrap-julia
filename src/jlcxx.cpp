@@ -339,6 +339,10 @@ namespace detail
     {
     }
   };
+
+  template struct JLCXX_API BasicArg<false>;
+  template struct JLCXX_API BasicArg<true>;
+
 }
 
 #ifdef JLCXX_USE_TYPE_MAP

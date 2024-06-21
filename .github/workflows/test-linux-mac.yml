@@ -43,7 +43,7 @@ jobs:
           body: ${{ github.event.pull_request.body }}
         run: |
           package="$(echo "$body" | sed -n '1p')"
-          if [ -z "${package}" ]; then
+          if [[ "$package" != "http"* ]]; then
             package="https://github.com/JuliaInterop/CxxWrap.jl.git"
           fi
           if [[ "$OSTYPE" != "darwin"* ]]; then
