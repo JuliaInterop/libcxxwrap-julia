@@ -19,6 +19,7 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   m_instance.reset(new StlWrappers(mod));
   apply_vector(m_instance->vector);
   apply_valarray(m_instance->valarray);
+  apply_deque_iterator(m_instance->deque_iterator);
   apply_deque(m_instance->deque);
   apply_queue(m_instance->queue);
   apply_priority_queue(m_instance->priority_queue);
@@ -52,6 +53,7 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   m_stl_mod(stl),
   vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))),
   valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
+  deque_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdDequeIterator")),
   deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
   // Assign appropriate parent types after iterators are implemented
   queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue")),

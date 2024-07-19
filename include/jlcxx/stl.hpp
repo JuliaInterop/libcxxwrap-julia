@@ -53,6 +53,7 @@ private:
 public:
   TypeWrapper1 vector;
   TypeWrapper1 valarray;
+  TypeWrapper1 deque_iterator;
   TypeWrapper1 deque;
   TypeWrapper1 queue;
   TypeWrapper1 priority_queue;
@@ -76,6 +77,7 @@ public:
 // Separate per-container functions to split up the compilation over multiple C++ files
 void apply_vector(TypeWrapper1& vector);
 void apply_valarray(TypeWrapper1& valarray);
+void apply_deque_iterator(TypeWrapper1& deque_iterator);
 void apply_deque(TypeWrapper1& deque);
 void apply_queue(TypeWrapper1& queue);
 void apply_priority_queue(TypeWrapper1& priority_queue);
@@ -116,6 +118,40 @@ void wrap_range_based_algorithms([[maybe_unused]] TypeWrapperT& wrapped)
   wrapped.module().unset_override_module();
 #endif
 }
+
+template <typename valueT, template <typename, typename=std::allocator<valueT>> typename ContainerT>
+struct IteratorWrapper
+{
+  using value_type = valueT;
+  using iterator_type = typename ContainerT<value_type>::iterator;
+
+  iterator_type value;
+};
+
+
+template <typename T>
+void validate_iterator(T it)
+{
+  using IteratorT = typename T::iterator_type;
+  if (it.value == IteratorT())
+  {
+    throw std::runtime_error("Invalid iterator");
+  }
+}
+
+struct WrapIterator
+{
+  template <typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using ValueT = typename WrappedT::value_type;
+
+    wrapped.method("iterator_next", [](WrappedT it) -> WrappedT { ++(it.value); return it; });
+    wrapped.method("iterator_value", [](WrappedT it) -> ValueT { validate_iterator(it); return *it.value; });
+    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) -> bool {return it1.value == it2.value; });
+  };
+};
 
 template<typename T>
 struct WrapVectorImpl
@@ -197,6 +233,9 @@ struct WrapValArray
   }
 };
 
+template <typename valueT>
+struct DequeIteratorWrapper : IteratorWrapper<valueT, std::deque> {};
+
 struct WrapDeque
 {
   template<typename TypeWrapperT>
@@ -216,6 +255,8 @@ struct WrapDeque
     wrapped.method("push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
     wrapped.method("pop_back!", [] (WrappedT& v) { v.pop_back(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.method("iteratorbegin", [] (WrappedT& v) { return DequeIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v) { return DequeIteratorWrapper<T>{v.begin()}; });
     wrapped.module().unset_override_module();
   }
 };
@@ -450,6 +491,7 @@ inline void apply_stl(jlcxx::Module& mod)
 {
   TypeWrapper1(mod, StlWrappers::instance().vector).apply<std::vector<T>>(WrapVector());
   TypeWrapper1(mod, StlWrappers::instance().valarray).apply<std::valarray<T>>(WrapValArray());
+  TypeWrapper1(mod, StlWrappers::instance().deque_iterator).apply<stl::DequeIteratorWrapper<T>>(WrapIterator());
   TypeWrapper1(mod, StlWrappers::instance().deque).apply<std::deque<T>>(WrapDeque());
   TypeWrapper1(mod, StlWrappers::instance().queue).apply<std::queue<T>>(WrapQueue());
   TypeWrapper1(mod, StlWrappers::instance().stack).apply<std::stack<T>>(WrapStack());
