@@ -62,6 +62,7 @@ public:
   TypeWrapper1 multiset;
   TypeWrapper1 unordered_set;
   TypeWrapper1 unordered_multiset;
+  TypeWrapper1 list_iterator;
   TypeWrapper1 list;
   TypeWrapper1 forward_list;
 
@@ -86,6 +87,7 @@ void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
 void apply_unordered_set(TypeWrapper1& unordered_set);
 void apply_unordered_multiset(TypeWrapper1& unordered_multiset);
+void apply_list_iterator(TypeWrapper1& list_iterator);
 void apply_list(TypeWrapper1& list);
 void apply_forward_list(TypeWrapper1& forward_list);
 void apply_shared_ptr();
@@ -256,7 +258,7 @@ struct WrapDeque
     wrapped.method("pop_back!", [] (WrappedT& v) { v.pop_back(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop_front(); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return DequeIteratorWrapper<T>{v.begin()}; });
-    wrapped.method("iteratorend", [] (WrappedT& v) { return DequeIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v) { return DequeIteratorWrapper<T>{v.end()}; });
     wrapped.module().unset_override_module();
   }
 };
@@ -394,6 +396,9 @@ struct WrapMultisetType
   }
 };
 
+template <typename valueT>
+struct ListIteratorWrapper : IteratorWrapper<valueT, std::list> {};
+
 struct WrapList
 {
   template<typename TypeWrapperT>
@@ -413,6 +418,8 @@ struct WrapList
     wrapped.method("list_push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
     wrapped.method("list_pop_back!", [] (WrappedT& v) { v.pop_back(); });
     wrapped.method("list_pop_front!", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.method("iteratorbegin", [] (WrappedT& v) { return ListIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v) { return ListIteratorWrapper<T>{v.end()}; });
     wrapped.module().unset_override_module();
   }
 };
@@ -506,6 +513,7 @@ inline void apply_stl(jlcxx::Module& mod)
     TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapSetType());
     TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapMultisetType());
   }
+  TypeWrapper1(mod, StlWrappers::instance().list_iterator).apply<stl::ListIteratorWrapper<T>>(WrapIterator());
   TypeWrapper1(mod, StlWrappers::instance().list).apply<std::list<T>>(WrapList());
   TypeWrapper1(mod, StlWrappers::instance().forward_list).apply<std::forward_list<T>>(WrapForwardList());
 }
