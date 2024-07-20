@@ -357,7 +357,27 @@ struct WrapStack
   }
 };
 
-struct WrapSetType
+struct WrapSet
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("set_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("set_empty!", [] (WrappedT& v) { v.clear(); });
+    wrapped.method("set_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("set_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
+    wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.module().unset_override_module();
+  }
+};
+
+struct WrapUnorderedSet
 {
   template<typename TypeWrapperT>
   void operator()(TypeWrapperT&& wrapped)
@@ -511,13 +531,13 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().stack).apply<std::stack<T>>(WrapStack());
   if constexpr (container_has_less_than_operator<T>::value)
   {
-    TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSetType());
+    TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
     TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultisetType());
     TypeWrapper1(mod, StlWrappers::instance().priority_queue).apply<std::priority_queue<T>>(WrapPriorityQueue());
   }
   if constexpr (is_hashable<T>::value)
   {
-    TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapSetType());
+    TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapUnorderedSet());
     TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapMultisetType());
   }
   TypeWrapper1(mod, StlWrappers::instance().list_iterator).apply<stl::ListIteratorWrapper<T>>(WrapIterator());
