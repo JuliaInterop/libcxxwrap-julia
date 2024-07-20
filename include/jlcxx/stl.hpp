@@ -426,7 +426,28 @@ struct WrapUnorderedSet
   }
 };
 
-struct WrapMultisetType
+struct WrapMultiset
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using T = typename WrappedT::value_type;
+
+    wrapped.template constructor<>();
+    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.method("cppsize", &WrappedT::size);
+    wrapped.method("multiset_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("multiset_empty!", [] (WrappedT& v) { v.clear(); });
+    wrapped.method("multiset_isempty", [] (WrappedT& v) { return v.empty(); });
+    wrapped.method("multiset_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
+    wrapped.method("multiset_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.method("multiset_count", [] (WrappedT& v, const T& val) { return v.count(val); });
+    wrapped.module().unset_override_module();
+  }
+};
+
+struct WrapUnorderedMultiset
 {
   template<typename TypeWrapperT>
   void operator()(TypeWrapperT&& wrapped)
@@ -562,14 +583,14 @@ inline void apply_stl(jlcxx::Module& mod)
   {
     TypeWrapper1(mod, StlWrappers::instance().set_iterator).apply<stl::SetIteratorWrapper<T>>(WrapIterator());
     TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
-    TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultisetType());
+    TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultiset());
     TypeWrapper1(mod, StlWrappers::instance().priority_queue).apply<std::priority_queue<T>>(WrapPriorityQueue());
   }
   if constexpr (is_hashable<T>::value)
   {
     TypeWrapper1(mod, StlWrappers::instance().unordered_set_iterator).apply<stl::UnorderedSetIteratorWrapper<T>>(WrapIterator());
     TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapUnorderedSet());
-    TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapMultisetType());
+    TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapUnorderedMultiset());
   }
   TypeWrapper1(mod, StlWrappers::instance().list_iterator).apply<stl::ListIteratorWrapper<T>>(WrapIterator());
   TypeWrapper1(mod, StlWrappers::instance().list).apply<std::list<T>>(WrapList());
