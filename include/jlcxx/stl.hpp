@@ -58,6 +58,7 @@ public:
   TypeWrapper1 queue;
   TypeWrapper1 priority_queue;
   TypeWrapper1 stack;
+  TypeWrapper1 set_iterator;
   TypeWrapper1 set;
   TypeWrapper1 multiset;
   TypeWrapper1 unordered_set;
@@ -84,6 +85,7 @@ void apply_deque(TypeWrapper1& deque);
 void apply_queue(TypeWrapper1& queue);
 void apply_priority_queue(TypeWrapper1& priority_queue);
 void apply_stack(TypeWrapper1& stack);
+void apply_set_iterator(TypeWrapper1& set_iterator);
 void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
 void apply_unordered_set(TypeWrapper1& unordered_set);
@@ -357,6 +359,14 @@ struct WrapStack
   }
 };
 
+template <typename valueT>
+struct SetIteratorWrapper
+{
+  using value_type = valueT;
+  using iterator_type = typename std::set<valueT, std::less<valueT>, std::allocator<valueT>>::iterator;
+  iterator_type value;
+};
+
 struct WrapSet
 {
   template<typename TypeWrapperT>
@@ -373,6 +383,8 @@ struct WrapSet
     wrapped.method("set_isempty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("set_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
     wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.method("iteratorbegin", [] (WrappedT& v) { return SetIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v) { return SetIteratorWrapper<T>{v.end()}; });
     wrapped.module().unset_override_module();
   }
 };
@@ -531,6 +543,7 @@ inline void apply_stl(jlcxx::Module& mod)
   TypeWrapper1(mod, StlWrappers::instance().stack).apply<std::stack<T>>(WrapStack());
   if constexpr (container_has_less_than_operator<T>::value)
   {
+    TypeWrapper1(mod, StlWrappers::instance().set_iterator).apply<stl::SetIteratorWrapper<T>>(WrapIterator());
     TypeWrapper1(mod, StlWrappers::instance().set).apply<std::set<T>>(WrapSet());
     TypeWrapper1(mod, StlWrappers::instance().multiset).apply<std::multiset<T>>(WrapMultisetType());
     TypeWrapper1(mod, StlWrappers::instance().priority_queue).apply<std::priority_queue<T>>(WrapPriorityQueue());
