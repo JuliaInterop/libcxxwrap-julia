@@ -61,6 +61,7 @@ public:
   TypeWrapper1 set_iterator;
   TypeWrapper1 set;
   TypeWrapper1 multiset;
+  TypeWrapper1 unordered_set_iterator;
   TypeWrapper1 unordered_set;
   TypeWrapper1 unordered_multiset;
   TypeWrapper1 list_iterator;
@@ -88,6 +89,7 @@ void apply_stack(TypeWrapper1& stack);
 void apply_set_iterator(TypeWrapper1& set_iterator);
 void apply_set(TypeWrapper1& set);
 void apply_multiset(TypeWrapper1& multiset);
+void apply_unordered_set_iterator(TypeWrapper1& unordered_set_iterator);
 void apply_unordered_set(TypeWrapper1& unordered_set);
 void apply_unordered_multiset(TypeWrapper1& unordered_multiset);
 void apply_list_iterator(TypeWrapper1& list_iterator);
@@ -389,6 +391,19 @@ struct WrapSet
   }
 };
 
+template <typename valueT>
+struct UnorderedSetIteratorWrapper
+{
+  using value_type = valueT;
+  using iterator_type = typename std::unordered_set<
+      valueT,
+      std::hash<valueT>,
+      std::equal_to<valueT>,
+      std::allocator<valueT>
+  >::iterator;
+  iterator_type value;
+};
+
 struct WrapUnorderedSet
 {
   template<typename TypeWrapperT>
@@ -405,6 +420,8 @@ struct WrapUnorderedSet
     wrapped.method("set_isempty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("set_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
     wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.method("iteratorbegin", [] (WrappedT& v) { return UnorderedSetIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v) { return UnorderedSetIteratorWrapper<T>{v.end()}; });
     wrapped.module().unset_override_module();
   }
 };
@@ -550,6 +567,7 @@ inline void apply_stl(jlcxx::Module& mod)
   }
   if constexpr (is_hashable<T>::value)
   {
+    TypeWrapper1(mod, StlWrappers::instance().unordered_set_iterator).apply<stl::UnorderedSetIteratorWrapper<T>>(WrapIterator());
     TypeWrapper1(mod, StlWrappers::instance().unordered_set).apply<std::unordered_set<T>>(WrapUnorderedSet());
     TypeWrapper1(mod, StlWrappers::instance().unordered_multiset).apply<std::unordered_multiset<T>>(WrapMultisetType());
   }
