@@ -26,9 +26,11 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   apply_stack(m_instance->stack);
   apply_set_iterator(m_instance->set_iterator);
   apply_set(m_instance->set);
+  apply_multiset_iterator(m_instance->multiset_iterator);
   apply_multiset(m_instance->multiset);
   apply_unordered_set_iterator(m_instance->unordered_set_iterator);
   apply_unordered_set(m_instance->unordered_set);
+  apply_unordered_multiset_iterator(m_instance->unordered_multiset_iterator);
   apply_unordered_multiset(m_instance->unordered_multiset);
   apply_list_iterator(m_instance->list_iterator);
   apply_list(m_instance->list);
@@ -65,9 +67,11 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   stack(stl.add_type<Parametric<TypeVar<1>>>("StdStack")),
   set_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdSetIterator")),
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
+  multiset_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdMultisetIterator")),
   multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
   unordered_set_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSetIterator")),
   unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),
+  unordered_multiset_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultisetIterator")),
   unordered_multiset(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultiset")),
   list_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdListIterator")),
   list(stl.add_type<Parametric<TypeVar<1>>>("StdList")),
