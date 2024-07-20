@@ -64,6 +64,7 @@ public:
   TypeWrapper1 unordered_multiset;
   TypeWrapper1 list_iterator;
   TypeWrapper1 list;
+  TypeWrapper1 forward_list_iterator;
   TypeWrapper1 forward_list;
 
   static void instantiate(Module& mod);
@@ -89,6 +90,7 @@ void apply_unordered_set(TypeWrapper1& unordered_set);
 void apply_unordered_multiset(TypeWrapper1& unordered_multiset);
 void apply_list_iterator(TypeWrapper1& list_iterator);
 void apply_list(TypeWrapper1& list);
+void apply_forward_list_iterator(TypeWrapper1& forward_list_iterator);
 void apply_forward_list(TypeWrapper1& forward_list);
 void apply_shared_ptr();
 void apply_weak_ptr();
@@ -424,6 +426,9 @@ struct WrapList
   }
 };
 
+template <typename valueT>
+struct ForwardListIteratorWrapper : IteratorWrapper<valueT, std::forward_list> {};
+
 struct WrapForwardList
 {
   template<typename TypeWrapperT>
@@ -439,6 +444,8 @@ struct WrapForwardList
     wrapped.method("flist_front", [] (WrappedT& v) { return v.front(); });
     wrapped.method("flist_push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
     wrapped.method("flist_pop_front!", [] (WrappedT& v) { v.pop_front(); });
+    wrapped.method("iteratorbegin", [] (WrappedT& v) { return ForwardListIteratorWrapper<T>{v.begin()}; });
+    wrapped.method("iteratorend", [] (WrappedT& v) { return ForwardListIteratorWrapper<T>{v.end()}; });
     wrapped.module().unset_override_module();
   }
 };
@@ -515,6 +522,7 @@ inline void apply_stl(jlcxx::Module& mod)
   }
   TypeWrapper1(mod, StlWrappers::instance().list_iterator).apply<stl::ListIteratorWrapper<T>>(WrapIterator());
   TypeWrapper1(mod, StlWrappers::instance().list).apply<std::list<T>>(WrapList());
+  TypeWrapper1(mod, StlWrappers::instance().forward_list_iterator).apply<stl::ForwardListIteratorWrapper<T>>(WrapIterator());
   TypeWrapper1(mod, StlWrappers::instance().forward_list).apply<std::forward_list<T>>(WrapForwardList());
 }
 
