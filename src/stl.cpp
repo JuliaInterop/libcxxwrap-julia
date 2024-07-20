@@ -24,6 +24,7 @@ JLCXX_API void StlWrappers::instantiate(Module& mod)
   apply_queue(m_instance->queue);
   apply_priority_queue(m_instance->priority_queue);
   apply_stack(m_instance->stack);
+  apply_set_iterator(m_instance->set_iterator);
   apply_set(m_instance->set);
   apply_multiset(m_instance->multiset);
   apply_unordered_set(m_instance->unordered_set);
@@ -61,6 +62,7 @@ JLCXX_API StlWrappers::StlWrappers(Module& stl) :
   queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue")),
   priority_queue(stl.add_type<Parametric<TypeVar<1>>>("StdPriorityQueue")),
   stack(stl.add_type<Parametric<TypeVar<1>>>("StdStack")),
+  set_iterator(stl.add_type<Parametric<TypeVar<1>>>("StdSetIterator")),
   set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
   multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
   unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),
