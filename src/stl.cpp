@@ -126,7 +126,7 @@ JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
     .method("swap", &std::thread::swap);
 
   stl.method("hardware_concurrency", [] () { return std::thread::hardware_concurrency(); });
-  
+
   jlcxx::add_smart_pointer<std::shared_ptr>(stl, "SharedPtr");
   jlcxx::add_smart_pointer<std::weak_ptr>(stl, "WeakPtr");
   jlcxx::add_smart_pointer<std::unique_ptr>(stl, "UniquePtr");
