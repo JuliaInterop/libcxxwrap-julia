@@ -131,40 +131,6 @@ void wrap_range_based_algorithms([[maybe_unused]] TypeWrapperT& wrapped)
 #endif
 }
 
-template <typename valueT, template <typename, typename=std::allocator<valueT>> typename ContainerT>
-struct IteratorWrapper
-{
-  using value_type = valueT;
-  using iterator_type = typename ContainerT<value_type>::iterator;
-
-  iterator_type value;
-};
-
-
-template <typename T>
-void validate_iterator(T it)
-{
-  using IteratorT = typename T::iterator_type;
-  if (it.value == IteratorT())
-  {
-    throw std::runtime_error("Invalid iterator");
-  }
-}
-
-struct WrapIterator
-{
-  template <typename TypeWrapperT>
-  void operator()(TypeWrapperT&& wrapped)
-  {
-    using WrappedT = typename TypeWrapperT::type;
-    using ValueT = typename WrappedT::value_type;
-
-    wrapped.method("iterator_next", [](WrappedT it) -> WrappedT { ++(it.value); return it; });
-    wrapped.method("iterator_value", [](WrappedT it) -> ValueT { validate_iterator(it); return *it.value; });
-    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) -> bool {return it1.value == it2.value; });
-  };
-};
-
 template<typename T>
 struct WrapVectorImpl
 {
@@ -243,6 +209,40 @@ struct WrapValArray
     wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, cxxint_t i) { v[i-1] = val; });
     wrapped.module().unset_override_module();
   }
+};
+
+
+template <typename valueT, template <typename, typename=std::allocator<valueT>> typename ContainerT>
+struct IteratorWrapper
+{
+  using value_type = valueT;
+  using iterator_type = typename ContainerT<value_type>::iterator;
+
+  iterator_type value;
+};
+
+template <typename T>
+void validate_iterator(T it)
+{
+  using IteratorT = typename T::iterator_type;
+  if (it.value == IteratorT())
+  {
+    throw std::runtime_error("Invalid iterator");
+  }
+}
+
+struct WrapIterator
+{
+  template <typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    using WrappedT = typename TypeWrapperT::type;
+    using ValueT = typename WrappedT::value_type;
+    
+    wrapped.method("iterator_next", [](WrappedT it) -> WrappedT { ++(it.value); return it; });
+    wrapped.method("iterator_value", [](WrappedT it) -> ValueT { validate_iterator(it); return *it.value; });
+    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) -> bool {return it1.value == it2.value; });
+  };
 };
 
 template <typename valueT>
