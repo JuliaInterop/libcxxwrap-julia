@@ -119,8 +119,58 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
   jl_value_t*
 >, fundamental_int_types>, fixed_int_types>>;
 
+template <typename T, typename = void>
+struct has_less_than_operator : std::false_type {};
+
+template <typename T>
+struct has_less_than_operator<T, std::void_t<decltype(std::declval<T>() < std::declval<T>())>>
+    : std::true_type {};
+
+template <typename T>
+constexpr bool has_less_than_operator_v = has_less_than_operator<T>::value;
+
+template <typename T, typename = void>
+struct is_container : std::false_type {};
+
+template <typename T>
+struct is_container<T, std::void_t<typename T::value_type>> : std::true_type {};
+
+template <typename T, typename = void>
+struct is_pair : std::false_type {};
+
+template <typename T>
+struct is_pair<T, std::void_t<typename T::first_type, typename T::second_type>> : std::true_type {};
+
+template <typename T, typename = void>
+struct container_has_less_than_operator : std::false_type {};
+
+template <typename T>
+struct container_has_less_than_operator<T, std::enable_if_t<is_container<T>::value>>
+    : std::conditional_t<
+          container_has_less_than_operator<typename T::value_type>::value,
+          std::true_type,
+          std::false_type> {};
+
+template <typename T>
+struct container_has_less_than_operator<T, std::enable_if_t<is_pair<T>::value>>
+    : std::conditional_t<
+          container_has_less_than_operator<typename T::first_type>::value &&
+              container_has_less_than_operator<typename T::second_type>::value,
+          std::true_type,
+          std::false_type> {};
+
+template <typename T>
+struct container_has_less_than_operator<T, std::enable_if_t<!is_container<T>::value && !is_pair<T>::value>>
+    : has_less_than_operator<T> {};
+
+template <typename T, typename = void>
+struct is_hashable : std::false_type {};
+
+template <typename T>
+struct is_hashable<T, std::void_t<decltype(std::hash<T>{}(std::declval<T>()))>> : std::true_type {};
+
 template<typename TypeWrapperT>
-void wrap_range_based_algorithms([[maybe_unused]] TypeWrapperT& wrapped)
+void wrap_range_based_fill([[maybe_unused]] TypeWrapperT& wrapped)
 {
 #ifdef JLCXX_HAS_RANGES
   using WrappedT = typename TypeWrapperT::type;
@@ -139,7 +189,6 @@ struct WrapVectorImpl
   {
     using WrappedT = std::vector<T>;
     
-    wrap_range_based_algorithms(wrapped);
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&)>(&WrappedT::push_back));
     wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> typename WrappedT::const_reference { return v[i-1]; });
@@ -197,7 +246,6 @@ struct WrapValArray
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
-    wrap_range_based_algorithms(wrapped); 
     wrapped.template constructor<std::size_t>();
     wrapped.template constructor<const T&, std::size_t>();
     wrapped.template constructor<const T*, std::size_t>();
@@ -256,7 +304,6 @@ struct WrapDeque
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
-    wrap_range_based_algorithms(wrapped);
     wrapped.template constructor<std::size_t>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
@@ -512,8 +559,9 @@ struct WrapList
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
+    wrap_range_based_fill(wrapped);
     wrapped.template constructor<>();
-    wrapped.module().set_override_module(StlWrappers::instance().module());
+    wrapped.module().set_override_module(StlWrappers::instance().module());\
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("list_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("list_isempty", [] (WrappedT& v) { return v.empty(); });
@@ -540,6 +588,7 @@ struct WrapForwardList
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
+    wrap_range_based_fill(wrapped);
     wrapped.template constructor<>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("flist_empty!", [] (WrappedT& v) { v.clear(); });
@@ -552,56 +601,6 @@ struct WrapForwardList
     wrapped.module().unset_override_module();
   }
 };
-
-template <typename T, typename = void>
-struct has_less_than_operator : std::false_type {};
-
-template <typename T>
-struct has_less_than_operator<T, std::void_t<decltype(std::declval<T>() < std::declval<T>())>>
-    : std::true_type {};
-
-template <typename T>
-constexpr bool has_less_than_operator_v = has_less_than_operator<T>::value;
-
-template <typename T, typename = void>
-struct is_container : std::false_type {};
-
-template <typename T>
-struct is_container<T, std::void_t<typename T::value_type>> : std::true_type {};
-
-template <typename T, typename = void>
-struct is_pair : std::false_type {};
-
-template <typename T>
-struct is_pair<T, std::void_t<typename T::first_type, typename T::second_type>> : std::true_type {};
-
-template <typename T, typename = void>
-struct container_has_less_than_operator : std::false_type {};
-
-template <typename T>
-struct container_has_less_than_operator<T, std::enable_if_t<is_container<T>::value>>
-    : std::conditional_t<
-          container_has_less_than_operator<typename T::value_type>::value,
-          std::true_type,
-          std::false_type> {};
-
-template <typename T>
-struct container_has_less_than_operator<T, std::enable_if_t<is_pair<T>::value>>
-    : std::conditional_t<
-          container_has_less_than_operator<typename T::first_type>::value &&
-              container_has_less_than_operator<typename T::second_type>::value,
-          std::true_type,
-          std::false_type> {};
-
-template <typename T>
-struct container_has_less_than_operator<T, std::enable_if_t<!is_container<T>::value && !is_pair<T>::value>>
-    : has_less_than_operator<T> {};
-
-template <typename T, typename = void>
-struct is_hashable : std::false_type {};
-
-template <typename T>
-struct is_hashable<T, std::void_t<decltype(std::hash<T>{}(std::declval<T>()))>> : std::true_type {};
 
 template<typename T>
 inline void apply_stl(jlcxx::Module& mod)
