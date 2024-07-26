@@ -613,6 +613,7 @@ struct WrapList
     {
       wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return ListIteratorWrapper<T>{std::ranges::upper_bound(v, val)}; });
       wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return ListIteratorWrapper<T>{std::ranges::lower_bound(v, val)}; });
+      wrapped.method("StdListSort", [] (WrappedT& v) { v.sort(); });
     }
 #endif
     wrapped.module().unset_override_module();
