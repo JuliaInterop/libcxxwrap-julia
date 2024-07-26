@@ -181,6 +181,21 @@ void wrap_range_based_fill([[maybe_unused]] TypeWrapperT& wrapped)
 #endif
 }
 
+template<typename TypeWrapperT>
+void wrap_range_based_bsearch([[maybe_unused]] TypeWrapperT& wrapped)
+{
+#ifdef JLCXX_HAS_RANGES
+  using WrappedT = typename TypeWrapperT::type;
+  using T = typename WrappedT::value_type;
+  wrapped.module().set_override_module(StlWrappers::instance().module());
+  if constexpr (container_has_less_than_operator<T>::value)
+  {
+    wrapped.method("StdBinarySearch", [] (WrappedT& v, const T& val) { return std::ranges::binary_search(v, val); });
+  }
+  wrapped.module().unset_override_module();
+#endif
+}
+
 template<typename T>
 struct WrapVectorImpl
 {
@@ -189,6 +204,7 @@ struct WrapVectorImpl
   {
     using WrappedT = std::vector<T>;
     
+    wrap_range_based_bsearch(wrapped);
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&)>(&WrappedT::push_back));
     wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> typename WrappedT::const_reference { return v[i-1]; });
@@ -206,6 +222,7 @@ struct WrapVectorImpl<bool>
   {
     using WrappedT = std::vector<bool>;
 
+    wrap_range_based_bsearch(wrapped);
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("push_back", [] (WrappedT& v, const bool val) { v.push_back(val); });
     wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) { return bool(v[i-1]); });
@@ -304,6 +321,7 @@ struct WrapDeque
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
+    wrap_range_based_bsearch(wrapped);
     wrapped.template constructor<std::size_t>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
@@ -428,6 +446,7 @@ struct WrapSet
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
+    wrap_range_based_bsearch(wrapped);
     wrapped.template constructor<>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
@@ -438,6 +457,13 @@ struct WrapSet
     wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return SetIteratorWrapper<T>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return SetIteratorWrapper<T>{v.end()}; });
+#ifdef JLCXX_HAS_RANGES
+    if constexpr (container_has_less_than_operator<T>::value)
+    {
+      wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return SetIteratorWrapper<T>{std::ranges::upper_bound(v, val)}; });
+      wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return SetIteratorWrapper<T>{std::ranges::lower_bound(v, val)}; });
+    }
+#endif
     wrapped.module().unset_override_module();
   }
 };
@@ -497,6 +523,7 @@ struct WrapMultiset
     using WrappedT = typename TypeWrapperT::type;
     using T = typename WrappedT::value_type;
 
+    wrap_range_based_bsearch(wrapped);
     wrapped.template constructor<>();
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
@@ -508,6 +535,13 @@ struct WrapMultiset
     wrapped.method("multiset_count", [] (WrappedT& v, const T& val) { return v.count(val); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return MultisetIteratorWrapper<T>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return MultisetIteratorWrapper<T>{v.end()}; });
+#ifdef JLCXX_HAS_RANGES
+    if constexpr (container_has_less_than_operator<T>::value)
+    {
+      wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return MultisetIteratorWrapper<T>{std::ranges::upper_bound(v, val)}; });
+      wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return MultisetIteratorWrapper<T>{std::ranges::lower_bound(v, val)}; });
+    }
+#endif
     wrapped.module().unset_override_module();
   }
 };
@@ -560,6 +594,7 @@ struct WrapList
     using T = typename WrappedT::value_type;
 
     wrap_range_based_fill(wrapped);
+    wrap_range_based_bsearch(wrapped);
     wrapped.template constructor<>();
     wrapped.module().set_override_module(StlWrappers::instance().module());\
     wrapped.method("cppsize", &WrappedT::size);
@@ -573,6 +608,13 @@ struct WrapList
     wrapped.method("list_pop_front!", [] (WrappedT& v) { v.pop_front(); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return ListIteratorWrapper<T>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return ListIteratorWrapper<T>{v.end()}; });
+#ifdef JLCXX_HAS_RANGES
+    if constexpr (container_has_less_than_operator<T>::value)
+    {
+      wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return ListIteratorWrapper<T>{std::ranges::upper_bound(v, val)}; });
+      wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return ListIteratorWrapper<T>{std::ranges::lower_bound(v, val)}; });
+    }
+#endif
     wrapped.module().unset_override_module();
   }
 };
