@@ -269,8 +269,8 @@ struct WrapValArray
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
-    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> const T& { return v[i-1]; });
-    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) -> T& { return v[i-1]; });
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) { return v[i-1]; });
+    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) { return v[i-1]; });
     wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, cxxint_t i) { v[i-1] = val; });
     wrapped.module().unset_override_module();
   }
@@ -304,9 +304,9 @@ struct WrapIterator
     using WrappedT = typename TypeWrapperT::type;
     using ValueT = typename WrappedT::value_type;
     
-    wrapped.method("iterator_next", [](WrappedT it) -> WrappedT { ++(it.value); return it; });
-    wrapped.method("iterator_value", [](WrappedT it) -> ValueT { validate_iterator(it); return *it.value; });
-    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) -> bool {return it1.value == it2.value; });
+    wrapped.method("iterator_next", [](WrappedT it) { ++(it.value); return it; });
+    wrapped.method("iterator_value", [](WrappedT it) { validate_iterator(it); return *it.value; });
+    wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) {return it1.value == it2.value; });
   };
 };
 
@@ -326,7 +326,7 @@ struct WrapDeque
     wrapped.module().set_override_module(StlWrappers::instance().module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("resize", [](WrappedT &v, const cxxint_t s) { v.resize(s); });
-    wrapped.method("cxxgetindex", [](const WrappedT& v, cxxint_t i) -> const T& { return v[i - 1]; });
+    wrapped.method("cxxgetindex", [](const WrappedT& v, cxxint_t i) { return v[i - 1]; });
     wrapped.method("cxxsetindex!", [](WrappedT& v, const T& val, cxxint_t i) { v[i - 1] = val; });
     wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push_back(val); });
     wrapped.method("push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
@@ -368,7 +368,7 @@ struct WrapQueueImpl<bool>
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("q_empty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("push_back!", [] (WrappedT& v, const bool val) { v.push(val); });
-    wrapped.method("front", [] (WrappedT& v) -> bool { return v.front(); });
+    wrapped.method("front", [] (WrappedT& v) { return v.front(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
     wrapped.module().unset_override_module();
   }
