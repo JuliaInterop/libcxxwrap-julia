@@ -448,6 +448,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.method("get_custom_nb_deletes", [] () { return UseCustomDelete::nb_deleted; });
   types.add_type<UseCustomClassDelete>("UseCustomClassDelete");
   types.method("get_custom_class_nb_deletes", [] () { return UseCustomClassDelete::nb_deleted; });
+
+  types.method("world_dequeue", []() { static World w; return std::deque({w}); });
+  types.method("world_list", []() { static World w; return std::list({w}); });
 }
 
 JLCXX_MODULE define_types2_module(jlcxx::Module& types2)
