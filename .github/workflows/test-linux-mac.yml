@@ -50,7 +50,7 @@ jobs:
             rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
           fi
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
+          CXXFLAGS=-ftemplate-backtrace-limit=0 cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install
           wget https://github.com/JuliaBinaryWrappers/libcxxwrap_julia_jll.jl/raw/main/Project.toml
           jllversion=$(grep "version" Project.toml | sed -r 's/.* = "(.*)\+.*/\1/')

@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_stack(TypeWrapper1& stack)
+void apply_stack()
 {
-  stack.apply_combination<std::stack, stltypes>(stl::WrapStack());
+  WrapSTLContainer<std::stack>().apply_combination<stltypes>();
 }
 
 }

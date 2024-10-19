@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_valarray(TypeWrapper1& valarray)
+void apply_valarray()
 {
-  valarray.apply_combination<std::valarray, stltypes>(stl::WrapValArray());
+  WrapSTLContainer<std::valarray>().apply_combination<stltypes>();
 }
 
 }
