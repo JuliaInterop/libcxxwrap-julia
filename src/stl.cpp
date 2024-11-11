@@ -20,7 +20,7 @@ StoredWrappersT& stl_wrappers()
   return wrappers;
 }
 
-void set_wrapper(Module& stl, std::string name, jl_value_t* supertype)
+JLCXX_API void set_wrapper(Module& stl, std::string name, jl_value_t* supertype)
 {
   auto result = stl_wrappers().insert(std::make_pair(name, stl.add_type<Parametric<TypeVar<1>>>(name, supertype)));
   if(!result.second)
@@ -29,7 +29,7 @@ void set_wrapper(Module& stl, std::string name, jl_value_t* supertype)
   }
 }
 
-TypeWrapper1& get_wrapper(std::string name)
+JLCXX_API TypeWrapper1& get_wrapper(std::string name)
 {
   auto result = stl_wrappers().find(name);
   if(result == stl_wrappers().end())
@@ -39,7 +39,7 @@ TypeWrapper1& get_wrapper(std::string name)
   return result->second;
 }
 
-bool has_wrapper(std::string name)
+JLCXX_API bool has_wrapper(std::string name)
 {
   return stl_wrappers().count(name) != 0;
 }

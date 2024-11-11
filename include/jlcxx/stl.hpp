@@ -50,9 +50,9 @@ namespace stl
 
 JLCXX_API jl_module_t* stl_module();
 
-void set_wrapper(Module& stl, std::string name, jl_value_t* supertype);
-TypeWrapper1& get_wrapper(std::string name);
-bool has_wrapper(std::string name);
+JLCXX_API  void set_wrapper(Module& stl, std::string name, jl_value_t* supertype);
+JLCXX_API  TypeWrapper1& get_wrapper(std::string name);
+JLCXX_API  bool has_wrapper(std::string name);
 
 // Separate per-container functions to split up the compilation over multiple C++ files
 void apply_vector();
