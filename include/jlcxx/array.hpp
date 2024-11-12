@@ -252,6 +252,10 @@ public:
     {
       return data()[i];
     }
+    else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value)
+    {
+      return *reinterpret_cast<ValueT*>(&data()[i]);
+    }
     else
     {
       return *extract_pointer_nonull<ValueT>(data()[i]);
@@ -263,6 +267,10 @@ public:
     if constexpr(std::is_same<julia_t, ValueT>::value)
     {
       return data()[i];
+    }
+     else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value)
+    {
+      return *reinterpret_cast<ValueT*>(&data()[i]);
     }
     else
     {
