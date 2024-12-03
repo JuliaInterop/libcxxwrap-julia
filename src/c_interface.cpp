@@ -147,7 +147,8 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
        {
           Array<jl_value_t*> arg_default_values_array;
           jl_value_t* boxed_n_kwargs = nullptr;
-          JL_GC_PUSH2(arg_default_values_array.gc_pointer(), &boxed_n_kwargs);
+          jl_value_t* cppfuncinfo = nullptr;
+          JL_GC_PUSH3(arg_default_values_array.gc_pointer(), &boxed_n_kwargs, &cppfuncinfo);
 
           fill_types_vec(arg_types_array, f.argument_types());
 
@@ -169,7 +170,7 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
             julia_return_type = ccall_return_type;
           }
 
-          function_array.push_back(jl_new_struct(g_cppfunctioninfo_type,
+          cppfuncinfo = jl_new_struct(g_cppfunctioninfo_type,
             f.name(),
             arg_types_array.wrapped(),
             ccall_return_type,
@@ -181,7 +182,8 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
             arg_names_array.wrapped(),
             arg_default_values_array.wrapped(),
             boxed_n_kwargs
-          ));
+            );
+          function_array.push_back(cppfuncinfo);
           JL_GC_POP();
        }
        JL_GC_POP();
