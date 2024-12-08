@@ -457,4 +457,16 @@ JLCXX_API void cxxwrap_init(const std::string& envpath)
   }
 }
 
+#ifdef _MSC_VER 
+
+namespace detail
+{
+
+template class BasicArg<false>;
+template class BasicArg<true>;
+
+}
+
+#endif
+
 }

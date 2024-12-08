@@ -25,7 +25,7 @@
 
 // Apple Clang doesn't really support ranges fully until __cpp_lib_ranges==202207L (AppleClang 16)
 #if defined(__cpp_lib_ranges) && !defined(JLCXX_FORCE_RANGES_OFF)
-#  if defined(__clang__) && defined(__apple_build_version__)
+#  if (defined(__clang__) && defined(__apple_build_version__)) || defined _MSC_VER
 #    if __cpp_lib_ranges >= 202207L
 #      define JLCXX_HAS_RANGES
 #    endif
