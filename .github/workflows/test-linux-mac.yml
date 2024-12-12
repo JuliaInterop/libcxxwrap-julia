@@ -17,6 +17,7 @@ jobs:
         version:
           - "1.6"
           - "1.10"
+          - "1.11"
           - "nightly"
         os:
           - ubuntu-latest
@@ -42,10 +43,7 @@ jobs:
         env:
           body: ${{ github.event.pull_request.body }}
         run: |
-          package="$(echo "$body" | sed -n '1p')"
-          if [ -z "${package}" ]; then
-            package="https://github.com/JuliaInterop/CxxWrap.jl.git"
-          fi
+          package="CxxWrap@0.16"
           if [[ "$OSTYPE" != "darwin"* ]]; then
             rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
           fi
