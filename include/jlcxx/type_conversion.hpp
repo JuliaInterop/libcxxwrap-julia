@@ -498,6 +498,15 @@ inline jl_datatype_t* julia_base_type()
   return detail::GetBaseT<T>::type();
 }
 
+template<>
+struct jlcxx::julia_type_factory<void>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return jl_nothing_type; // `jl_void_type` is deprecated
+  }
+};
+
 // Mapping for const references
 template<typename SourceT>
 struct julia_type_factory<const SourceT&>
