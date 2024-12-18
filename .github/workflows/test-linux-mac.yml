@@ -50,6 +50,7 @@ jobs:
           mkdir build && cd build
           cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install
+          cd lib
           ln -s libcxxwrap_julia.*.*.*.* libcxxwrap_julia.0.13.2.dylib
           cd ..
           ls -al lib
