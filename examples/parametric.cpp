@@ -209,6 +209,38 @@ struct WrapCppVector2
   }
 };
 
+struct Unwrapped {};
+
+// Type with a third template that will not be exposed to Julia
+template<typename T, int N, typename ParamT>
+struct WithUnwrappedParam
+{
+  using value_type = T;
+  static constexpr int ndims = N;
+};
+
+// Give the unwrapped parameterr a default value
+template <typename T, int N>
+using UnwrappedDefault = WithUnwrappedParam<T,N,Unwrapped>;
+
+// Wrap the simplified type
+struct WrapUnwrappedDefault
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&& wrapped)
+  {
+    typedef typename TypeWrapperT::type WrappedT;
+    using value_type = typename WrappedT::value_type;
+    
+    // Constructor function that takes the types as parameters
+    // Call in Julia using e.g. ParametricTypes.make_unwrapped_default(ParametricTypes.P1,Val(Cint(2)))
+    wrapped.module().method("make_unwrapped_default", [](jlcxx::SingletonType<value_type>, jlcxx::Val<int, WrappedT::ndims>)
+    {
+      return WithUnwrappedParam<value_type, WrappedT::ndims, Unwrapped>();
+    });
+  }
+};
+
 } // namespace parametric
 
 namespace jlcxx
@@ -225,6 +257,12 @@ namespace jlcxx
     typedef ParameterList<T, std::integral_constant<T, Val>> type;
   };
 
+  template<typename T, int N>
+  struct BuildParameterList<parametric::UnwrappedDefault<T, N>>
+  {
+    typedef ParameterList<T, std::integral_constant<int, N>> type;
+  };
+
   using namespace parametric;
 
   template<> struct IsMirroredType<P1> : std::false_type { };
@@ -238,6 +276,7 @@ namespace jlcxx
   template<typename T1, bool B> struct IsMirroredType<Foo2<T1,B>> : std::false_type { };
   template<typename T1> struct IsMirroredType<CppVector<T1>> : std::false_type { };
   template<typename T1, typename T2> struct IsMirroredType<CppVector2<T1,T2>> : std::false_type { };
+  template<typename T, int N> struct IsMirroredType<UnwrappedDefault<T,N>> : std::false_type { };
 
 } // namespace jlcxx
 
@@ -278,4 +317,8 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   types.add_type<Parametric<TypeVar<1>, TypeVar<2>>, ParameterList<TypeVar<1>>>("CppVector2", jlcxx::julia_type("AbstractVector"))
     .apply<CppVector2<double,float>>(WrapCppVector2());
+
+  types.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("UnwrappedDefault")
+    .apply<UnwrappedDefault<P1, 1>>(WrapUnwrappedDefault())
+    .apply<UnwrappedDefault<P1, 2>>(WrapUnwrappedDefault());
 }
