@@ -456,8 +456,8 @@ JLCXX_API void cxxwrap_init(const std::string& envpath)
 namespace detail
 {
 
-template class BasicArg<false>;
-template class BasicArg<true>;
+template struct BasicArg<false>;
+template struct BasicArg<true>;
 
 }
 
