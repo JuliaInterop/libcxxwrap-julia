@@ -60,6 +60,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
     return result;
   });
 
+  containers.method("int_array_return", [] () {
+    jlcxx::Array<int> data{ };
+    data.push_back(1);
+    data.push_back(2);
+    data.push_back(3);
+
+    return data;
+  });
+
   // Test some automatic type creation
   containers.method("tuple_int_pointer", [] () { return std::make_tuple(static_cast<int*>(nullptr), 1); });
   containers.method("uint8_arrayref", [] (jlcxx::ArrayRef<uint8_t *> a)
