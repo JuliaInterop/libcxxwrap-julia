@@ -16,7 +16,7 @@ jobs:
       matrix:
         version:
           - "1.6"
-          - "1.10"
+          - "1.11"
           - "nightly"
         os:
           - ubuntu-latest
@@ -26,7 +26,7 @@ jobs:
         include:
           - os: macos-14
             arch: aarch64
-            version: "1.10"
+            version: "1.11"
           - os: macos-14
             arch: aarch64
             version: "nightly"
@@ -38,6 +38,12 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+      - name: Set up GCC 10 on Ubuntu and Julia 1.6
+        if: matrix.os == 'ubuntu-latest' && matrix.version == '1.6'
+        run: |
+          sudo apt-get install -y gcc-10 g++-10
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
       - name: Build and test
         env:
           body: ${{ github.event.pull_request.body }}
