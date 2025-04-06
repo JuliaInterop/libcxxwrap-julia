@@ -60,7 +60,7 @@ public:
   template <class OtherPointedT, class OtherCppT>
   array_iterator_base(array_iterator_base<OtherPointedT, OtherCppT> const& other) : m_ptr(other.m_ptr) {}
 
-  auto operator*() -> decltype(ValueExtractor<PointedT,CppT>()(m_ptr))
+  auto operator*() const -> decltype(ValueExtractor<PointedT,CppT>()(m_ptr))
   {
     return ValueExtractor<PointedT,CppT>()(m_ptr);
   }
