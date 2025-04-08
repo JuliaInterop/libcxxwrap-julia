@@ -128,16 +128,6 @@ struct IteratorWrapper
   iterator_type value;
 };
 
-template <typename T>
-void validate_iterator(T it)
-{
-  using IteratorT = typename T::iterator_type;
-  if (it.value == IteratorT())
-  {
-    throw std::runtime_error("Invalid iterator");
-  }
-}
-
 struct WrapIterator
 {
   template <typename TypeWrapperT>
@@ -147,7 +137,7 @@ struct WrapIterator
     using ValueT = typename WrappedT::value_type;
     
     wrapped.method("iterator_next", [](WrappedT it) { ++(it.value); return it; });
-    wrapped.method("iterator_value", [](WrappedT it) { validate_iterator(it); return *it.value; });
+    wrapped.method("iterator_value", [](WrappedT it) { return *it.value; });
     wrapped.method("iterator_is_equal", [](WrappedT it1, WrappedT it2) {return it1.value == it2.value; });
   };
 };
