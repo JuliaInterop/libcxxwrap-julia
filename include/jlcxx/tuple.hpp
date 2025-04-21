@@ -67,6 +67,32 @@ struct TraitSelector<std::tuple<TypesT...>>
   using type = TupleTrait;
 };
 
+// Tuples are always copied because the memory layout in C++ and Julia is different, so references and pointers are not allowed
+template<typename... TypesT>
+struct TraitSelector<std::tuple<TypesT...>&>
+{
+  using type = TupleTrait;
+  static_assert(sizeof(std::tuple<TypesT...>) == 0, "References to Julia tuples can't be used. Pass the tuple by value instead.");
+};
+template<typename... TypesT>
+struct TraitSelector<const std::tuple<TypesT...>&>
+{
+  using type = TupleTrait;
+  static_assert(sizeof(std::tuple<TypesT...>) == 0, "References to Julia tuples can't be used. Pass the tuple by value instead.");
+};
+template<typename... TypesT>
+struct TraitSelector<std::tuple<TypesT...>*>
+{
+  using type = TupleTrait;
+  static_assert(sizeof(std::tuple<TypesT...>) == 0, "Pointers to Julia tuples can't be used. Pass the tuple by value instead.");
+};
+template<typename... TypesT>
+struct TraitSelector<const std::tuple<TypesT...>*>
+{
+  using type = TupleTrait;
+  static_assert(sizeof(std::tuple<TypesT...>) == 0, "Pointers to Julia tuples can't be used. Pass the tuple by value instead.");
+};
+
 template<typename... TypesT>
 struct MappingTrait<std::tuple<TypesT...>, TupleTrait>
 {
@@ -103,6 +129,21 @@ struct ConvertToJulia<std::tuple<TypesT...>, TupleTrait>
   jl_value_t* operator()(const std::tuple<TypesT...>& tp)
   {
     return detail::new_jl_tuple(tp);
+  }
+};
+
+template<typename... TypesT>
+struct ConvertToCpp<std::tuple<TypesT...>, TupleTrait>
+{
+  using cpp_t = std::tuple<TypesT...>;
+  inline cpp_t operator()(jl_value_t* julia_val) const
+  {
+    constexpr std::size_t tup_sz = std::tuple_size<cpp_t>::value;
+    auto unpack_tuple = [&]<std::size_t... Is>(std::index_sequence<Is...>)
+    {
+      return std::make_tuple((unbox<std::tuple_element_t<Is, cpp_t>>(jl_get_nth_field_checked(julia_val, Is)))...);
+    };
+    return unpack_tuple(std::make_index_sequence<tup_sz>{});
   }
 };
 

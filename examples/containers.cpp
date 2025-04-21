@@ -18,6 +18,45 @@ const double* const_matrix()
   return &d[0][0];
 }
 
+// Tuple array test
+std::tuple<jlcxx::Array<double>, jlcxx::Array<double>>
+make_array_tuple()
+{
+  jlcxx::Array<double> x;
+  jlcxx::Array<double> y;
+
+  x.push_back(1.0);
+  x.push_back(2.0);
+  y.push_back(3.0);
+
+  return std::make_tuple(x, y);
+}
+
+std::tuple<double,int,bool> copy_tuple(std::tuple<double,int,bool> t)
+{
+  return t;
+}
+
+std::vector<double> read_array_tuple(std::tuple<jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>> t)
+{
+  jlcxx::ArrayRef<double> x = std::get<0>(t);
+  jlcxx::ArrayRef<double> y = std::get<1>(t);
+
+  std::vector<double> result;
+
+  for(auto el : x)
+  {
+    result.push_back(el);
+  }
+
+  for(auto el : y)
+  {
+    result.push_back(el);
+  }
+
+  return result;
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
 {
   using namespace jlcxx;
@@ -81,4 +120,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
     return result;
   });
   containers.method("uint8_ptr", [] (uint8_t* x) { return int(*x); });
+  containers.method("copy_tuple", &copy_tuple);
+  containers.method("make_array_tuple", &make_array_tuple);
+  containers.method("read_array_tuple", &read_array_tuple);
 }
