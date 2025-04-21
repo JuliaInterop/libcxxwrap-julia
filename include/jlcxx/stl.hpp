@@ -84,6 +84,49 @@ using stltypes = remove_duplicates<combine_parameterlists<combine_parameterlists
   jl_value_t*
 >, fundamental_int_types>, fixed_int_types>>;
 
+
+template<typename T>
+struct ReferenceTypes
+{
+  using const_reference = typename T::const_reference;
+  using reference = typename T::reference;
+};
+
+template<template<typename...> class ContainerT, typename... TupleArgs, typename... Args>
+struct ReferenceTypes<ContainerT<std::tuple<TupleArgs...>, Args...>>
+{
+  using const_reference = std::tuple<TupleArgs...>;
+  using reference = const_reference;
+};
+
+template<template<typename...> class ContainerT, typename... Args>
+struct ReferenceTypes<ContainerT<bool, Args...>>
+{
+  using const_reference = bool;
+  using reference = bool;
+};
+
+template<typename T>
+struct ReferenceTypes<std::valarray<T>>
+{
+  using const_reference = const T&;
+  using reference = T&;
+};
+
+template<>
+struct ReferenceTypes<std::valarray<bool>>
+{
+  using const_reference = bool;
+  using reference = bool;
+};
+
+template<typename T>
+using const_reftype = typename ReferenceTypes<T>::const_reference;
+
+template<typename T>
+using reftype = typename ReferenceTypes<T>::reference;
+
+
 template<typename TypeWrapperT>
 void wrap_range_based_fill([[maybe_unused]] TypeWrapperT& wrapped)
 {
@@ -91,7 +134,7 @@ void wrap_range_based_fill([[maybe_unused]] TypeWrapperT& wrapped)
   using WrappedT = typename TypeWrapperT::type;
   using T = typename WrappedT::value_type;
   wrapped.module().set_override_module(stl_module());
-  wrapped.method("StdFill", [] (WrappedT& v, const T& val) { std::ranges::fill(v, val); });
+  wrapped.method("StdFill", [] (WrappedT& v, const_reftype<WrappedT> val) { std::ranges::fill(v, val); });
   wrapped.module().unset_override_module();
 #endif
 }
@@ -112,7 +155,7 @@ void wrap_range_based_bsearch([[maybe_unused]] TypeWrapperT& wrapped)
   if constexpr(has_less<T>)
   {
     wrapped.module().set_override_module(stl_module());
-    wrapped.method("StdBinarySearch", [] (WrappedT& v, const T& val) { return std::ranges::binary_search(v, val); });
+    wrapped.method("StdBinarySearch", [] (WrappedT& v, const_reftype<WrappedT> val) { return std::ranges::binary_search(v, val); });
     wrapped.module().unset_override_module();
   }
 #endif
@@ -247,27 +290,10 @@ struct WrapVectorImpl
     
     wrap_range_based_bsearch(wrapped);
     wrapped.module().set_override_module(stl_module());
-    wrapped.method("push_back", static_cast<void (WrappedT::*)(const T&)>(&WrappedT::push_back));
-    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> typename WrappedT::const_reference { return v[i-1]; });
-    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) -> typename WrappedT::reference { return v[i-1]; });
-    wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, cxxint_t i) { v[i-1] = val; });
-    wrapped.module().unset_override_module();
-  }
-};
-
-template<>
-struct WrapVectorImpl<bool>
-{
-  template<typename TypeWrapperT>
-  static void wrap(TypeWrapperT&& wrapped)
-  {
-    using WrappedT = std::vector<bool>;
-
-    wrap_range_based_bsearch(wrapped);
-    wrapped.module().set_override_module(stl_module());
-    wrapped.method("push_back", [] (WrappedT& v, const bool val) { v.push_back(val); });
-    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) { return bool(v[i-1]); });
-    wrapped.method("cxxsetindex!", [] (WrappedT& v, const bool val, cxxint_t i) { v[i-1] = val; });
+    wrapped.method("push_back", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_back(val); });
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> const_reftype<WrappedT> { return v[i-1]; });
+    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) -> reftype<WrappedT> { return v[i-1]; });
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const_reftype<WrappedT> val, cxxint_t i) { v[i-1] = val; });
     wrapped.module().unset_override_module();
   }
 };
@@ -318,9 +344,9 @@ struct WrapSTLContainer<std::valarray> : STLTypeWrapperBase<WrapSTLContainer<std
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
-    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) { return v[i-1]; });
-    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) { return v[i-1]; });
-    wrapped.method("cxxsetindex!", [] (WrappedT& v, const T& val, cxxint_t i) { v[i-1] = val; });
+    wrapped.method("cxxgetindex", [] (const WrappedT& v, cxxint_t i) -> const_reftype<WrappedT> { return v[i-1]; });
+    wrapped.method("cxxgetindex", [] (WrappedT& v, cxxint_t i) -> reftype<WrappedT> { return v[i-1]; });
+    wrapped.method("cxxsetindex!", [] (WrappedT& v, const_reftype<WrappedT> val, cxxint_t i) { v[i-1] = val; });
     wrapped.module().unset_override_module();
   }
 };
@@ -342,10 +368,10 @@ struct WrapSTLContainer<std::deque> : STLTypeWrapperBase<WrapSTLContainer<std::d
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("resize", [](WrappedT &v, const cxxint_t s) { v.resize(s); });
-    wrapped.method("cxxgetindex", [](const WrappedT& v, cxxint_t i) { return v[i - 1]; });
-    wrapped.method("cxxsetindex!", [](WrappedT& v, const T& val, cxxint_t i) { v[i - 1] = val; });
-    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push_back(val); });
-    wrapped.method("push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
+    wrapped.method("cxxgetindex", [](const WrappedT& v, cxxint_t i) -> const_reftype<WrappedT> { return v[i - 1]; });
+    wrapped.method("cxxsetindex!", [](WrappedT& v, const_reftype<WrappedT> val, cxxint_t i) { v[i - 1] = val; });
+    wrapped.method("push_back!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_back(val); });
+    wrapped.method("push_front!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_front(val); });
     wrapped.method("pop_back!", [] (WrappedT& v) { v.pop_back(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop_front(); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
@@ -365,25 +391,7 @@ struct WrapQueueImpl
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("q_empty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("push_back!", [] (WrappedT& v, const T& val) { v.push(val); });
-    wrapped.method("front", [] (WrappedT& v) { return v.front(); });
-    wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
-    wrapped.module().unset_override_module();
-  }
-};
-
-template<>
-struct WrapQueueImpl<bool>
-{
-  template<typename TypeWrapperT>
-  static void wrap(TypeWrapperT&& wrapped)
-  {
-    using WrappedT = std::queue<bool>;
-
-    wrapped.module().set_override_module(stl_module());
-    wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("q_empty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("push_back!", [] (WrappedT& v, const bool val) { v.push(val); });
+    wrapped.method("push_back!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push(val); });
     wrapped.method("front", [] (WrappedT& v) { return v.front(); });
     wrapped.method("pop_front!", [] (WrappedT& v) { v.pop(); });
     wrapped.module().unset_override_module();
@@ -420,7 +428,7 @@ struct WrapSTLContainer<std::priority_queue> : STLTypeWrapperBase<WrapSTLContain
     wrapped.template constructor<>();
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("pq_push!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("pq_push!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push(val); });
     wrapped.method("pq_pop!", [] (WrappedT& v) { v.pop(); });
     if constexpr(std::is_same<T,bool>::value)
     {
@@ -451,7 +459,7 @@ struct WrapSTLContainer<std::stack> : STLTypeWrapperBase<WrapSTLContainer<std::s
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("stack_isempty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("stack_push!", [] (WrappedT& v, const T& val) { v.push(val); });
+    wrapped.method("stack_push!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push(val); });
     wrapped.method("stack_top", [] (WrappedT& v) { return v.top(); });
     wrapped.method("stack_pop!", [] (WrappedT& v) { v.pop(); });
     wrapped.module().unset_override_module();
@@ -474,18 +482,18 @@ struct WrapSTLContainer<std::set> : STLTypeWrapperBase<WrapSTLContainer<std::set
     wrapped.template constructor<>();
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("set_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("set_insert!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.insert(val); });
     wrapped.method("set_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("set_isempty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("set_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
-    wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.method("set_delete!", [] (WrappedT&v, const_reftype<WrappedT> val) { v.erase(val); });
+    wrapped.method("set_in", [] (WrappedT& v, const_reftype<WrappedT> val) { return v.count(val) != 0; });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.end()}; });
 #ifdef JLCXX_HAS_RANGES
     if constexpr(has_less<T>)
     {
-      wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return iterator_wrapper_type<WrappedT>{std::ranges::upper_bound(v, val)}; });
-      wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return iterator_wrapper_type<WrappedT>{std::ranges::lower_bound(v, val)}; });
+      wrapped.method("StdUpperBound", [] (WrappedT& v, const_reftype<WrappedT> val) { return iterator_wrapper_type<WrappedT>{std::ranges::upper_bound(v, val)}; });
+      wrapped.method("StdLowerBound", [] (WrappedT& v, const_reftype<WrappedT> val) { return iterator_wrapper_type<WrappedT>{std::ranges::lower_bound(v, val)}; });
     }
 #endif
     wrapped.module().unset_override_module();
@@ -507,11 +515,11 @@ struct WrapSTLContainer<std::unordered_set> : STLTypeWrapperBase<WrapSTLContaine
     wrapped.template constructor<>();
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("set_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("set_insert!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.insert(val); });
     wrapped.method("set_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("set_isempty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("set_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
-    wrapped.method("set_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
+    wrapped.method("set_delete!", [] (WrappedT&v, const_reftype<WrappedT> val) { v.erase(val); });
+    wrapped.method("set_in", [] (WrappedT& v, const_reftype<WrappedT> val) { return v.count(val) != 0; });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.end()}; });
     wrapped.module().unset_override_module();
@@ -534,19 +542,19 @@ struct WrapSTLContainer<std::multiset> : STLTypeWrapperBase<WrapSTLContainer<std
     wrapped.template constructor<>();
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("multiset_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("multiset_insert!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.insert(val); });
     wrapped.method("multiset_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("multiset_isempty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("multiset_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
-    wrapped.method("multiset_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
-    wrapped.method("multiset_count", [] (WrappedT& v, const T& val) { return v.count(val); });
+    wrapped.method("multiset_delete!", [] (WrappedT&v, const_reftype<WrappedT> val) { v.erase(val); });
+    wrapped.method("multiset_in", [] (WrappedT& v, const_reftype<WrappedT> val) { return v.count(val) != 0; });
+    wrapped.method("multiset_count", [] (WrappedT& v, const_reftype<WrappedT> val) { return v.count(val); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.end()}; });
 #ifdef JLCXX_HAS_RANGES
     if constexpr(has_less<T>)
     {
-      wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return iterator_wrapper_type<WrappedT>{std::ranges::upper_bound(v, val)}; });
-      wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return iterator_wrapper_type<WrappedT>{std::ranges::lower_bound(v, val)}; });
+      wrapped.method("StdUpperBound", [] (WrappedT& v, const_reftype<WrappedT> val) { return iterator_wrapper_type<WrappedT>{std::ranges::upper_bound(v, val)}; });
+      wrapped.method("StdLowerBound", [] (WrappedT& v, const_reftype<WrappedT> val) { return iterator_wrapper_type<WrappedT>{std::ranges::lower_bound(v, val)}; });
     }
 #endif
     wrapped.module().unset_override_module();
@@ -568,12 +576,12 @@ struct WrapSTLContainer<std::unordered_multiset> : STLTypeWrapperBase<WrapSTLCon
     wrapped.template constructor<>();
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("multiset_insert!", [] (WrappedT& v, const T& val) { v.insert(val); });
+    wrapped.method("multiset_insert!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.insert(val); });
     wrapped.method("multiset_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("multiset_isempty", [] (WrappedT& v) { return v.empty(); });
-    wrapped.method("multiset_delete!", [] (WrappedT&v, const T& val) { v.erase(val); });
-    wrapped.method("multiset_in", [] (WrappedT& v, const T& val) { return v.count(val) != 0; });
-    wrapped.method("multiset_count", [] (WrappedT& v, const T& val) { return v.count(val); });
+    wrapped.method("multiset_delete!", [] (WrappedT&v, const_reftype<WrappedT> val) { v.erase(val); });
+    wrapped.method("multiset_in", [] (WrappedT& v, const_reftype<WrappedT> val) { return v.count(val) != 0; });
+    wrapped.method("multiset_count", [] (WrappedT& v, const_reftype<WrappedT> val) { return v.count(val); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.end()}; });
     wrapped.module().unset_override_module();
@@ -601,8 +609,8 @@ struct WrapSTLContainer<std::list> : STLTypeWrapperBase<WrapSTLContainer<std::li
     wrapped.method("list_isempty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("list_front", [] (WrappedT& v) { return v.front(); });
     wrapped.method("list_back", [] (WrappedT& v) { return v.back(); });
-    wrapped.method("list_push_back!", [] (WrappedT& v, const T& val) { v.push_back(val); });
-    wrapped.method("list_push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
+    wrapped.method("list_push_back!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_back(val); });
+    wrapped.method("list_push_front!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_front(val); });
     wrapped.method("list_pop_back!", [] (WrappedT& v) { v.pop_back(); });
     wrapped.method("list_pop_front!", [] (WrappedT& v) { v.pop_front(); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
@@ -610,8 +618,8 @@ struct WrapSTLContainer<std::list> : STLTypeWrapperBase<WrapSTLContainer<std::li
 #ifdef JLCXX_HAS_RANGES
     if constexpr(has_less<T>)
     {
-      wrapped.method("StdUpperBound", [] (WrappedT& v, const T& val) { return iterator_wrapper_type<WrappedT>{std::ranges::upper_bound(v, val)}; });
-      wrapped.method("StdLowerBound", [] (WrappedT& v, const T& val) { return iterator_wrapper_type<WrappedT>{std::ranges::lower_bound(v, val)}; });
+      wrapped.method("StdUpperBound", [] (WrappedT& v, const_reftype<WrappedT> val) { return iterator_wrapper_type<WrappedT>{std::ranges::upper_bound(v, val)}; });
+      wrapped.method("StdLowerBound", [] (WrappedT& v, const_reftype<WrappedT> val) { return iterator_wrapper_type<WrappedT>{std::ranges::lower_bound(v, val)}; });
       wrapped.method("StdListSort", [] (WrappedT& v) { v.sort(); });
     }
 #endif
@@ -637,7 +645,7 @@ struct WrapSTLContainer<std::forward_list> : STLTypeWrapperBase<WrapSTLContainer
     wrapped.method("flist_empty!", [] (WrappedT& v) { v.clear(); });
     wrapped.method("flist_isempty", [] (WrappedT& v) { return v.empty(); });
     wrapped.method("flist_front", [] (WrappedT& v) { return v.front(); });
-    wrapped.method("flist_push_front!", [] (WrappedT& v, const T& val) { v.push_front(val); });
+    wrapped.method("flist_push_front!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_front(val); });
     wrapped.method("flist_pop_front!", [] (WrappedT& v) { v.pop_front(); });
     wrapped.method("iteratorbegin", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.begin()}; });
     wrapped.method("iteratorend", [] (WrappedT& v) { return iterator_wrapper_type<WrappedT>{v.end()}; });

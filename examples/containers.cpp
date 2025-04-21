@@ -5,6 +5,7 @@
 #include "jlcxx/tuple.hpp"
 #include "jlcxx/const_array.hpp"
 #include "jlcxx/functions.hpp"
+#include "jlcxx/stl.hpp"
 
 const double* const_vector()
 {
@@ -54,6 +55,14 @@ std::vector<double> read_array_tuple(std::tuple<jlcxx::ArrayRef<double>, jlcxx::
     result.push_back(el);
   }
 
+  return result;
+}
+
+std::vector<std::tuple<double,double>> make_tuple_vector()
+{
+  std::vector<std::tuple<double,double>> result;
+  result.push_back(std::make_tuple(1.0, 2.0));
+  result.push_back(std::make_tuple(3.0, 4.0));
   return result;
 }
 
@@ -123,4 +132,5 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
   containers.method("copy_tuple", &copy_tuple);
   containers.method("make_array_tuple", &make_array_tuple);
   containers.method("read_array_tuple", &read_array_tuple);
+  containers.method("make_tuple_vector", &make_tuple_vector);
 }
