@@ -415,6 +415,24 @@ struct ConvertToCpp<ArrayRef<T,Dim>, CxxWrappedTrait<SubTraitT>>
   }
 };
 
+template<typename CppT>
+struct BoxValue<CppT,jl_array_t*>
+{
+  inline jl_value_t* operator()(CppT arr)
+  {
+    return (jl_value_t*)arr.wrapped();
+  }
+};
+
+template<typename ElementT, int Dim>
+struct UnboxValue<ArrayRef<ElementT,Dim>, jl_array_t*>
+{
+  inline ArrayRef<ElementT,Dim> operator()(jl_value_t* arr)
+  {
+    return ArrayRef<ElementT,Dim>(reinterpret_cast<jl_array_t*>(arr));
+  }
+};
+
 // Iterator operator implementation
 template<typename PointedT, typename CppT>
 bool operator!=(const array_iterator_base<PointedT, CppT>& l, const array_iterator_base<PointedT, CppT>& r)
