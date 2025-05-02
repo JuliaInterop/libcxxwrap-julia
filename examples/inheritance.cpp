@@ -125,6 +125,11 @@ public:
 
   virtual ~VirtualCfunctionExtended() {}
 
+  std::vector<double>& getData()
+  {
+    return m_data;
+  }
+
   virtual double virtualfunc()
   {
     double sum = 0;
@@ -223,6 +228,7 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
     .method("set_callback", &VirtualCppJuliaExtended::set_callback);
   types.add_type<VirtualCfunctionExtended>("VirtualCfunctionExtended", jlcxx::julia_base_type<VirtualCpp>())
     .constructor<int, double>()
+    .method("getData", &VirtualCfunctionExtended::getData)
     .method("set_callback", &VirtualCfunctionExtended::set_callback);
 }
 
