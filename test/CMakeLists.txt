@@ -39,3 +39,6 @@ target_link_libraries(typemaptestlib typemaplib)
 
 add_executable(test_typemap test_typemap.cpp)
 add_test(NAME test_typemap COMMAND test_typemap)
+if(NOT WIN32)
+  target_link_libraries(test_typemap dl)
+endif()
