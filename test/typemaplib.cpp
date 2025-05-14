@@ -10,7 +10,7 @@ TestType::TestType()
 EXPORTAPI StoredType& get_stored_type_hash(std::type_index idx)
 {
   static std::unordered_map<std::type_index, StoredType> m_map;
-  if(!m_map.contains(idx))
+  if(m_map.count(idx) == 0)
   {
     m_map[idx] = StoredType();
   }
