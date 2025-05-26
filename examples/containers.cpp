@@ -66,6 +66,16 @@ std::vector<std::tuple<double,double>> make_tuple_vector()
   return result;
 }
 
+std::string catstrings(jlcxx::ArrayRef<const char*> strings)
+{
+  std::string result;
+  for(const char* s : strings)
+  {
+    result += std::string(s);
+  }
+  return result;
+}
+
 JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
 {
   using namespace jlcxx;
@@ -133,4 +143,5 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
   containers.method("make_array_tuple", &make_array_tuple);
   containers.method("read_array_tuple", &read_array_tuple);
   containers.method("make_tuple_vector", &make_tuple_vector);
+  containers.method("catstrings", &catstrings);
 }
