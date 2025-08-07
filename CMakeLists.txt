@@ -99,10 +99,13 @@ set(JLCXX_STL_SOURCES
     ${JLCXX_SOURCE_DIR}/stl_deque.cpp
     ${JLCXX_SOURCE_DIR}/stl_queue.cpp
     ${JLCXX_SOURCE_DIR}/stl_priority_queue.cpp
+    ${JLCXX_SOURCE_DIR}/stl_stack.cpp
     ${JLCXX_SOURCE_DIR}/stl_set.cpp
     ${JLCXX_SOURCE_DIR}/stl_multiset.cpp
     ${JLCXX_SOURCE_DIR}/stl_unordered_set.cpp
     ${JLCXX_SOURCE_DIR}/stl_unordered_multiset.cpp
+    ${JLCXX_SOURCE_DIR}/stl_list.cpp
+    ${JLCXX_SOURCE_DIR}/stl_forward_list.cpp
     ${JLCXX_SOURCE_DIR}/stl_shared_ptr.cpp
     ${JLCXX_SOURCE_DIR}/stl_unique_ptr.cpp
     ${JLCXX_SOURCE_DIR}/stl_weak_ptr.cpp

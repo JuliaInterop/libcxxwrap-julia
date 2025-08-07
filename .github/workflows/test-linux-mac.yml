@@ -16,7 +16,7 @@ jobs:
       matrix:
         version:
           - "1.6"
-          - "1.10"
+          - "1.11"
           - "nightly"
         os:
           - ubuntu-latest
@@ -26,7 +26,7 @@ jobs:
         include:
           - os: macos-14
             arch: aarch64
-            version: "1.10"
+            version: "1.11"
           - os: macos-14
             arch: aarch64
             version: "nightly"
@@ -38,22 +38,28 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
+      - name: Set up GCC 10 on Ubuntu and Julia 1.6
+        if: matrix.os == 'ubuntu-latest' && matrix.version == '1.6'
+        run: |
+          sudo apt-get install -y gcc-10 g++-10
+          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10
+          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
       - name: Build and test
         env:
           body: ${{ github.event.pull_request.body }}
         run: |
           package="$(echo "$body" | sed -n '1p')"
-          if [ -z "${package}" ]; then
+          if [[ ! "${package}" =~ ^https:// ]]; then
             package="https://github.com/JuliaInterop/CxxWrap.jl.git"
           fi
           if [[ "$OSTYPE" != "darwin"* ]]; then
             rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
           fi
           mkdir build && cd build
-          cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
+          CXXFLAGS=-ftemplate-backtrace-limit=0 cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install
-          wget https://github.com/JuliaBinaryWrappers/libcxxwrap_julia_jll.jl/raw/main/Project.toml
-          jllversion=$(grep "version" Project.toml | sed -r 's/.* = "(.*)\+.*/\1/')
+          wget https://github.com/JuliaRegistries/General/raw/refs/heads/master/jll/L/libcxxwrap_julia_jll/Versions.toml
+          jllversion=$(grep '\["' Versions.toml | tail -n 1 | sed -E 's/\["([0-9]+\.[0-9]+\.[0-9]+)\+[^"]*"\]/\1/g')
           cd lib
           if [ ! -f libcxxwrap_julia.${jllversion}.dylib ]; then
             ln -s libcxxwrap_julia.*.*.*.* libcxxwrap_julia.${jllversion}.dylib

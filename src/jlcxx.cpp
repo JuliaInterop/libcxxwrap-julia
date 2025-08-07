@@ -55,12 +55,6 @@ JLCXX_API void cxx_root_scanner(int)
   }
 }
 
-JLCXX_API std::stack<std::size_t>& gc_free_stack()
-{
-  static std::stack<std::size_t> m_stack;
-  return m_stack;
-}
-
 Module::Module(jl_module_t* jmod) :
   m_jl_mod(jmod),
   m_constant_values(jl_any_type)
@@ -456,5 +450,17 @@ JLCXX_API void cxxwrap_init(const std::string& envpath)
     throw std::runtime_error("Error initializing CxxWrap module");
   }
 }
+
+#ifdef _MSC_VER 
+
+namespace detail
+{
+
+template struct BasicArg<false>;
+template struct BasicArg<true>;
+
+}
+
+#endif
 
 }

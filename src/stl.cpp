@@ -12,51 +12,36 @@ namespace jlcxx
 namespace stl
 {
 
-JLCXX_API std::unique_ptr<StlWrappers> StlWrappers::m_instance = std::unique_ptr<StlWrappers>();
+using StoredWrappersT = std::map<std::string, TypeWrapper1>;
 
-JLCXX_API void StlWrappers::instantiate(Module& mod)
+StoredWrappersT& stl_wrappers()
 {
-  m_instance.reset(new StlWrappers(mod));
-  apply_vector(m_instance->vector);
-  apply_valarray(m_instance->valarray);
-  apply_deque(m_instance->deque);
-  apply_queue(m_instance->queue);
-  apply_priority_queue(m_instance->priority_queue);
-  apply_set(m_instance->set);
-  apply_multiset(m_instance->multiset);
-  apply_unordered_set(m_instance->unordered_set);
-  apply_unordered_multiset(m_instance->unordered_multiset);
-  apply_shared_ptr();
-  apply_weak_ptr();
-  apply_unique_ptr();
+  static StoredWrappersT wrappers;
+  return wrappers;
 }
 
-JLCXX_API StlWrappers& StlWrappers::instance()
+JLCXX_API void set_wrapper(Module& stl, std::string name, jl_value_t* supertype)
 {
-  if(m_instance == nullptr)
+  auto result = stl_wrappers().insert(std::make_pair(name, stl.add_type<Parametric<TypeVar<1>>>(name, supertype)));
+  if(!result.second)
   {
-    throw std::runtime_error("StlWrapper was not instantiated");
+    throw std::runtime_error("Type " + name + " was already mapped");
   }
-  return *m_instance;
 }
 
-JLCXX_API StlWrappers& wrappers()
+JLCXX_API TypeWrapper1& get_wrapper(std::string name)
 {
-  return StlWrappers::instance();
+  auto result = stl_wrappers().find(name);
+  if(result == stl_wrappers().end())
+  {
+    throw std::runtime_error("Type " + name + " was not added");
+  }
+  return result->second;
 }
 
-JLCXX_API StlWrappers::StlWrappers(Module& stl) :
-  m_stl_mod(stl),
-  vector(stl.add_type<Parametric<TypeVar<1>>>("StdVector", julia_type("AbstractVector"))),
-  valarray(stl.add_type<Parametric<TypeVar<1>>>("StdValArray", julia_type("AbstractVector"))),
-  deque(stl.add_type<Parametric<TypeVar<1>>>("StdDeque", julia_type("AbstractVector"))),
-  queue(stl.add_type<Parametric<TypeVar<1>>>("StdQueue", julia_type("AbstractVector"))),
-  priority_queue(stl.add_type<Parametric<TypeVar<1>>>("StdPriorityQueue")),
-  set(stl.add_type<Parametric<TypeVar<1>>>("StdSet")),
-  multiset(stl.add_type<Parametric<TypeVar<1>>>("StdMultiset")),
-  unordered_set(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedSet")),
-  unordered_multiset(stl.add_type<Parametric<TypeVar<1>>>("StdUnorderedMultiset"))
+JLCXX_API bool has_wrapper(std::string name)
 {
+  return stl_wrappers().count(name) != 0;
 }
 
 template<typename string_t>
@@ -71,10 +56,19 @@ void wrap_string(TypeWrapper<string_t>&& wrapper)
   wrapper.module().method("cxxgetindex", [] (const string_t& s, cxxint_t i) { return s[i-1]; });
 }
 
+jl_module_t* g_stl_module = nullptr;
+
+JLCXX_API jl_module_t* stl_module()
+{
+  assert(g_stl_module != nullptr);
+  return g_stl_module;
+}
+
 }
 
 JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
 {
+  stl::g_stl_module = stl.julia_module();
 #ifdef JLCXX_HAS_RANGES
   stl.set_const("HAS_RANGES", 1);
 #endif
@@ -106,12 +100,27 @@ JLCXX_MODULE define_cxxwrap_stl_module(jlcxx::Module& stl)
     .method("swap", &std::thread::swap);
 
   stl.method("hardware_concurrency", [] () { return std::thread::hardware_concurrency(); });
-  
+
   jlcxx::add_smart_pointer<std::shared_ptr>(stl, "SharedPtr");
   jlcxx::add_smart_pointer<std::weak_ptr>(stl, "WeakPtr");
   jlcxx::add_smart_pointer<std::unique_ptr>(stl, "UniquePtr");
 
-  jlcxx::stl::StlWrappers::instantiate(stl);
+  jlcxx::stl::apply_vector();
+  jlcxx::stl::apply_valarray();
+  jlcxx::stl::apply_deque();
+  jlcxx::stl::apply_queue();
+  jlcxx::stl::apply_priority_queue();
+  jlcxx::stl::apply_stack();
+  jlcxx::stl::apply_set();
+  jlcxx::stl::apply_multiset();
+  jlcxx::stl::apply_unordered_set();
+  jlcxx::stl::apply_unordered_multiset();
+  jlcxx::stl::apply_list();
+  jlcxx::stl::apply_forward_list();
+
+  jlcxx::stl::apply_shared_ptr();
+  jlcxx::stl::apply_weak_ptr();
+  jlcxx::stl::apply_unique_ptr();
 }
 
 }

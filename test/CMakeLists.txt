@@ -28,3 +28,17 @@ else()
       "JULIA_HOME=${JULIA_HOME}"
   )
 endif()
+
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+set(CMAKE_BUILD_RPATH "${Julia_LIBRARY_DIR}")
+
+add_library(typemaplib SHARED typemaplib.cpp)
+target_link_libraries(typemaplib)
+add_library(typemaptestlib SHARED typemaptestlib.cpp)
+target_link_libraries(typemaptestlib typemaplib)
+
+add_executable(test_typemap test_typemap.cpp)
+add_test(NAME test_typemap COMMAND test_typemap)
+if(NOT WIN32)
+  target_link_libraries(test_typemap dl)
+endif()

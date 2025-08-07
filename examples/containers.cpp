@@ -5,6 +5,7 @@
 #include "jlcxx/tuple.hpp"
 #include "jlcxx/const_array.hpp"
 #include "jlcxx/functions.hpp"
+#include "jlcxx/stl.hpp"
 
 const double* const_vector()
 {
@@ -16,6 +17,63 @@ const double* const_matrix()
 {
   static double d[2][3] = {{1., 2., 3}, {4., 5., 6.}};
   return &d[0][0];
+}
+
+// Tuple array test
+std::tuple<jlcxx::Array<double>, jlcxx::Array<double>>
+make_array_tuple()
+{
+  jlcxx::Array<double> x;
+  jlcxx::Array<double> y;
+
+  x.push_back(1.0);
+  x.push_back(2.0);
+  y.push_back(3.0);
+
+  return std::make_tuple(x, y);
+}
+
+std::tuple<double,int,bool> copy_tuple(std::tuple<double,int,bool> t)
+{
+  return t;
+}
+
+std::vector<double> read_array_tuple(std::tuple<jlcxx::ArrayRef<double>, jlcxx::ArrayRef<double>> t)
+{
+  jlcxx::ArrayRef<double> x = std::get<0>(t);
+  jlcxx::ArrayRef<double> y = std::get<1>(t);
+
+  std::vector<double> result;
+
+  for(auto el : x)
+  {
+    result.push_back(el);
+  }
+
+  for(auto el : y)
+  {
+    result.push_back(el);
+  }
+
+  return result;
+}
+
+std::vector<std::tuple<double,double>> make_tuple_vector()
+{
+  std::vector<std::tuple<double,double>> result;
+  result.push_back(std::make_tuple(1.0, 2.0));
+  result.push_back(std::make_tuple(3.0, 4.0));
+  return result;
+}
+
+std::string catstrings(jlcxx::ArrayRef<const char*> strings)
+{
+  std::string result;
+  for(const char* s : strings)
+  {
+    result += std::string(s);
+  }
+  return result;
 }
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
@@ -60,6 +118,15 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
     return result;
   });
 
+  containers.method("int_array_return", [] () {
+    jlcxx::Array<int> data{ };
+    data.push_back(1);
+    data.push_back(2);
+    data.push_back(3);
+
+    return data;
+  });
+
   // Test some automatic type creation
   containers.method("tuple_int_pointer", [] () { return std::make_tuple(static_cast<int*>(nullptr), 1); });
   containers.method("uint8_arrayref", [] (jlcxx::ArrayRef<uint8_t *> a)
@@ -72,4 +139,9 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& containers)
     return result;
   });
   containers.method("uint8_ptr", [] (uint8_t* x) { return int(*x); });
+  containers.method("copy_tuple", &copy_tuple);
+  containers.method("make_array_tuple", &make_array_tuple);
+  containers.method("read_array_tuple", &read_array_tuple);
+  containers.method("make_tuple_vector", &make_tuple_vector);
+  containers.method("catstrings", &catstrings);
 }

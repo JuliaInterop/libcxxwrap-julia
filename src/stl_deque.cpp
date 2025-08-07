@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_deque(TypeWrapper1& deque)
+void apply_deque()
 {
-  deque.apply_combination<std::deque, stltypes>(stl::WrapDeque());
+  WrapSTLContainer<std::deque>().apply_combination<stltypes>();
 }
 
 }

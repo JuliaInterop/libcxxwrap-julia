@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_vector(TypeWrapper1& vector)
+void apply_vector()
 {
-  vector.apply_combination<std::vector, stltypes>(stl::WrapVector());
+  WrapSTLContainer<std::vector>().apply_combination<stltypes>();
 }
 
 }

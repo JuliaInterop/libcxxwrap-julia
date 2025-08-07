@@ -64,6 +64,7 @@ int main()
   jl_value_t* mod = jl_eval_string(R"(
     module TestModule
       const __cxxwrap_pointers = Ptr{Cvoid}[]
+      using CxxWrap
     end
   )");
   JL_GC_PUSH1(&mod);
@@ -76,6 +77,12 @@ int main()
 
   register_julia_module((jl_module_t*)mod, register_test_module);
   jl_call1(jl_get_function(jlcxx::get_cxxwrap_module(), "wraptypes"), mod);
+  jl_call1(jl_get_function(jlcxx::get_cxxwrap_module(), "wrapfunctions"), mod);
+  if (jl_exception_occurred())
+  {
+    jl_call2(jl_get_function(jl_base_module, "showerror"), jl_stderr_obj(), jl_exception_occurred());
+    jl_printf(jl_stderr_stream(), "\n");
+  }
 
   jl_value_t* dt = jl_eval_string("TestModule.Foo");
   if(jlcxx::julia_type_name(dt) != "Foo")
@@ -83,6 +90,10 @@ int main()
     std::cout << "unexpected type name: " << jlcxx::julia_type_name(dt) << std::endl;
     return 1;
   }
+
+  //jl_value_t* foo = jl_eval_string("a = TestModule.Foo(); println(a);");
+  jl_eval_string("display(methods(Foo))");
+  //std::cout << "foo: " << foo << std::endl;
 
   JL_GC_POP();
   

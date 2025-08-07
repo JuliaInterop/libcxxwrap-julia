@@ -66,6 +66,88 @@ struct StaticBase {
 struct StaticDerived: public StaticBase {
 };
 
+// A virtual C++ class that we will extend from Julia
+class VirtualCpp
+{
+public:
+  VirtualCpp(int size, double val) : m_data(size)
+  {
+    for (int i = 0; i < size; ++i)
+    {
+      m_data[i] = val;
+    }
+  }
+
+  virtual ~VirtualCpp() {}
+
+  virtual double virtualfunc() = 0;
+
+protected:
+  std::vector<double> m_data;
+};
+
+class VirtualCppJuliaExtended : public VirtualCpp
+{
+public:
+  VirtualCppJuliaExtended(int size, double val) : VirtualCpp(size, val)
+  {
+  }
+
+  virtual ~VirtualCppJuliaExtended() {}
+
+  virtual double virtualfunc()
+  {
+    jlcxx::JuliaFunction cb(m_callback);
+    // Apply cb to each element of m_data and return the sum of the result
+    double sum = 0;
+    for (size_t i = 0; i < m_data.size(); ++i)
+    {
+      sum += jlcxx::unbox<double>(cb(static_cast<double>(m_data[i]))); // Without the static_cast<double> it would be a reference to a double
+    }
+    return sum;
+  }
+
+  void set_callback(jl_function_t* callback)
+  {
+    m_callback = callback;
+  }
+private:
+  jl_function_t* m_callback = nullptr;
+};
+
+class VirtualCfunctionExtended : public VirtualCpp
+{
+  using callback_t = double (*)(double);
+public:
+  VirtualCfunctionExtended(int size, double val) : VirtualCpp(size, val)
+  {
+  }
+
+  virtual ~VirtualCfunctionExtended() {}
+
+  std::vector<double>& getData()
+  {
+    return m_data;
+  }
+
+  virtual double virtualfunc()
+  {
+    double sum = 0;
+    for (size_t i = 0; i < m_data.size(); ++i)
+    {
+      sum += m_callback(m_data[i]);
+    }
+    return sum;
+  }
+
+  void set_callback(jlcxx::SafeCFunction callback)
+  {
+    m_callback = jlcxx::make_function_pointer<double(double)>(callback);
+  }
+private:
+  callback_t m_callback = nullptr;
+};
+
 // Example based on https://discourse.julialang.org/t/simplest-way-to-wrap-virtual-c-class/4977
 namespace virtualsolver
 {
@@ -105,6 +187,9 @@ namespace jlcxx
   template<> struct SuperType<C> { typedef B type; };
   template<> struct SuperType<B> { typedef A type; };
 
+  template<> struct SuperType<VirtualCppJuliaExtended>  { typedef VirtualCpp type; };
+  template<> struct SuperType<VirtualCfunctionExtended> { typedef VirtualCpp type; };
+
   template<> struct SuperType<virtualsolver::E> { typedef virtualsolver::Base type; };
   template<> struct SuperType<virtualsolver::F> { typedef virtualsolver::Base type; };
 
@@ -135,6 +220,16 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
 
   types.add_type<StaticBase>("StaticBase");
   types.add_type<StaticDerived>("StaticDerived", jlcxx::julia_base_type<StaticBase>());
+
+  types.add_type<VirtualCpp>("VirtualCpp")
+    .method("virtualfunc", &VirtualCpp::virtualfunc);
+  types.add_type<VirtualCppJuliaExtended>("VirtualCppJuliaExtended", jlcxx::julia_base_type<VirtualCpp>())
+    .constructor<int, double>()
+    .method("set_callback", &VirtualCppJuliaExtended::set_callback);
+  types.add_type<VirtualCfunctionExtended>("VirtualCfunctionExtended", jlcxx::julia_base_type<VirtualCpp>())
+    .constructor<int, double>()
+    .method("getData", &VirtualCfunctionExtended::getData)
+    .method("set_callback", &VirtualCfunctionExtended::set_callback);
 }
 
 JLCXX_MODULE define_vsolver_module(jlcxx::Module& vsolver_mod)

@@ -140,45 +140,54 @@ JLCXX_API jl_array_t* get_module_functions(jl_module_t* jlmod)
     Array<jl_datatype_t*> arg_types_array;
     jl_value_t* boxed_f = nullptr;
     jl_value_t* boxed_thunk = nullptr;
-    Array<jl_value_t*> arg_names_array;
-    Array<jl_value_t*> arg_default_values_array;
-    jl_value_t* boxed_n_kwargs;
-    JL_GC_PUSH6(arg_types_array.gc_pointer(), &boxed_f, &boxed_thunk, arg_names_array.gc_pointer(), arg_default_values_array.gc_pointer(), &boxed_n_kwargs);
-
-    fill_types_vec(arg_types_array, f.argument_types());
-
-    boxed_f = jlcxx::box<void*>(f.pointer());
-    boxed_thunk = jlcxx::box<void*>(f.thunk());
-
-    fill_values_vec(arg_names_array, f.argument_names());
-    fill_values_vec(arg_default_values_array, f.argument_default_values());
-
-    boxed_n_kwargs = jlcxx::box<int>(f.number_of_keyword_arguments());
-
-    auto returntypes = f.return_type();
-
-    jl_datatype_t* ccall_return_type = returntypes.first;
-    jl_datatype_t* julia_return_type = returntypes.second;
-    if(ccall_return_type == nullptr)
+    JL_GC_PUSH3(arg_types_array.gc_pointer(), &boxed_f, &boxed_thunk);
     {
-      ccall_return_type = julia_type<void>();
-      julia_return_type = ccall_return_type;
+       Array<jl_value_t*> arg_names_array;
+       JL_GC_PUSH1(arg_names_array.gc_pointer());
+       {
+          Array<jl_value_t*> arg_default_values_array;
+          jl_value_t* boxed_n_kwargs = nullptr;
+          jl_value_t* cppfuncinfo = nullptr;
+          JL_GC_PUSH3(arg_default_values_array.gc_pointer(), &boxed_n_kwargs, &cppfuncinfo);
+
+          fill_types_vec(arg_types_array, f.argument_types());
+
+          boxed_f = jlcxx::box<void*>(f.pointer());
+          boxed_thunk = jlcxx::box<void*>(f.thunk());
+
+          fill_values_vec(arg_names_array, f.argument_names());
+          fill_values_vec(arg_default_values_array, f.argument_default_values());
+
+          boxed_n_kwargs = jlcxx::box<int>(f.number_of_keyword_arguments());
+
+          auto returntypes = f.return_type();
+
+          jl_datatype_t* ccall_return_type = returntypes.first;
+          jl_datatype_t* julia_return_type = returntypes.second;
+          if(ccall_return_type == nullptr)
+          {
+            ccall_return_type = julia_type<void>();
+            julia_return_type = ccall_return_type;
+          }
+
+          cppfuncinfo = jl_new_struct(g_cppfunctioninfo_type,
+            f.name(),
+            arg_types_array.wrapped(),
+            ccall_return_type,
+            julia_return_type,
+            boxed_f,
+            boxed_thunk,
+            f.override_module(),
+            f.doc(),
+            arg_names_array.wrapped(),
+            arg_default_values_array.wrapped(),
+            boxed_n_kwargs
+            );
+          function_array.push_back(cppfuncinfo);
+          JL_GC_POP();
+       }
+       JL_GC_POP();
     }
-
-    function_array.push_back(jl_new_struct(g_cppfunctioninfo_type,
-      f.name(),
-      arg_types_array.wrapped(),
-      ccall_return_type,
-      julia_return_type,
-      boxed_f,
-      boxed_thunk,
-      f.override_module(),
-      f.doc(),
-      arg_names_array.wrapped(),
-      arg_default_values_array.wrapped(),
-      boxed_n_kwargs
-    ));
-
     JL_GC_POP();
   });
   JL_GC_POP();

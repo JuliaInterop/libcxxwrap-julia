@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_set(TypeWrapper1& set)
+void apply_set()
 {
-  set.apply_combination<std::set, stltypes>(stl::WrapSetType());
+  WrapSTLContainer<std::set>().apply_combination<stltypes>();
 }
 
 }

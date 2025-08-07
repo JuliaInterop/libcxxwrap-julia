@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_queue(TypeWrapper1& queue)
+void apply_queue()
 {
-  queue.apply_combination<std::queue, stltypes>(stl::WrapQueue());
+  WrapSTLContainer<std::queue>().apply_combination<stltypes>();
 }
 
 }

@@ -6,9 +6,9 @@ namespace jlcxx
 namespace stl
 {
 
-void apply_multiset(TypeWrapper1& multiset)
+void apply_multiset()
 {
-  multiset.apply_combination<std::multiset, stltypes>(stl::WrapMultisetType());
+  WrapSTLContainer<std::multiset>().apply_combination<stltypes>();
 }
 
 }
