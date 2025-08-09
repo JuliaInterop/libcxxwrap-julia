@@ -15,7 +15,7 @@ cxx_gc_roots_t& cxx_gc_roots()
   return m_roots;
 }
 
-jl_module_t* g_cxxwrap_module = nullptr;
+JLCXX_API jl_module_t* g_cxxwrap_module = nullptr;
 jl_datatype_t* g_cppfunctioninfo_type = nullptr;
 
 JLCXX_API void protect_from_gc(jl_value_t* v)

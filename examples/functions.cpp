@@ -274,7 +274,7 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
     JL_GC_POP();
   });
 
-  mod.method("fn_clb2", [] (jl_function_t* f)
+  mod.method("fn_clb2", [] (jl_value_t* f)
   {
     std::vector<double> v{1., 2.};
     auto ar = jlcxx::ArrayRef<double, 1>(v.data(), v.size());
@@ -282,20 +282,20 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
     fnClb((jl_value_t*)ar.wrapped(), std::wstring(L"calledFromCPP"));
   });
 
-  mod.method("callback_byval", [] (jl_function_t* f, int& result)
+  mod.method("callback_byval", [] (jl_value_t* f, int& result)
   {
     jlcxx::JuliaFunction juliafunc(f);
     juliafunc(BoxedNumber(1), result);
   });
 
-  mod.method("callback_byref", [] (jl_function_t* f, int& result)
+  mod.method("callback_byref", [] (jl_value_t* f, int& result)
   {
     jlcxx::JuliaFunction juliafunc(f);
     BoxedNumber n(2);
     juliafunc(n, result);
   });
 
-  mod.method("callback_byptr", [] (jl_function_t* f, int& result)
+  mod.method("callback_byptr", [] (jl_value_t* f, int& result)
   {
     jlcxx::JuliaFunction juliafunc(f);
     BoxedNumber n(3);

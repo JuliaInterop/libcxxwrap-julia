@@ -38,7 +38,7 @@ JuliaFunction::JuliaFunction(const std::string& name, const std::string& module_
   }
 }
 
-JuliaFunction::JuliaFunction(jl_function_t* fpointer)
+JuliaFunction::JuliaFunction(jl_value_t* fpointer)
 {
   if(fpointer == nullptr)
   {
