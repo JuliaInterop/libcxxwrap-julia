@@ -690,6 +690,42 @@ public:
   template<typename T, typename JLSuperT=jl_datatype_t>
   void add_bits(const std::string& name, JLSuperT* super = jl_any_type);
 
+  template<typename EnumT, typename T>
+  void add_enum(std::string name, std::vector<const char*> labels, std::vector<T> values)
+  {
+    const std::size_t nb_items = labels.size();
+    if(nb_items != values.size())
+    {
+      throw std::runtime_error("Lengths of the labels and values vectors don't match for enum " + name);
+    }
+
+    create_if_not_exists<ArrayRef<const char*>>();
+    create_if_not_exists<ArrayRef<T>>();
+    auto labels_jl = ArrayRef<const char*>(&labels[0], nb_items);
+    auto values_jl = ArrayRef<T>(&values[0], nb_items);
+
+    jl_function_t* add_enum_fn = jl_get_function(g_cxxwrap_module, "add_enum");
+    if(add_enum_fn == nullptr)
+    {
+      throw std::runtime_error("CxxWrapCore.add_enum function not found, ensure you are using at least CxxWrap 0.17.3");
+    }
+
+    jl_value_t** julia_args;
+    JL_GC_PUSHARGS(julia_args, 4);
+    julia_args[0] = (jl_value_t*)m_jl_mod;
+    julia_args[1] = jl_cstr_to_string(name.c_str());
+    julia_args[2] = (jl_value_t*)labels_jl.wrapped();
+    julia_args[3] = (jl_value_t*)values_jl.wrapped();
+    jl_value_t* dt = jl_call(add_enum_fn, julia_args, 4);
+    JL_GC_POP();
+
+    if(!jl_is_datatype(dt))
+    {
+      throw std::runtime_error("error adding enum type " + name);
+    }
+    set_julia_type<EnumT>((jl_datatype_t*)dt);
+  }
+
   /// Set a global constant value at the module level
   template<typename T>
   void set_const(const std::string& name, T&& value)
