@@ -137,7 +137,7 @@ struct UpCast
 };
 
 // The CxxWrap Julia module
-extern jl_module_t* g_cxxwrap_module;
+extern JLCXX_API jl_module_t* g_cxxwrap_module;
 extern jl_datatype_t* g_cppfunctioninfo_type;
 
 class JLCXX_API Module;
@@ -704,7 +704,7 @@ public:
     auto labels_jl = ArrayRef<const char*>(&labels[0], nb_items);
     auto values_jl = ArrayRef<T>(&values[0], nb_items);
 
-    jl_function_t* add_enum_fn = jl_get_function(g_cxxwrap_module, "add_enum");
+    jl_value_t* add_enum_fn = jl_get_function(g_cxxwrap_module, "add_enum");
     if(add_enum_fn == nullptr)
     {
       throw std::runtime_error("CxxWrapCore.add_enum function not found, ensure you are using at least CxxWrap 0.17.3");

@@ -107,12 +107,12 @@ public:
     return sum;
   }
 
-  void set_callback(jl_function_t* callback)
+  void set_callback(jl_value_t* callback)
   {
     m_callback = callback;
   }
 private:
-  jl_function_t* m_callback = nullptr;
+  jl_value_t* m_callback = nullptr;
 };
 
 class VirtualCfunctionExtended : public VirtualCpp
