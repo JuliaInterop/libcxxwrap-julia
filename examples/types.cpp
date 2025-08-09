@@ -116,7 +116,14 @@ enum MyEnum
   EnumValB
 };
 
+enum MyEnumNew
+{
+  EnumVal1,
+  EnumVal2
+};
+
 enum class EnumClass { red, green = 20, blue };
+enum class BigEnumClass : uint64_t { zero = 0, verybig = 0xffffffffffffffff };
 
 struct Foo
 {
@@ -399,6 +406,13 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   static const EnumClass stored_blue = EnumClass::blue;
   types.method("check_enum_byref", [] (const EnumClass& c) { return c == EnumClass::red; });
   types.set_const("StoredBlue", stored_blue);
+
+  types.add_enum<MyEnumNew>("MyEnumNew", std::vector<const char*>({"EnumVal1", "EnumVal2"}), std::vector<int>({EnumVal1, EnumVal2}));
+  types.method("newenum_to_int", [] (const MyEnumNew e) { return static_cast<int>(e); });
+  types.method("newenum_from_int", [] (int i) { return static_cast<MyEnumNew>(i); });
+  types.method("newenum_byref", [] (const MyEnumNew& e) { return static_cast<int>(e); });
+
+  types.add_enum<BigEnumClass>("BigEnumClass", std::vector<const char*>({"zero", "verybig"}), std::vector<uint64_t>({static_cast<uint64_t>(BigEnumClass::zero), static_cast<uint64_t>(BigEnumClass::verybig)}));
 
   types.add_type<Foo>("Foo")
     .constructor<const std::wstring&, jlcxx::ArrayRef<double,1>>()
