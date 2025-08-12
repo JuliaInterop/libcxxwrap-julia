@@ -723,7 +723,7 @@ public:
     {
       throw std::runtime_error("error adding enum type " + name);
     }
-    set_julia_type<EnumT>((jl_datatype_t*)dt);
+    set_julia_type<EnumT>((jl_datatype_t*)dt, false);
   }
 
   /// Set a global constant value at the module level
