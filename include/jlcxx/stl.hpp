@@ -43,6 +43,17 @@ struct SkipIfSameAs<T,T>
 
 template<typename T1, typename T2> using skip_if_same = typename SkipIfSameAs<T1,T2>::type;
 
+template <typename, typename, typename = void>
+struct is_move_insertable
+ : std::false_type {};
+
+template <typename T, typename A>
+struct is_move_insertable<T, A, std::void_t<decltype(std::allocator_traits<A>::construct(std::declval<A&>(), std::declval<T*>(), std::declval<T&&>()))>>
+ : std::true_type {};
+
+template <typename T, typename A>
+inline constexpr bool is_move_insertable_v = is_move_insertable<T, A>::value;
+
 }
 
 namespace stl
@@ -311,15 +322,28 @@ struct WrapSTLContainer<std::vector> : STLTypeWrapperBase<WrapSTLContainer<std::
     using T = typename WrappedT::value_type;
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
+
+    // Although the C++ standard sates potential undefined behavior depending on
+    // if T is DefaultInsertable/MoveInsertable/CopyInsertable, the only hard
+    // type requirement for WrappedT<T>::resize is that if the current size
+    // is less than the target resize, that T must be DefaultConstructable.
+    if constexpr(std::is_default_constructible_v<T>) {
+      wrapped.method("resize", [] (WrappedT& v, const cxxint_t s) { v.resize(s); });
+    }
+
+    // The exposed `append' method uses WrappedT<T>::reserve, which requires
+    // T to be MoveInsertible into WrappedT<T>. If this is not satisfied,
+    // we can simply fall back to the slower non-reserved method.
     wrapped.method("append", [] (WrappedT& v, jlcxx::ArrayRef<T> arr)
     {
       const std::size_t addedlen = arr.size();
-      v.reserve(v.size() + addedlen);
-      for(size_t i = 0; i != addedlen; ++i)
-      {
-        v.push_back(arr[i]);
+      if constexpr(jlcxx::detail::is_move_insertable_v<T, typename WrappedT::allocator_type>) {
+	v.reserve(v.size() + addedlen);
       }
+      for(size_t i = 0; i != addedlen; ++i)
+	{
+	  v.push_back(arr[i]);
+	}
     });
     wrapped.module().unset_override_module();
     WrapVectorImpl<T>::wrap(wrapped);
@@ -367,7 +391,10 @@ struct WrapSTLContainer<std::deque> : STLTypeWrapperBase<WrapSTLContainer<std::d
     wrapped.template constructor<std::size_t>();
     wrapped.module().set_override_module(stl_module());
     wrapped.method("cppsize", &WrappedT::size);
-    wrapped.method("resize", [](WrappedT &v, const cxxint_t s) { v.resize(s); });
+    // Similar to the std::vector check, std::deque::resize requires DefaultConstrutable:
+    if constexpr(std::is_default_constructible_v<T>) {
+      wrapped.method("resize", [](WrappedT &v, const cxxint_t s) { v.resize(s); });
+    }
     wrapped.method("cxxgetindex", [](const WrappedT& v, cxxint_t i) -> const_reftype<WrappedT> { return v[i - 1]; });
     wrapped.method("cxxsetindex!", [](WrappedT& v, const_reftype<WrappedT> val, cxxint_t i) { v[i - 1] = val; });
     wrapped.method("push_back!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push_back(val); });
