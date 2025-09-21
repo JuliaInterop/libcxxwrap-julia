@@ -135,6 +135,13 @@ struct Foo
   std::vector<double> data;
 };
 
+struct NeverEmpty
+{
+  int data;
+  NeverEmpty() = delete;
+  NeverEmpty(int d) : data(d) {};
+};
+
 struct NullableStruct { NullableStruct() {} };
 
 struct IntDerived
@@ -465,6 +472,14 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   types.method("world_dequeue", []() { static World w; return std::deque({w}); });
   types.method("world_list", []() { static World w; return std::list({w}); });
+  
+  types.add_type<NeverEmpty>("NeverEmpty")
+    .constructor<int>()
+    .method("get_data", [](NeverEmpty& n) { return n.data; })
+    .method("set_data", [](NeverEmpty& n, int d) { n.data = d; });
+  
+  types.method("neverempty_array", [] () { NeverEmpty n(1); return std::vector({n}); });
+  types.method("neverempty_deque", [] () { NeverEmpty n(1); return std::deque({n}); });
 }
 
 JLCXX_MODULE define_types2_module(jlcxx::Module& types2)
