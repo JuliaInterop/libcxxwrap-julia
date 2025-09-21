@@ -425,9 +425,9 @@ struct WrapSTLContainer<std::vector> : STLTypeWrapperBase<WrapSTLContainer<std::
         v.reserve(v.size() + addedlen);
       }
       for(size_t i = 0; i != addedlen; ++i)
-	{
-	  v.push_back(arr[i]);
-	}
+        {
+          v.push_back(arr[i]);
+        }
     });
     wrapped.module().unset_override_module();
     WrapVectorImpl<T>::wrap(wrapped);
