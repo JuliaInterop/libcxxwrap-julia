@@ -196,6 +196,7 @@ void const_int_vec_arg(std::vector<std::shared_ptr<const int>>){}
 namespace jlcxx
 {
   template<> struct IsMirroredType<cpp_types::DoubleData> : std::false_type { };
+  template<> struct IsMirroredType<cpp_types::NeverEmpty> : std::false_type { };
   template<typename T> struct IsSmartPointerType<cpp_types::MySmartPointer<T>> : std::true_type { };
   template<typename T> struct ConstructorPointerType<cpp_types::MySmartPointer<T>> { typedef std::shared_ptr<T> type; };
 }
