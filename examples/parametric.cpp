@@ -40,6 +40,11 @@ struct TemplateType
   }
 };
 
+template<typename T>
+struct PartialTemplate : public TemplateType<P2,T>
+{
+};
+
 // Template containing a non-type parameter
 template<typename T, T I>
 struct NonTypeParam
@@ -79,6 +84,14 @@ struct WrapTemplateType
     typedef typename TypeWrapperT::type WrappedT;
     wrapped.method("get_first", &WrappedT::get_first);
     wrapped.method("get_second", &WrappedT::get_second);
+  }
+};
+
+struct WrapPartialTemplateType
+{
+  template<typename TypeWrapperT>
+  void operator()(TypeWrapperT&&)
+  {
   }
 };
 
@@ -239,6 +252,9 @@ namespace jlcxx
   template<typename T1> struct IsMirroredType<CppVector<T1>> : std::false_type { };
   template<typename T1, typename T2> struct IsMirroredType<CppVector2<T1,T2>> : std::false_type { };
 
+  template<typename T> struct IsMirroredType<PartialTemplate<T>> : std::false_type { };
+  template<typename T> struct SuperType<PartialTemplate<T>> { typedef TemplateType<P2,T> type; };
+
 } // namespace jlcxx
 
 JLCXX_MODULE define_julia_module(jlcxx::Module& types)
@@ -249,8 +265,11 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   types.add_type<P1>("P1");
   types.add_type<P2>("P2");
 
-  types.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("TemplateType")
-    .apply<TemplateType<P1,P2>, TemplateType<P2,P1>>(WrapTemplateType());
+  auto template_type = types.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("TemplateType");
+  template_type.apply<TemplateType<P1,P2>, TemplateType<P2,P1>>(WrapTemplateType());
+
+  types.add_type<Parametric<TypeVar<2>>, ParameterList<P2, TypeVar<2>>>("PartialTemplate", template_type.dt())
+    .apply<PartialTemplate<P1>>(WrapPartialTemplateType());
 
   types.add_type<Parametric<TypeVar<1>>>("TemplateDefaultType")
     .apply<TemplateDefaultType<P1>, TemplateDefaultType<P2>>(WrapTemplateDefaultType());
