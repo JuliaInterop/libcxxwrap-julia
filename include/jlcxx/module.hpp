@@ -424,17 +424,11 @@ namespace detail
     }
   };
 
-  template<typename... T>
-  constexpr bool has_type = false;
-
-  template<typename T1, typename T2, typename... ParametersT>
-  constexpr bool has_type<T1, ParameterList<T2, ParametersT...>> = has_type<T1, ParameterList<ParametersT...>>;
+  template<typename T, typename... ParametersT>
+  struct has_type : std::bool_constant<(... || std::is_same_v<T, ParametersT>)> {};
 
   template<typename T, typename... ParametersT>
-  constexpr bool has_type<T, ParameterList<T, ParametersT...>> = true;
-
-  template<typename T1, typename T2>
-  constexpr bool has_type<T1, T2, ParameterList<>> = false;
+  constexpr bool has_type_v = has_type<T, ParametersT...>::value;
 
   template<bool, typename T1, typename T2>
   struct ConditionalAppend
@@ -468,7 +462,7 @@ namespace detail
   template<typename ResultT, typename T1, typename... ParametersT>
   struct RemoveDuplicates<ResultT, ParameterList<T1,ParametersT...>>
   {
-    using type = typename RemoveDuplicates<typename ConditionalAppend<!has_type<T1,ResultT>,T1,ResultT>::type, ParameterList<ParametersT...>>::type;
+    using type = typename RemoveDuplicates<typename ConditionalAppend<!has_type_v<T1,ResultT>,T1,ResultT>::type, ParameterList<ParametersT...>>::type;
   };
 
   template<typename ResultT>
