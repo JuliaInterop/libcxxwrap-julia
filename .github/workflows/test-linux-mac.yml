@@ -15,8 +15,8 @@ jobs:
       fail-fast: false
       matrix:
         version:
-          - "1.6"
-          - "1.11"
+          - "1.10"
+          - "1"
           - "nightly"
         os:
           - ubuntu-latest
@@ -26,7 +26,7 @@ jobs:
         include:
           - os: macos-14
             arch: aarch64
-            version: "1.11"
+            version: "1.10"
           - os: macos-14
             arch: aarch64
             version: "nightly"
@@ -38,12 +38,6 @@ jobs:
         with:
           version: ${{ matrix.version }}
           arch: ${{ matrix.arch }}
-      - name: Set up GCC 10 on Ubuntu and Julia 1.6
-        if: matrix.os == 'ubuntu-latest' && matrix.version == '1.6'
-        run: |
-          sudo apt-get install -y gcc-10 g++-10
-          sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-10 10
-          sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-10 10
       - name: Build and test
         env:
           body: ${{ github.event.pull_request.body }}
@@ -51,9 +45,6 @@ jobs:
           package="$(echo "$body" | sed -n '1p')"
           if [[ ! "${package}" =~ ^https:// ]]; then
             package="https://github.com/JuliaInterop/CxxWrap.jl.git"
-          fi
-          if [[ "$OSTYPE" != "darwin"* ]]; then
-            rm -f /opt/hostedtoolcache/julia/1.6*/x64/lib/julia/libstdc++.so.6
           fi
           mkdir build && cd build
           CXXFLAGS=-ftemplate-backtrace-limit=0 cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
