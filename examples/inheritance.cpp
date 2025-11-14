@@ -180,6 +180,25 @@ namespace virtualsolver
   };
 }
 
+struct Parent {
+    virtual std::string name() const { return "Parent"; }
+    virtual ~Parent() = default;
+};
+
+struct DerivedA : public Parent {
+    std::string name() const override { return "DerivedA"; }
+};
+
+struct DerivedB : public Parent {
+    std::string name() const override { return "DerivedB"; }
+};
+
+
+Parent* make_a() { return new DerivedA(); }
+Parent* make_b() { return new DerivedB(); }
+const Parent* make_const_a() { return new const DerivedA(); }
+const Parent* make_const_b() { return new const DerivedB(); }
+
 namespace jlcxx
 {
   // Needed for upcasting
@@ -196,6 +215,9 @@ namespace jlcxx
   template<> struct IsMirroredType<StaticBase> : std::false_type { };
   template<> struct IsMirroredType<StaticDerived> : std::false_type { };
   template<> struct SuperType<StaticDerived> { typedef StaticBase type; };
+
+  template<> struct SuperType<DerivedA> { typedef Parent type; };
+  template<> struct SuperType<DerivedB> { typedef Parent type; };
 }
 
 JLCXX_MODULE define_types_module(jlcxx::Module& types)
@@ -230,6 +252,20 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
     .constructor<int, double>()
     .method("getData", &VirtualCfunctionExtended::getData)
     .method("set_callback", &VirtualCfunctionExtended::set_callback);
+
+  types.add_type<Parent>("Parent")
+        .method("name", &Parent::name);
+
+  types.add_type<DerivedA>("DerivedA", jlcxx::julia_base_type<Parent>())
+      .method("name", &DerivedA::name);
+
+  types.add_type<DerivedB>("DerivedB", jlcxx::julia_base_type<Parent>())
+      .method("name", &DerivedB::name);
+
+  types.method("make_a", &make_a);
+  types.method("make_b", &make_b);
+  types.method("make_const_a", &make_const_a);
+  types.method("make_const_b", &make_const_b);
 }
 
 JLCXX_MODULE define_vsolver_module(jlcxx::Module& vsolver_mod)

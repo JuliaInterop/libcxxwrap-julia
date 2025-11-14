@@ -20,14 +20,14 @@ jobs:
           - "nightly"
         os:
           - ubuntu-latest
-          - macos-13
+          - macos-15-intel
         arch:
           - x64
         include:
-          - os: macos-14
+          - os: macos-latest
             arch: aarch64
             version: "1.10"
-          - os: macos-14
+          - os: macos-latest
             arch: aarch64
             version: "nightly"
     steps:
@@ -50,7 +50,7 @@ jobs:
           CXXFLAGS=-ftemplate-backtrace-limit=0 cmake -DCMAKE_INSTALL_PREFIX=$HOME/install -DAPPEND_OVERRIDES_TOML=ON -DCMAKE_BUILD_TYPE=Debug ..
           VERBOSE=ON cmake --build . --config Debug --target install
           wget https://github.com/JuliaRegistries/General/raw/refs/heads/master/jll/L/libcxxwrap_julia_jll/Versions.toml
-          jllversion=0.14.2 #$(grep '\["' Versions.toml | tail -n 1 | sed -E 's/\["([0-9]+\.[0-9]+\.[0-9]+)\+[^"]*"\]/\1/g')
+          jllversion=$(grep '\["' Versions.toml | tail -n 1 | sed -E 's/\["([0-9]+\.[0-9]+\.[0-9]+)\+[^"]*"\]/\1/g')
           cd lib
           if [ ! -f libcxxwrap_julia.${jllversion}.dylib ]; then
             ln -s libcxxwrap_julia.*.*.*.* libcxxwrap_julia.${jllversion}.dylib
