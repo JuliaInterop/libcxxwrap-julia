@@ -430,56 +430,38 @@ namespace detail
   template<typename T, typename... ParametersT>
   constexpr bool has_type_v = has_type<T, ParametersT...>::value;
 
-  template<bool, typename T1, typename T2>
-  struct ConditionalAppend
-  {
-  };
-
-  template<typename T, typename... ParametersT>
-  struct ConditionalAppend<true, T, ParameterList<ParametersT...>>
-  {
-    using type = ParameterList<ParametersT..., T>;
-  };
-
-  template<typename T, typename... ParametersT>
-  struct ConditionalAppend<false, T, ParameterList<ParametersT...>>
-  {
-    using type = ParameterList<ParametersT...>;
-  };
-
-  template<typename... T>
-  struct RemoveDuplicates
-  {
-    using type = ParameterList<>;
-  };
-
-  template<typename T1, typename... ParametersT>
-  struct RemoveDuplicates<ParameterList<T1,ParametersT...>>
-  {
-    using type = typename RemoveDuplicates<ParameterList<T1>, ParameterList<ParametersT...>>::type;
-  };
-
-  template<typename ResultT, typename T1, typename... ParametersT>
-  struct RemoveDuplicates<ResultT, ParameterList<T1,ParametersT...>>
-  {
-    using type = typename RemoveDuplicates<typename ConditionalAppend<!has_type_v<T1,ResultT>,T1,ResultT>::type, ParameterList<ParametersT...>>::type;
-  };
-
-  template<typename ResultT>
-  struct RemoveDuplicates<ResultT, ParameterList<>>
-  {
-    using type = ResultT;
-  };
-
   template<typename T1, typename T2>
-  struct CombineParameterLists
-  {
-  };
+  struct CombineParameterLists;
 
   template<typename... Params1, typename... Params2>
   struct CombineParameterLists<ParameterList<Params1...>, ParameterList<Params2...>>
   {
     using type = ParameterList<Params1..., Params2...>;
+  };
+
+  template<typename... T>
+  struct RemoveDuplicates;
+
+  // empty/bottom case
+  template<>
+  struct RemoveDuplicates<ParameterList<>>
+  {
+    using type = ParameterList<>;
+  };
+
+  template<typename T, typename... Rest>
+  struct RemoveDuplicates<ParameterList<T, Rest...>>
+  {
+  private:
+    // recursive splitting of remaining parameters
+    using rest_t = typename RemoveDuplicates<ParameterList<Rest...>>::type;
+
+  public:
+    using type = std::conditional_t<
+      has_type_v<T, Rest...>,
+      rest_t,  // T appears later, skip it
+      typename CombineParameterLists<rest_t, ParameterList<T>>::type  // T is unique so far, append it
+    >;
   };
 }
 
