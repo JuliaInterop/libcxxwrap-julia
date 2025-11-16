@@ -397,6 +397,8 @@ JLCXX_API void register_core_types()
 
     set_julia_type<jl_datatype_t*>(jl_any_type,false);
     set_julia_type<jl_value_t*>(jl_any_type,false);
+
+    set_julia_type<FILE*>((jl_datatype_t*)jl_apply_type1((jl_value_t*)jl_pointer_type, julia_type("FILE", "Libc")), false);
     registered = true;
   }
 }

@@ -481,6 +481,12 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   
   types.method("neverempty_array", [] () { NeverEmpty n(1); return std::vector({n}); });
   types.method("neverempty_deque", [] () { NeverEmpty n(1); return std::deque({n}); });
+
+  // Note that when mixing compilers (e.g. MSVC and GCC) the FILE* must be manipulated only from
+  // within functions compiled with the same compiler. Passing between CRT results in errors.
+  types.method("makefptr", [] (const std::string& filename) { return fopen(filename.c_str(), "w"); });
+  types.method("writefptr", [] (FILE* fp) { fprintf(fp, "Hello world!"); });
+  types.method("closefptr", [] (FILE* fp) { fclose(fp); });
 }
 
 JLCXX_MODULE define_types2_module(jlcxx::Module& types2)
