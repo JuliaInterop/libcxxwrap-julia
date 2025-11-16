@@ -271,6 +271,12 @@ struct MappingTrait<void*>
   using type = DirectPtrTrait;
 };
 
+template<>
+struct MappingTrait<FILE*>
+{
+  using type = DirectPtrTrait;
+};
+
 template<typename T>
 struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value && !IsSmartPointerType<T>::value>::type>
 {
@@ -562,6 +568,16 @@ struct julia_type_factory<jl_value_t*>
   static inline jl_datatype_t* julia_type()
   {
     return jl_any_type;
+  }
+};
+
+template<>
+struct julia_type_factory<FILE*>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    static jl_datatype_t* result = (jl_datatype_t*)jl_apply_type1((jl_value_t*)jl_pointer_type, jlcxx::julia_type("FILE", "Libc"));
+    return result;
   }
 };
 
