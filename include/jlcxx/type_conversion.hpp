@@ -37,26 +37,6 @@ namespace detail
 
 using cxxint_t = typename detail::IndexT<sizeof(long)>::type;
 
-namespace detail
-{
-  template<bool, typename T1, typename T2>
-  struct StaticIf;
-
-  // non-bits
-  template<typename T1, typename T2>
-  struct StaticIf<false, T1, T2>
-  {
-    typedef T2 type;
-  };
-
-  // bits type
-  template<typename T1, typename T2>
-  struct StaticIf<true, T1, T2>
-  {
-    typedef T1 type;
-  };
-}
-
 JLCXX_API void protect_from_gc(jl_value_t* v);
 JLCXX_API void unprotect_from_gc(jl_value_t* v);
 JLCXX_API void cxx_root_scanner(int);
