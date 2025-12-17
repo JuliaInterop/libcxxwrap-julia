@@ -943,48 +943,104 @@ void for_each_type(FunctorT&& f)
   ForEachType<T>()(f);
 }
 
+/// Type-level container for accumulating parameter packs during CombineTypes recursion.
+/// Semantically equivalent to ParameterList but with a distinct typename to enable
+/// template specialization in CombineTypes.
 template<typename... Types>
 struct UnpackedTypeList
 {
 };
 
+template<typename... Types>
+struct FlattenParameterLists;
+
+// Base case: single non-ParameterList type
+template<typename T>
+struct FlattenParameterLists<T>
+{
+  using flatten = ParameterList<T>;
+};
+
+// Single ParameterList: flatten it recursively
+template<typename... Types>
+struct FlattenParameterLists<ParameterList<Types...>>
+{
+  using flatten = typename FlattenParameterLists<Types...>::flatten;
+};
+
+// Multiple types: recursively flatten each and concatenate
+template<typename T1, typename T2, typename... Rest>
+struct FlattenParameterLists<T1, T2, Rest...>
+{
+  using flatten = typename detail::CombineParameterLists<
+      typename FlattenParameterLists<T1>::flatten,
+      typename FlattenParameterLists<T2, Rest...>::flatten
+    >::type;
+};
+
+/// Compute the cartesian product of multiple ParameterLists, applying ApplyT to each combination.
+///
+/// Given ApplyT and N ParameterLists, produces a ParameterList containing ApplyT applied to all
+/// possible combinations of one type from each input list. ApplyT must provide a template type
+/// alias `apply` that accepts the unpacked combination.
+///
+/// Example from parametric.cpp:
+///   CombineTypes<ApplyType<Foo3>, ParameterList<int32_t, double>, ParameterList<P1,P2,bool>, ParameterList<float>>::type
+///   => ParameterList<Foo3<int32_t,P1,float>, Foo3<int32_t,P2,float>, Foo3<int32_t,bool,float>,
+///                    Foo3<double,P1,float>, Foo3<double,P2,float>, Foo3<double,bool,float>>
 template<typename ApplyT, typename... TypeLists>
 struct CombineTypes;
 
-template<typename ApplyT, typename... UnpackedTypes>
-struct CombineTypes<ApplyT, UnpackedTypeList<UnpackedTypes...>>
-{
-  typedef typename ApplyT::template apply<UnpackedTypes...> type;
-};
-
-template<typename ApplyT, typename... UnpackedTypes, typename... Types, typename... OtherTypeLists>
-struct CombineTypes<ApplyT, UnpackedTypeList<UnpackedTypes...>, ParameterList<Types...>, OtherTypeLists...>
-{
-  typedef CombineTypes<ApplyT, UnpackedTypeList<UnpackedTypes...>, ParameterList<Types...>, OtherTypeLists...> ThisT;
-
-  template<typename T1>
-  struct type_unpack
-  {
-    typedef UnpackedTypeList<UnpackedTypes..., T1> unpacked_t;
-    typedef CombineTypes<ApplyT, unpacked_t, OtherTypeLists...> combined_t;
-  };
-  
-  typedef ParameterList<typename ThisT::template type_unpack<Types>::combined_t::type...> type;
-};
-
+/// Primary specialization: Entry point that begins recursion on the first ParameterList.
+/// Unpacks the first list and creates recursive CombineTypes instantiations for each type,
+/// pairing it with all remaining lists.
+///
+/// Example instantiation:
+///   CombineTypes<ApplyType<Foo3>, ParameterList<int32_t, double>, ParameterList<P1,P2,bool>, ParameterList<float>>
+///   Types = {int32_t, double}
+///   OtherTypeLists = {ParameterList<P1,P2,bool>, ParameterList<float>}
+///   type = ParameterList<combined_t<int32_t>, combined_t<double>>
+///   where combined_t<int32_t> = CombineTypes<ApplyType<Foo3>, UnpackedTypeList<int32_t>, ParameterList<P1,P2,bool>, ParameterList<float>>
 template<typename ApplyT, typename... Types, typename... OtherTypeLists>
 struct CombineTypes<ApplyT, ParameterList<Types...>, OtherTypeLists...>
 {
-  typedef CombineTypes<ApplyT, ParameterList<Types...>, OtherTypeLists...> ThisT;
-
   template<typename T1>
-  struct type_unpack
-  {
-    typedef UnpackedTypeList<T1> unpacked_t;
-    typedef CombineTypes<ApplyT, unpacked_t, OtherTypeLists...> combined_t;
-  };
+  using combined_t = typename CombineTypes<ApplyT, UnpackedTypeList<T1>, OtherTypeLists...>::type;
 
-  typedef ParameterList<typename ThisT::template type_unpack<Types>::combined_t::type...> type;
+  using type = typename FlattenParameterLists<combined_t<Types>...>::flatten;
+};
+
+/// Secondary specialization: Accumulates types from remaining ParameterLists.
+/// Takes types already accumulated in UnpackedTypeList, unpacks the next ParameterList,
+/// and recursively combines each new type with the accumulated types.
+///
+/// Example instantiation:
+///   CombineTypes<ApplyType<Foo3>, UnpackedTypeList<int32_t>, ParameterList<P1,P2,bool>, ParameterList<float>>
+///   UnpackedTypes = {int32_t}
+///   Types = {P1, P2, bool}
+///   OtherTypeLists = {ParameterList<float>}
+///   type = ParameterList<combined_t<P1>, combined_t<P2>, combined_t<bool>>
+///   where combined_t<P1> = CombineTypes<ApplyType<Foo3>, UnpackedTypeList<int32_t, P1>, ParameterList<float>>
+template<typename ApplyT, typename... UnpackedTypes, typename... Types, typename... OtherTypeLists>
+struct CombineTypes<ApplyT, UnpackedTypeList<UnpackedTypes...>, ParameterList<Types...>, OtherTypeLists...>
+{
+  template<typename T1>
+  using combined_t = typename CombineTypes<ApplyT, UnpackedTypeList<UnpackedTypes..., T1>, OtherTypeLists...>::type;
+
+  using type = ParameterList<combined_t<Types>...>;
+};
+
+/// Base case: All ParameterLists exhausted, apply ApplyT to the accumulated type combination.
+/// UnpackedTypes contains one complete combination of types selected from each input ParameterList.
+///
+/// Example instantiation:
+///   CombineTypes<ApplyType<Foo3>, UnpackedTypeList<int32_t, P1, float>>
+///   UnpackedTypes = {int32_t, P1, float}
+///   type = Foo3<int32_t, P1, float>
+template<typename ApplyT, typename... UnpackedTypes>
+struct CombineTypes<ApplyT, UnpackedTypeList<UnpackedTypes...>>
+{
+  using type = typename ApplyT::template apply<UnpackedTypes...>;
 };
 
 // Default ApplyT implementation
@@ -1264,8 +1320,7 @@ template<typename T>
 template<typename ApplyT, typename... TypeLists, typename FunctorT>
 void TypeWrapper<T>::apply_combination(FunctorT&& ftor)
 {
-  typedef typename CombineTypes<ApplyT, TypeLists...>::type applied_list;
-  detail::DoApply<applied_list>()(*this, std::forward<FunctorT>(ftor));
+  detail::DoApply<combine_types<ApplyT, TypeLists...>>()(*this, std::forward<FunctorT>(ftor));
 }
 
 template<typename T, typename SuperParametersT, typename JLSuperT>
