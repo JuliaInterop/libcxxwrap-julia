@@ -282,11 +282,21 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   types.add_type<Parametric<jlcxx::TypeVar<1>>>("ConcreteTemplate", abstract_template.dt()).apply<ConcreteTemplate<double>>(WrapConcreteTemplate());
 
+  typedef jlcxx::combine_types<jlcxx::ApplyType<Foo3>, ParameterList<int32_t, double>, ParameterList<P1,P2,bool>, ParameterList<float>> foo3_types;
+  static_assert(std::is_same_v<foo3_types,
+    ParameterList<
+      Foo3<int32_t,P1,float>,
+      Foo3<int32_t,P2,float>,
+      Foo3<int32_t,bool,float>,
+      Foo3<double,P1,float>,
+      Foo3<double,P2,float>,
+      Foo3<double,bool,float>>
+    >, "unexpected type combination from CombineTypes");
+
   types.add_type<Parametric<TypeVar<1>, TypeVar<2>, TypeVar<3>>, ParameterList<TypeVar<1>>>("Foo3", abstract_template.dt())
     .apply_combination<Foo3, ParameterList<int32_t, double>, ParameterList<P1,P2,bool>, ParameterList<float>>(WrapFoo3());
 
   /// Add a non-member function that uses Foo3
-  typedef jlcxx::combine_types<jlcxx::ApplyType<Foo3>, ParameterList<int32_t, double>, ParameterList<P1,P2,bool>, ParameterList<float>> foo3_types;
   jlcxx::for_each_type<foo3_types>(Foo3FreeMethod(types));
 
   types.add_type<Parametric<TypeVar<1>>>("Foo2")
