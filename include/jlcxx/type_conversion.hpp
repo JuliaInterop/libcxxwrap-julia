@@ -174,28 +174,6 @@ inline CppT* extract_pointer_nonull(const WrappedCppPtr& p)
   return extract_pointer<CppT>(p);
 }
 
-namespace detail
-{
-  template<typename T>
-  struct unused_type
-  {
-  };
-
-  template<typename T1, typename T2>
-  struct DefineIfDifferent
-  {
-    typedef T1 type;
-  };
-
-  template<typename T>
-  struct DefineIfDifferent<T,T>
-  {
-    typedef unused_type<T> type;
-  };
-
-  template<typename T1, typename T2> using define_if_different = typename DefineIfDifferent<T1,T2>::type;
-}
-
 // By default, fundamental and "POD" types are mapped directly
 template<typename T>
 struct IsMirroredType : std::bool_constant<(!std::is_class<T>::value || (std::is_standard_layout<T>::value && std::is_trivial<T>::value)) && !IsSmartPointerType<T>::value>
