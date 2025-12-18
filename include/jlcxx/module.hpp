@@ -1100,7 +1100,7 @@ template<typename T>
 inline void add_default_methods(Module& mod)
 {
   mod.set_override_module(get_cxxwrap_module());
-  if (!std::is_same_v<supertype<T>, T>)
+  if constexpr(!std::is_same_v<supertype<T>, T>)
   {
     mod.method("cxxupcast", UpCast<T>::apply);
     DownCast<supertype<T>,T>::apply(mod);
