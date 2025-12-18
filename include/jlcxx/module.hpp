@@ -64,7 +64,7 @@ struct ReturnTypeAdapter<void, Args...>
 template<typename R, typename... Args>
 struct CallFunctor
 {
-  using return_type = typename std::remove_const<decltype(ReturnTypeAdapter<R, Args...>()(std::declval<const void*>(), std::declval<static_julia_type<Args>>()...))>::type;
+  using return_type = std::remove_const_t<decltype(ReturnTypeAdapter<R, Args...>()(std::declval<const void*>(), std::declval<static_julia_type<Args>>()...))>;
 
   static return_type apply(const void* functor, static_julia_type<Args>... args)
   {
@@ -93,7 +93,7 @@ struct NeedConvertHelper
 {
   bool operator()()
   {
-    for(const bool b : {std::is_same<static_julia_type<Args>,Args>::value...})
+    for(const bool b : {std::is_same_v<static_julia_type<Args>,Args>...})
     {
       if(!b)
         return true;
@@ -519,13 +519,13 @@ template<> inline std::string fixed_int_type_name<uint64_t>() { return "uint64_t
 
 /// Trait to allow user-controlled disabling of the default constructor
 template <typename T>
-struct DefaultConstructible : std::bool_constant<std::is_default_constructible<T>::value && !std::is_abstract<T>::value>
+struct DefaultConstructible : std::bool_constant<std::is_default_constructible_v<T> && !std::is_abstract_v<T>>
 {
 };
 
 /// Trait to allow user-controlled disabling of the copy constructor
 template <typename T>
-struct CopyConstructible : std::bool_constant<std::is_copy_constructible<T>::value && !std::is_abstract<T>::value>
+struct CopyConstructible : std::bool_constant<std::is_copy_constructible_v<T> && !std::is_abstract_v<T>>
 {
 };
 
@@ -583,7 +583,7 @@ public:
 
   /// Define a new function. Overload for lambda
   template<typename LambdaT, typename... Extra,
-           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer<LambdaT>::value, bool> = true>
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer_v<LambdaT>, bool> = true>
   FunctionWrapperBase& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
@@ -606,7 +606,7 @@ public:
   template<typename T, typename R, typename LambdaT, typename... ArgsT, typename... Extra>
   void constructor(jl_datatype_t* dt, LambdaT&& lambda, R(LambdaT::*)(ArgsT...) const, Extra... extra)
   {
-    static_assert(std::is_same<T*,R>::value, "Constructor lambda function must return a pointer to the constructed object, of the correct type");
+    static_assert(std::is_same_v<T*,R>, "Constructor lambda function must return a pointer to the constructed object, of the correct type");
     detail::ExtraFunctionData extraData = detail::parse_attributes<false,true>(extra...);
     FunctionWrapperBase &new_wrapper = add_lambda("dummy", [=](ArgsT... args)
     {
@@ -1079,7 +1079,7 @@ struct DownCast
   {
     mod.method("cxxdowncast", [](SingletonType<DerivedT>, SuperT* base)
     {
-      if constexpr (std::is_polymorphic<DerivedT>::value)
+      if constexpr (std::is_polymorphic_v<DerivedT>)
       {
         return dynamic_cast<DerivedT*>(base);
       }
@@ -1089,7 +1089,7 @@ struct DownCast
       }
     });
     using newsuper_t = supertype<SuperT>;
-    if constexpr (!std::is_same<newsuper_t,SuperT>::value)
+    if constexpr (!std::is_same_v<newsuper_t,SuperT>)
     {
       DownCast<supertype<SuperT>, DerivedT>::apply(mod);
     }
@@ -1100,12 +1100,12 @@ template<typename T>
 inline void add_default_methods(Module& mod)
 {
   mod.set_override_module(get_cxxwrap_module());
-  if (!std::is_same<supertype<T>, T>::value)
+  if (!std::is_same_v<supertype<T>, T>)
   {
     mod.method("cxxupcast", UpCast<T>::apply);
     DownCast<supertype<T>,T>::apply(mod);
   }
-  if constexpr(std::is_destructible<T>::value)
+  if constexpr(std::is_destructible_v<T>)
   {
     mod.method("__delete", Finalizer<T>::finalize);
   }
@@ -1174,7 +1174,7 @@ public:
 
   /// Define a "member" function using a lambda
   template<typename LambdaT, typename... Extra,
-           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer<LambdaT>::value, bool> = true>
+           std::enable_if_t<detail::has_call_operator<LambdaT>::value && !std::is_member_function_pointer_v<LambdaT>, bool> = true>
   TypeWrapper<T>& method(const std::string& name, LambdaT&& lambda, Extra... extra)
   {
     detail::ExtraFunctionData extraData = detail::parse_attributes(extra...);
@@ -1302,7 +1302,7 @@ TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* supe
 {
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
   static_assert(!IsMirroredType<T>::value, "Mirrored types (marked with IsMirroredType) can't be added using add_type, map them directly to a struct instead and use map_type or explicitly disable mirroring for this type, e.g. define template<> struct IsMirroredType<Foo> : std::false_type { };");
-  static_assert(!std::is_scalar<T>::value, "Scalar types must be added using add_bits");
+  static_assert(!std::is_scalar_v<T>, "Scalar types must be added using add_bits");
 
   if(get_constant(name) != nullptr)
   {
@@ -1413,7 +1413,7 @@ void Module::add_bits(const std::string& name, JLSuperT* super)
 {
   assert(jl_is_datatype(super));
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
-  static_assert(std::is_scalar<T>::value, "Bits types must be a scalar type");
+  static_assert(std::is_scalar_v<T>, "Bits types must be a scalar type");
   jl_svec_t* params = is_parametric ? parameter_list<T>()() : jl_emptysvec;
   JL_GC_PUSH1(&params);
   jl_datatype_t* dt = new_bitstype(jl_symbol(name.c_str()), m_jl_mod, (jl_datatype_t*)super, params, 8*sizeof(T));
