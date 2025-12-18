@@ -314,7 +314,7 @@ namespace detail
           }
           cppname[0] = std::toupper(cppname[0]);
         }
-        tname << prefix << (std::is_unsigned<T>::value ? "U" : "") << cppname;
+        tname << prefix << (std::is_unsigned_v<T> ? "U" : "") << cppname;
         if(basename == cppname)
         {
           tname << sizeof(T)*8;

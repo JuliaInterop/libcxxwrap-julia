@@ -133,7 +133,7 @@ public:
     JL_GC_PUSH1(&m_array);
     const size_t pos = jl_array_len(m_array);
     jl_array_grow_end(m_array, 1);
-    if(jlcxx::IsMirroredType<ValueT>::value && !std::is_pointer<ValueT>::value)
+    if(jlcxx::IsMirroredType<ValueT>::value && !std::is_pointer_v<ValueT>)
     {
       // Directly set the data if our array contains a mirrored non-pointer type
       ValueT* rawarray = jlcxx_array_data<ValueT>(wrapped());
@@ -232,7 +232,7 @@ public:
   void push_back(const ValueT& val)
   {
     static_assert(Dim == 1, "ArrayRef::push_back is only for 1D ArrayRef");
-    static_assert(std::is_same<julia_t,ValueT>::value, "ArrayRef::push_back is only for arrays of fundamental types");
+    static_assert(std::is_same_v<julia_t,ValueT>, "ArrayRef::push_back is only for arrays of fundamental types");
     jl_array_t* arr_ptr = wrapped();
     JL_GC_PUSH1(&arr_ptr);
     const size_t pos = size();
@@ -258,11 +258,11 @@ public:
 
   ValueT& operator[](const std::size_t i)
   {
-    if constexpr(std::is_same<julia_t, ValueT>::value)
+    if constexpr(std::is_same_v<julia_t, ValueT>)
     {
       return data()[i];
     }
-    else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value)
+    else if constexpr(std::is_same_v<julia_t, static_julia_type<ValueT>> && !std::is_same_v<julia_t, WrappedCppPtr>)
     {
       return *reinterpret_cast<ValueT*>(&data()[i]);
     }
@@ -274,11 +274,11 @@ public:
 
   const ValueT& operator[](const std::size_t i) const
   {
-    if constexpr(std::is_same<julia_t, ValueT>::value)
+    if constexpr(std::is_same_v<julia_t, ValueT>)
     {
       return data()[i];
     }
-     else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value)
+     else if constexpr(std::is_same_v<julia_t, static_julia_type<ValueT>> && !std::is_same_v<julia_t, WrappedCppPtr>)
     {
       return *reinterpret_cast<ValueT*>(&data()[i]);
     }

@@ -17,7 +17,7 @@ namespace detail
     static void apply(jl_value_t** boxed, const TupleT& tup)
     {
       boxed[I] = box<std::tuple_element_t<I,TupleT>>(std::get<I>(tup));
-      AppendTupleValues<I+1, std::tuple_size<TupleT>::value>::apply(boxed, tup);
+      AppendTupleValues<I+1, std::tuple_size_v<TupleT>>::apply(boxed, tup);
     }
   };
 
@@ -37,7 +37,7 @@ namespace detail
     jl_datatype_t* concrete_dt = nullptr;
     JL_GC_PUSH2(&result, &concrete_dt);
     {
-      constexpr std::size_t tup_sz = std::tuple_size<TupleT>::value;
+      constexpr std::size_t tup_sz = std::tuple_size_v<TupleT>;
       jl_value_t** args;
       JL_GC_PUSHARGS(args, tup_sz);
       detail::AppendTupleValues<0, tup_sz>::apply(args, tp);
@@ -138,7 +138,7 @@ struct ConvertToCpp<std::tuple<TypesT...>, TupleTrait>
   using cpp_t = std::tuple<TypesT...>;
   inline cpp_t operator()(jl_value_t* julia_val) const
   {
-    constexpr std::size_t tup_sz = std::tuple_size<cpp_t>::value;
+    constexpr std::size_t tup_sz = std::tuple_size_v<cpp_t>;
     auto unpack_tuple = [&]<std::size_t... Is>(std::index_sequence<Is...>)
     {
       return std::make_tuple((unbox<std::tuple_element_t<Is, cpp_t>>(jl_get_nth_field_checked(julia_val, Is)))...);

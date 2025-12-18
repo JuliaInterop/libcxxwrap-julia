@@ -135,7 +135,7 @@ namespace detail
 template<typename T> using supertype = typename detail::_get_supertype<T>::type;
 
 /// Remove reference and const from a type
-template<typename T> using remove_const_ref = typename std::remove_const<typename std::remove_reference<T>::type>::type;
+template<typename T> using remove_const_ref = std::remove_const_t<std::remove_reference_t<T>>;
 
 /// Indicate if a type is a smart pointer
 template<typename T> struct IsSmartPointerType
@@ -176,7 +176,7 @@ inline CppT* extract_pointer_nonull(const WrappedCppPtr& p)
 
 // By default, fundamental and "POD" types are mapped directly
 template<typename T>
-struct IsMirroredType : std::bool_constant<(!std::is_class<T>::value || (std::is_standard_layout<T>::value && std::is_trivial<T>::value)) && !IsSmartPointerType<T>::value>
+struct IsMirroredType : std::bool_constant<(!std::is_class_v<T> || (std::is_standard_layout_v<T> && std::is_trivial_v<T>)) && !IsSmartPointerType<T>::value>
 {
 };
 
@@ -236,7 +236,7 @@ struct MappingTrait<FILE*>
 };
 
 template<typename T>
-struct MappingTrait<T, typename std::enable_if<!IsMirroredType<T>::value && !IsSmartPointerType<T>::value>::type>
+struct MappingTrait<T, std::enable_if_t<!IsMirroredType<T>::value && !IsSmartPointerType<T>::value>>
 {
   using type = CxxWrappedTrait<NoCxxWrappedSubtrait>;
 };
@@ -362,7 +362,7 @@ CachedDatatype& stored_type()
 template<typename T>
 void set_julia_type(jl_datatype_t* dt, bool protect = true)
 {
-  using nonconst_t = typename std::remove_const<T>::type;
+  using nonconst_t = std::remove_const_t<T>;
   CachedDatatype& cache = stored_type<nonconst_t>();
   if(cache.get_dt() != nullptr)
   {
@@ -388,7 +388,7 @@ public:
 template<typename T>
 inline jl_datatype_t* julia_type()
 {
-  using nonconst_t = typename std::remove_const<T>::type;
+  using nonconst_t = std::remove_const_t<T>;
   jl_datatype_t* dt = stored_type<nonconst_t>().get_dt();
   if(dt == nullptr)
   {
@@ -401,7 +401,7 @@ inline jl_datatype_t* julia_type()
 template <typename T>
 bool has_julia_type()
 {
-  using nonconst_t = typename std::remove_const<T>::type;
+  using nonconst_t = std::remove_const_t<T>;
   return stored_type<nonconst_t>().get_dt() != nullptr;
 }
 
@@ -409,7 +409,7 @@ bool has_julia_type()
 template <typename T>
 void create_julia_type()
 {
-  using nonconst_t = typename std::remove_const<T>::type;
+  using nonconst_t = std::remove_const_t<T>;
   jl_datatype_t* result = julia_type_factory<nonconst_t>::julia_type();
   if(!has_julia_type<nonconst_t>())
   {
@@ -420,7 +420,7 @@ void create_julia_type()
 template<typename T>
 void create_if_not_exists()
 {
-  using nonconst_t = typename std::remove_const<T>::type;
+  using nonconst_t = std::remove_const_t<T>;
   static bool exists = false;
   if(!exists)
   {
@@ -633,7 +633,7 @@ BoxedValue<T> boxed_cpp_pointer(T* cpp_ptr, jl_datatype_t* dt, bool add_finalize
 template<typename T>
 BoxedValue<T> julia_owned(T* cpp_ptr)
 {
-  static_assert(!std::is_fundamental<T>::value, "Ownership can't be transferred for fundamental types");
+  static_assert(!std::is_fundamental_v<T>, "Ownership can't be transferred for fundamental types");
   const bool finalize = true;
   return boxed_cpp_pointer(cpp_ptr, julia_type<T>(), finalize);
 }
@@ -647,8 +647,8 @@ struct ConvertToJulia
   template<typename CppT>
   jl_value_t* operator()(CppT&& cpp_val) const
   {
-    static_assert(std::is_same<static_julia_type<T>, WrappedCppPtr>::value, "No appropriate specialization for ConvertToJulia");
-    static_assert(std::is_class<T>::value, "Need class type for conversion");
+    static_assert(std::is_same_v<static_julia_type<T>, WrappedCppPtr>, "No appropriate specialization for ConvertToJulia");
+    static_assert(std::is_class_v<T>, "Need class type for conversion");
     return julia_owned(new T(std::move(cpp_val)));
   }
 };
@@ -658,7 +658,7 @@ struct ConvertToJulia<T&, WrappedPtrTrait>
 {
   WrappedCppPtr operator()(T& cpp_val) const
   {
-    return {reinterpret_cast<void*>(const_cast<typename std::remove_const<T>::type*>(&cpp_val))};
+    return {reinterpret_cast<void*>(const_cast<std::remove_const_t<T>*>(&cpp_val))};
   }
 };
 
@@ -667,7 +667,7 @@ struct ConvertToJulia<T*, WrappedPtrTrait>
 {
   WrappedCppPtr operator()(T* cpp_val) const
   {
-    return {reinterpret_cast<void*>(const_cast<typename std::remove_const<T>::type*>(cpp_val))};
+    return {reinterpret_cast<void*>(const_cast<std::remove_const_t<T>*>(cpp_val))};
   }
 };
 

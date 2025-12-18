@@ -555,7 +555,7 @@ struct WrapSTLContainer<std::priority_queue> : STLTypeWrapperBase<WrapSTLContain
     wrapped.method("cppsize", &WrappedT::size);
     wrapped.method("pq_push!", [] (WrappedT& v, const_reftype<WrappedT> val) { v.push(val); });
     wrapped.method("pq_pop!", [] (WrappedT& v) { v.pop(); });
-    if constexpr(std::is_same<T,bool>::value)
+    if constexpr(std::is_same_v<T,bool>)
     {
       wrapped.method("pq_top", [] (WrappedT& v) { return bool(v.top()); });
     }

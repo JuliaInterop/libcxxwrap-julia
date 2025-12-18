@@ -100,7 +100,7 @@ PtrT<T> apply_impl(const PtrT<T>& smart_ptr, double)
 template<template<typename...> class PtrT, typename T>
 struct ConvertToConst<PtrT<T>>
 {
-  static auto apply(const PtrT<typename std::remove_const<T>::type>& smart_ptr)
+  static auto apply(const PtrT<std::remove_const_t<T>>& smart_ptr)
   {
     return detail::apply_impl(smart_ptr, 0);
   }
@@ -137,7 +137,7 @@ struct split_other_ptr
 template<template<typename...> class PtrT, typename PointeeT, typename... ExtraArgs>
 struct split_other_ptr<PtrT<PointeeT, ExtraArgs...>>
 {
-  using nonconst_pointee_t = typename std::remove_const<PointeeT>::type;
+  using nonconst_pointee_t = std::remove_const_t<PointeeT>;
   using other_t = PtrT<nonconst_pointee_t, ExtraArgs...>;
   using const_other_t = PtrT<const nonconst_pointee_t, ExtraArgs...>;
 };
@@ -145,7 +145,7 @@ struct split_other_ptr<PtrT<PointeeT, ExtraArgs...>>
 template<template<typename...> class PtrT, typename PointeeT, typename OtherPtrT, typename... ExtraArgs>
 struct SmartPtrMethods<PtrT<PointeeT, ExtraArgs...>, OtherPtrT>
 {
-  using NonConstPointeeT = typename std::remove_const<PointeeT>::type;
+  using NonConstPointeeT = std::remove_const_t<PointeeT>;
   using WrappedT = PtrT<NonConstPointeeT, ExtraArgs...>;
   using ConstWrappedT = PtrT<const NonConstPointeeT, ExtraArgs...>;
   using ConstOtherPtrT = typename split_other_ptr<OtherPtrT>::const_other_t;
@@ -178,8 +178,8 @@ struct SmartPtrMethods<PtrT<PointeeT, ExtraArgs...>, OtherPtrT>
     assert(has_julia_type<WrappedT>());
     mod.set_override_module(get_cxxwrap_module());
     ConvertToConst<WrappedT>::wrap(mod);
-    ConditionalConstructFromOther<!std::is_same<OtherPtrT, NoSmartOther>::value>::apply(mod);
-    ConditionalCastToBase<!std::is_same<NonConstPointeeT,supertype<NonConstPointeeT>>::value && !std::is_same<std::unique_ptr<NonConstPointeeT>, WrappedT>::value>::apply(mod);
+    ConditionalConstructFromOther<!std::is_same_v<OtherPtrT, NoSmartOther>>::apply(mod);
+    ConditionalCastToBase<!std::is_same_v<NonConstPointeeT,supertype<NonConstPointeeT>> && !std::is_same_v<std::unique_ptr<NonConstPointeeT>, WrappedT>>::apply(mod);
     mod.unset_override_module();
   }
 };
@@ -248,7 +248,7 @@ TypeWrapper1& add_smart_pointer(Module& mod, const std::string& name)
 struct SmartPointerTrait {};
 
 template<typename T>
-struct MappingTrait<T, typename std::enable_if<IsSmartPointerType<T>::value>::type>
+struct MappingTrait<T, std::enable_if_t<IsSmartPointerType<T>::value>>
 {
   using type = CxxWrappedTrait<SmartPointerTrait>;
 };
@@ -278,7 +278,7 @@ struct get_pointee
 template<template<typename...> class PtrT, typename T, typename... OtherParamsT>
 struct get_pointee<PtrT<T, OtherParamsT...>>
 {
-  using pointee_t = typename std::remove_const<T>::type;
+  using pointee_t = std::remove_const_t<T>;
   using pointer_t = PtrT<pointee_t>;
   using const_pointer_t = PtrT<const pointee_t>;
 };
@@ -294,7 +294,7 @@ struct julia_type_factory<T, CxxWrappedTrait<SmartPointerTrait>>
     using ConstMappedT = typename detail::get_pointee<T>::const_pointer_t;
     using NonConstMappedT = typename detail::get_pointee<T>::pointer_t;
     create_if_not_exists<PointeeT>();
-    if constexpr(!std::is_same<supertype<PointeeT>, PointeeT>::value)
+    if constexpr(!std::is_same_v<supertype<PointeeT>, PointeeT>)
     {
       create_if_not_exists<typename smartptr::ConvertToBase<NonConstMappedT>::SuperPtrT>();
     }
