@@ -13,7 +13,7 @@ struct BuildEquivalenceInner
   template<typename T>
   void operator()()
   {
-    if(std::is_same_v<SourceT,T>)
+    if constexpr (std::is_same_v<SourceT,T>)
     {
       m_fundamental_types_matched.push_back(jl_cstr_to_string(fundamental_int_type_name<SourceT>().c_str()));
       m_equivalent_types.push_back(jl_cstr_to_string(fixed_int_type_name<T>().c_str()));
