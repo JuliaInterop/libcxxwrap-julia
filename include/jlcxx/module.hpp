@@ -846,14 +846,22 @@ struct BuildParameterList<T<ParametersT...>>
 namespace detail
 {
   template<typename... Types>
-  struct DoApply;
-
-  template<>
-  struct DoApply<>
+  struct DoApply
   {
     template<typename WrapperT, typename FunctorT>
-    void operator()(WrapperT&, FunctorT&&)
+    void operator()(WrapperT& w, FunctorT&& ftor)
     {
+      (..., DoApply<Types>()(w, std::forward<FunctorT>(ftor)));
+    }
+  };
+
+  template<typename... Types>
+  struct DoApply<ParameterList<Types...>>
+  {
+    template<typename WrapperT, typename FunctorT>
+    void operator()(WrapperT& w, FunctorT&& ftor)
+    {
+      (..., DoApply<Types>()(w, std::forward<FunctorT>(ftor)));
     }
   };
 
@@ -866,39 +874,26 @@ namespace detail
       w.template apply<AppT>(std::forward<FunctorT>(ftor));
     }
   };
-
-  template<typename... Types>
-  struct DoApply<ParameterList<Types...>>
-  {
-    template<typename WrapperT, typename FunctorT>
-    void operator()(WrapperT& w, FunctorT&& ftor)
-    {
-      DoApply<Types...>()(w, std::forward<FunctorT>(ftor));
-    }
-  };
-
-  template<typename T1, typename... Types>
-  struct DoApply<T1, Types...>
-  {
-    template<typename WrapperT, typename FunctorT>
-    void operator()(WrapperT& w, FunctorT&& ftor)
-    {
-      DoApply<T1>()(w, std::forward<FunctorT>(ftor));
-      DoApply<Types...>()(w, std::forward<FunctorT>(ftor));
-    }
-  };
 }
 
 /// Execute a functor on each type
 template<typename... Types>
-struct ForEachType;
-
-template<>
-struct ForEachType<>
+struct ForEachType
 {
   template<typename FunctorT>
-  void operator()(FunctorT&&)
+  void operator()(FunctorT&& ftor)
   {
+    (..., ForEachType<Types>()(std::forward<FunctorT>(ftor)));
+  }
+};
+
+template<typename... Types>
+struct ForEachType<ParameterList<Types...>>
+{
+  template<typename FunctorT>
+  void operator()(FunctorT&& ftor)
+  {
+    (..., ForEachType<Types>()(std::forward<FunctorT>(ftor)));
   }
 };
 
@@ -910,30 +905,9 @@ struct ForEachType<AppT>
   {
 #ifdef _MSC_VER
     ftor.operator()<AppT>();
-#else 
+#else
     ftor.template operator()<AppT>();
 #endif
-  }
-};
-
-template<typename... Types>
-struct ForEachType<ParameterList<Types...>>
-{
-  template<typename FunctorT>
-  void operator()(FunctorT&& ftor)
-  {
-    ForEachType<Types...>()(std::forward<FunctorT>(ftor));
-  }
-};
-
-template<typename T1, typename... Types>
-struct ForEachType<T1, Types...>
-{
-  template<typename FunctorT>
-  void operator()(FunctorT&& ftor)
-  {
-    ForEachType<T1>()(std::forward<FunctorT>(ftor));
-    ForEachType<Types...>()(std::forward<FunctorT>(ftor));
   }
 };
 
