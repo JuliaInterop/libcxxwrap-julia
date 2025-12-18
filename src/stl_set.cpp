@@ -1,16 +1,11 @@
 #include "jlcxx/stl.hpp"
 
-namespace jlcxx
-{
-
-namespace stl
+namespace jlcxx::stl
 {
 
 void apply_set()
 {
   WrapSTLContainer<std::set>().apply_combination<stltypes>();
-}
-
 }
 
 }

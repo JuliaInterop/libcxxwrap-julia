@@ -1,16 +1,11 @@
 #include "jlcxx/stl.hpp"
 
-namespace jlcxx
-{
-
-namespace stl
+namespace jlcxx::stl
 {
 
 void apply_list()
 {
   WrapSTLContainer<std::list>().apply_combination<stltypes>();
-}
-
 }
 
 }

@@ -1,16 +1,11 @@
 #include "jlcxx/stl.hpp"
 
-namespace jlcxx
-{
-
-namespace stl
+namespace jlcxx::stl
 {
 
 void apply_vector()
 {
   WrapSTLContainer<std::vector>().apply_combination<stltypes>();
-}
-
 }
 
 }
