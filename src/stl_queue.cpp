@@ -1,16 +1,11 @@
 #include "jlcxx/stl.hpp"
 
-namespace jlcxx
-{
-
-namespace stl
+namespace jlcxx::stl
 {
 
 void apply_queue()
 {
   WrapSTLContainer<std::queue>().apply_combination<stltypes>();
-}
-
 }
 
 }

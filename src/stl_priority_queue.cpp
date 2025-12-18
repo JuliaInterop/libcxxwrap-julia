@@ -1,16 +1,11 @@
 #include "jlcxx/stl.hpp"
 
-namespace jlcxx
-{
-
-namespace stl
+namespace jlcxx::stl
 {
 
 void apply_priority_queue()
 {
   WrapSTLContainer<std::priority_queue>().apply_combination<stltypes>();
-}
-
 }
 
 }
