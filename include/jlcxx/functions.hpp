@@ -137,6 +137,29 @@ struct ConvertToCpp<SafeCFunction>
 
 namespace detail
 {
+  // Allow fundamental pointer types to be passed as e.g. Ptr{Int32} instead of CxxPtr{Int32}
+  template<typename T>
+  struct FundamentalPtrT
+  {
+    static jl_datatype_t* value()
+    {
+      return julia_type<T>();
+    }
+  };
+
+  template<typename T>
+  struct FundamentalPtrT<T*>
+  {
+    static jl_datatype_t* value()
+    {
+      if constexpr (std::is_fundamental_v<T>)
+      {
+        return (jl_datatype_t*)jl_apply_type1((jl_value_t*)jl_pointer_type, (jl_value_t*)julia_type<T>());
+      }
+      return julia_type<T*>();
+    }
+  };
+
   template<typename SignatureT>
   struct SplitSignature;
 
@@ -146,9 +169,26 @@ namespace detail
     typedef R return_type;
     typedef R(*fptr_t)(ArgsT...);
 
-    std::vector<jl_datatype_t*> operator()()
+    jl_datatype_t* expected_return_type()
     {
+      create_if_not_exists<R>();
+      return julia_type<return_type>();
+    }
+
+    jl_datatype_t* fundamental_ptr_return_type()
+    {
+      return FundamentalPtrT<return_type>::value();
+    }
+
+    std::vector<jl_datatype_t*> arg_types()
+    {
+      (create_if_not_exists<ArgsT>(), ...);
       return std::vector<jl_datatype_t*>({julia_type<ArgsT>()...});
+    }
+
+    std::vector<jl_datatype_t*> fundamental_ptr_types()
+    {
+      return std::vector<jl_datatype_t*>({FundamentalPtrT<ArgsT>::value()...});
     }
 
     fptr_t cast_ptr(void* ptr)
@@ -166,15 +206,16 @@ typename detail::SplitSignature<SignatureT>::fptr_t make_function_pointer(SafeCF
   JL_GC_PUSH3(&data.fptr, &data.return_type, &data.argtypes);
 
   // Check return type
-  jl_datatype_t* expected_rt = julia_type<typename SplitterT::return_type>();
-  if(expected_rt != data.return_type)
+  jl_datatype_t* expected_rt = SplitterT().expected_return_type();
+  if(expected_rt != data.return_type && SplitterT().fundamental_ptr_return_type() != data.return_type)
   {
     JL_GC_POP();
     throw std::runtime_error("Incorrect datatype for cfunction return type, expected " + julia_type_name(expected_rt) + " but got " + julia_type_name(data.return_type));
   }
 
   // Check arguments
-  const std::vector<jl_datatype_t*> expected_argstypes = SplitterT()();
+  const std::vector<jl_datatype_t*> expected_argstypes = SplitterT().arg_types();
+  const std::vector<jl_datatype_t*> fundamental_ptr_argstypes = SplitterT().fundamental_ptr_types();
   ArrayRef<jl_value_t*> argtypes(data.argtypes);
   const int nb_args = expected_argstypes.size();
   if(nb_args != static_cast<int>(argtypes.size()))
@@ -187,7 +228,7 @@ typename detail::SplitSignature<SignatureT>::fptr_t make_function_pointer(SafeCF
   for(int i = 0; i != nb_args; ++i)
   {
     jl_datatype_t* argt = (jl_datatype_t*)argtypes[i];
-    if(argt != expected_argstypes[i])
+    if(argt != expected_argstypes[i] && argt != fundamental_ptr_argstypes[i])
     {
       std::stringstream err_sstr;
       err_sstr << "Incorrect argument type for cfunction at position " << i+1 << ", expected: " << julia_type_name(expected_argstypes[i]) << ", obtained: " << julia_type_name(argt);

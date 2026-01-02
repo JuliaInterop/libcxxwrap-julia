@@ -353,6 +353,20 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
   {
     b = !b;
   });
+
+  mod.method("test_safe_cfunction_uint", [](jlcxx::SafeCFunction f_data)
+  {
+    auto f = jlcxx::make_function_pointer<int(unsigned int*,int)>(f_data);
+    unsigned int buffer[] = {1,2,3};
+    return f(buffer, 3);
+  });
+
+  mod.method("test_safe_cfunction_uint64", [](jlcxx::SafeCFunction f_data)
+  {
+    auto f = jlcxx::make_function_pointer<uint64_t*(int)>(f_data);
+    uint64_t* buffer = f(3);
+    return buffer[0] + buffer[1] + buffer[2];
+  });
  }
 
 }
