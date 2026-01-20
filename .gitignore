@@ -5,3 +5,6 @@
 /CMakeSettings.json
 /build
 /.vscode
+*.exe
+*.obj
+*.lib
