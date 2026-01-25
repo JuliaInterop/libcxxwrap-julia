@@ -222,6 +222,27 @@ struct WrapCppVector2
   }
 };
 
+
+  // Cyclic dependency in paxrametric types requiring split
+  // of type and method wrappers declarations.
+  //
+  // For method declarations, CyclicParamDepB depends on CyclicParamDepA, that
+  // depends itself on CyclicParamDepA.
+  //
+  // See https://github.com/JuliaInterop/libcxxwrap-julia/issues/138
+
+  template<typename> class CyclicParamDepB;
+
+  template<typename T>
+  struct CyclicParamDepA{
+    T f(){return T(1);}
+  };
+
+
+  template<typename T>
+  struct CyclicParamDepB{
+    T f(){return T(2);}
+  };
 } // namespace parametric
 
 namespace jlcxx
@@ -254,6 +275,10 @@ namespace jlcxx
 
   template<typename T> struct IsMirroredType<PartialTemplate<T>> : std::false_type { };
   template<typename T> struct SuperType<PartialTemplate<T>> { typedef TemplateType<P2,T> type; };
+
+  template<typename T> struct IsMirroredType<CyclicParamDepA<T>> : std::false_type { };
+  template<typename T> struct IsMirroredType<CyclicParamDepB<T>> : std::false_type { };
+
 
 } // namespace jlcxx
 
@@ -307,4 +332,21 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
 
   types.add_type<Parametric<TypeVar<1>, TypeVar<2>>, ParameterList<TypeVar<1>>>("CppVector2", jlcxx::julia_type("AbstractVector"))
     .apply<CppVector2<double,float>>(WrapCppVector2());
+
+  /// Add wrappes of the cylic dependency example
+  auto wrappers_a = types.add_type<jlcxx::Parametric<jlcxx::TypeVar<1>>>("CyclicParamDepA").apply<parametric::CyclicParamDepA<int>,
+                                                                                                  parametric::CyclicParamDepA<double>
+                                                                                                  >();
+  auto wrappers_b = types.add_type<jlcxx::Parametric<jlcxx::TypeVar<1>>>("CyclicParamDepB").apply<parametric::CyclicParamDepB<int>,
+                                                                                                  parametric::CyclicParamDepB<double>>();
+
+  wrappers_a.apply([](auto wrapped){
+    typedef typename decltype(wrapped)::type WrappedT;
+    wrapped.method("f", &WrappedT::f);
+  });
+
+  wrappers_b.apply([](auto wrapped){
+    typedef typename decltype(wrapped)::type WrappedT;
+    wrapped.method("f", &WrappedT::f);
+  });
 }

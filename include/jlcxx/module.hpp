@@ -119,7 +119,7 @@ BoxedValue<T> create(ArgsT&&... args)
 {
   jl_datatype_t* dt = julia_type<T>();
   assert(jl_is_mutable_datatype(dt));
-  
+
 
   T* cpp_obj = new T(std::forward<ArgsT>(args)...);
 
@@ -391,7 +391,7 @@ struct ParameterList
     {
       if(paramlist[i] == nullptr)
       {
-        std::vector<std::string> typenames({(typeid(ParametersT).name())...}); 
+        std::vector<std::string> typenames({(typeid(ParametersT).name())...});
         throw std::runtime_error("Attempt to use unmapped type " + typenames[i] + " in parameter list");
       }
     }
@@ -808,6 +808,7 @@ private:
   std::vector<jl_datatype_t*> m_box_types;
 
   template<class T> friend class TypeWrapper;
+  template<typename T, typename... AppliedTypesT> friend class ParametricTypeWrappers;
 };
 
 template<typename T>
@@ -1112,6 +1113,9 @@ inline void add_default_methods(Module& mod)
   mod.unset_override_module();
 }
 
+template<typename T, typename... AppliedTypesT>
+class ParametricTypeWrappers;
+
 /// Helper class to wrap type methods
 template<typename T>
 class TypeWrapper
@@ -1209,11 +1213,18 @@ public:
     return *this;
   }
 
+  template<typename... AppliedTypesT>
+  ParametricTypeWrappers<T, AppliedTypesT...> apply()
+  {
+    static_assert(detail::IsParametric<T>::value, "Apply can only be called on parametric types");
+    return ParametricTypeWrappers<T, AppliedTypesT...>(*this);
+  }
+
   template<typename... AppliedTypesT, typename FunctorT>
   TypeWrapper<T>& apply(FunctorT&& apply_ftor)
   {
     static_assert(detail::IsParametric<T>::value, "Apply can only be called on parametric types");
-    auto dummy = {this->template apply_internal<AppliedTypesT>(std::forward<FunctorT>(apply_ftor))...};
+    apply<AppliedTypesT...>().apply(std::forward<FunctorT>(apply_ftor));
     return *this;
   }
 
@@ -1273,6 +1284,8 @@ private:
   Module& m_module;
   jl_datatype_t* m_dt;
   jl_datatype_t* m_box_dt;
+
+  template<typename U, typename... AppliedTypesT> friend class ParametricTypeWrappers;
 };
 
 using TypeWrapper1 = TypeWrapper<Parametric<TypeVar<1>>>;
@@ -1381,6 +1394,98 @@ TypeWrapper<T> Module::add_type(const std::string& name, JLSuperT* super)
 {
   return add_type_internal<T, SuperParametersT>(name, super);
 }
+
+/// Collection of the wrappers of each class template instantiation, that is on
+/// Julia side, each fully-parametrized type.
+///
+/// Use the TypeWrapper::apply<...>() method to produce this collection.
+///
+/// The method ParametricTypeWrappers::apply(FunctorT&&) can then be used to add
+/// the wrappers for the class template methods.
+///
+template<typename T, typename... AppliedTypesT>
+class ParametricTypeWrappers
+{
+public:
+  ParametricTypeWrappers(TypeWrapper<T>& base_wrapper):
+    m_generic_type(base_wrapper),
+    m_specialized_types(std::make_tuple(create_type<AppliedTypesT>()...))
+  {
+  }
+
+  ///Apply a functor, ftor, to each wrapper.
+  ///
+  ///Usage example.
+  ///
+  ///  Wrap methods, `method1` and `method2` of a class template.
+  ///
+  ///  ```
+  ///  wrappers.apply([](auto wrapped)
+  ///  {
+  ///    typedef typename decltype(wrapped)::type WrappedT;
+  ///    wrapped.method("method1", &WrappedT::method1);
+  ///    wrapped.method("method2", &WrappedT::method2);
+  ///  });
+  ///  ```
+
+  template<typename FunctorT>
+  void apply(FunctorT&& ftor)
+  {
+    ssize_t i = 0;
+    apply_internal(std::forward<FunctorT>(ftor), m_specialized_types,
+                   std::index_sequence_for<AppliedTypesT...>{});
+  }
+
+private:
+
+  template<typename FunctorT, typename Tuple, std::size_t... I>
+  constexpr void apply_internal(FunctorT&& ftor, Tuple&& t, std::index_sequence<I...>)
+  {
+    //note: cast to decayed type required to allow in the functor statements like
+    //`using WrappedT = typename TypeWrapperT::type`
+    (void(ftor(static_cast<std::decay_t<decltype(std::get<I>(t))>>(std::get<I>(t)))), ...);
+  }
+
+  template<typename AppliedT>
+  TypeWrapper<AppliedT>
+  create_type()
+  {
+    static_assert(!IsMirroredType<AppliedT>::value, "Mirrored type templates can't be added using add_type and apply, you should explicitly disable mirroring for this type, e.g. define template<typename... T> struct IsMirroredType<Foo<T...>> : std::false_type { }; in the jlcxx namespace.");
+
+    static constexpr int nb_julia_parameters = parameter_list<T>::nb_parameters;
+    static constexpr int nb_cpp_parameters = parameter_list<AppliedT>::nb_parameters;
+    static_assert(nb_cpp_parameters != 0, "No parameters found when applying type. Specialize jlcxx::BuildParameterList for your combination of type and non-type parameters.");
+    static_assert(nb_cpp_parameters >= nb_julia_parameters, "Parametric type applied to wrong number of parameters.");
+    const bool is_abstract = jl_is_abstracttype(m_generic_type.dt());
+
+    detail::create_parameter_types<nb_julia_parameters>(parameter_list<AppliedT>(), std::make_index_sequence<nb_cpp_parameters>());
+
+    jl_datatype_t* app_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_generic_type.dt(), parameter_list<AppliedT>()(nb_julia_parameters));
+    jl_datatype_t* app_box_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_generic_type.m_box_dt, parameter_list<AppliedT>()(nb_julia_parameters));
+
+    if(has_julia_type<AppliedT>())
+      {
+        std::cout << "existing type found : " << app_box_dt << " <-> " << julia_type<AppliedT>() << std::endl;
+        assert(julia_type<AppliedT>() == app_box_dt);
+      }
+    else
+      {
+        set_julia_type<AppliedT>(app_box_dt);
+        m_generic_type.module().register_type(app_box_dt);
+      }
+
+
+    m_generic_type.module().template add_default_constructor<AppliedT>(app_dt);
+    m_generic_type.module().template add_copy_constructor<AppliedT>(app_dt);
+    add_default_methods<AppliedT>(m_generic_type.module());
+
+    return TypeWrapper<AppliedT>(m_generic_type.module(), app_dt, app_box_dt);
+  }
+
+private:
+  TypeWrapper<T>& m_generic_type;
+  std::tuple<TypeWrapper<AppliedTypesT>...> m_specialized_types;
+};
 
 namespace detail
 {

@@ -37,6 +37,12 @@ struct WrapManyParams
 
 }
 
+namespace jlcxx
+{
+  using namespace test_module;
+  template<typename... T> struct IsMirroredType<ManyParams<T...>> : std::false_type { };
+}
+
 JLCXX_MODULE register_test_module(jlcxx::Module& mod)
 {
   using namespace test_module;
