@@ -1248,39 +1248,6 @@ public:
 
 private:
 
-  template<typename AppliedT, typename FunctorT>
-  int apply_internal(FunctorT&& apply_ftor)
-  {
-    static constexpr int nb_julia_parameters = parameter_list<T>::nb_parameters;
-    static constexpr int nb_cpp_parameters = parameter_list<AppliedT>::nb_parameters;
-    static_assert(nb_cpp_parameters != 0, "No parameters found when applying type. Specialize jlcxx::BuildParameterList for your combination of type and non-type parameters.");
-    static_assert(nb_cpp_parameters >= nb_julia_parameters, "Parametric type applied to wrong number of parameters.");
-    const bool is_abstract = jl_is_abstracttype(m_dt);
-
-    detail::create_parameter_types<nb_julia_parameters>(parameter_list<AppliedT>(), std::make_index_sequence<nb_cpp_parameters>());
-
-    jl_datatype_t* app_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_dt, parameter_list<AppliedT>()(nb_julia_parameters));
-    jl_datatype_t* app_box_dt = (jl_datatype_t*)apply_type((jl_value_t*)m_box_dt, parameter_list<AppliedT>()(nb_julia_parameters));
-
-    if(has_julia_type<AppliedT>())
-    {
-      std::cout << "existing type found : " << app_box_dt << " <-> " << julia_type<AppliedT>() << std::endl;
-      assert(julia_type<AppliedT>() == app_box_dt);
-    }
-    else
-    {
-      set_julia_type<AppliedT>(app_box_dt);
-      m_module.register_type(app_box_dt);
-    }
-    m_module.add_default_constructor<AppliedT>(app_dt);
-    m_module.add_copy_constructor<AppliedT>(app_dt);
-
-    apply_ftor(TypeWrapper<AppliedT>(m_module, app_dt, app_box_dt));
-
-    add_default_methods<AppliedT>(m_module);
-
-    return 0;
-  }
   Module& m_module;
   jl_datatype_t* m_dt;
   jl_datatype_t* m_box_dt;
