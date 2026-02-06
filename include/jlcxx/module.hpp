@@ -1441,7 +1441,6 @@ private:
         m_generic_type.module().register_type(app_box_dt);
       }
 
-
     m_generic_type.module().template add_default_constructor<AppliedT>(app_dt);
     m_generic_type.module().template add_copy_constructor<AppliedT>(app_dt);
     add_default_methods<AppliedT>(m_generic_type.module());

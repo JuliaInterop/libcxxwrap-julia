@@ -235,13 +235,13 @@ struct WrapCppVector2
 
   template<typename T>
   struct CyclicParamDepA{
-    T f(){return T(1);}
+    bool f(const CyclicParamDepB<T>&){return true;}
   };
 
 
   template<typename T>
   struct CyclicParamDepB{
-    T f(){return T(2);}
+    bool f(const CyclicParamDepA<T>&){return true; }
   };
 } // namespace parametric
 
@@ -278,7 +278,6 @@ namespace jlcxx
 
   template<typename T> struct IsMirroredType<CyclicParamDepA<T>> : std::false_type { };
   template<typename T> struct IsMirroredType<CyclicParamDepB<T>> : std::false_type { };
-
 
 } // namespace jlcxx
 
