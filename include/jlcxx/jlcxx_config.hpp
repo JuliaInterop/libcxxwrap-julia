@@ -18,6 +18,10 @@
 #define JLCXX_VERSION_MINOR 14
 #define JLCXX_VERSION_PATCH 9
 
+#if (defined(_MSVC_LANG) && _MSVC_LANG < 202002L) || (!defined(_MSVC_LANG) && __cplusplus < 202002L)
+#error "This library requires at least C++20"
+#endif
+
 // From https://stackoverflow.com/questions/5459868/concatenate-int-to-string-using-c-preprocessor
 #define __JLCXX_STR_HELPER(x) #x
 #define __JLCXX_STR(x) __JLCXX_STR_HELPER(x)
