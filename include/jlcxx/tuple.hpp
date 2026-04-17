@@ -61,40 +61,30 @@ namespace detail
 
 struct TupleTrait {};
 
-template<typename... TypesT>
-struct TraitSelector<std::tuple<TypesT...>>
-{
-  using type = TupleTrait;
-};
-
 // Tuples are always copied because the memory layout in C++ and Julia is different, so references and pointers are not allowed
 template<typename... TypesT>
-struct TraitSelector<std::tuple<TypesT...>&>
+struct MappingTrait<std::tuple<TypesT...>&>
 {
-  using type = TupleTrait;
   static_assert(sizeof(std::tuple<TypesT...>) == 0, "References to Julia tuples can't be used. Pass the tuple by value instead.");
 };
 template<typename... TypesT>
-struct TraitSelector<const std::tuple<TypesT...>&>
+struct MappingTrait<const std::tuple<TypesT...>&>
 {
-  using type = TupleTrait;
   static_assert(sizeof(std::tuple<TypesT...>) == 0, "References to Julia tuples can't be used. Pass the tuple by value instead.");
 };
 template<typename... TypesT>
-struct TraitSelector<std::tuple<TypesT...>*>
+struct MappingTrait<std::tuple<TypesT...>*>
 {
-  using type = TupleTrait;
   static_assert(sizeof(std::tuple<TypesT...>) == 0, "Pointers to Julia tuples can't be used. Pass the tuple by value instead.");
 };
 template<typename... TypesT>
-struct TraitSelector<const std::tuple<TypesT...>*>
+struct MappingTrait<const std::tuple<TypesT...>*>
 {
-  using type = TupleTrait;
   static_assert(sizeof(std::tuple<TypesT...>) == 0, "Pointers to Julia tuples can't be used. Pass the tuple by value instead.");
 };
 
 template<typename... TypesT>
-struct MappingTrait<std::tuple<TypesT...>, TupleTrait>
+struct MappingTrait<std::tuple<TypesT...>>
 {
   using type = TupleTrait;
 };
@@ -153,14 +143,9 @@ struct NTuple
 {
 };
 
-template<typename N, typename T>
-struct TraitSelector<NTuple<N,T>>
-{
-  using type = TupleTrait;
-};
 
 template<typename N, typename T>
-struct MappingTrait<NTuple<N,T>, TupleTrait>
+struct MappingTrait<NTuple<N,T>>
 {
   using type = TupleTrait;
 };

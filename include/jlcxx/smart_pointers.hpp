@@ -248,7 +248,8 @@ TypeWrapper1& add_smart_pointer(Module& mod, const std::string& name)
 struct SmartPointerTrait {};
 
 template<typename T>
-struct MappingTrait<T, std::enable_if_t<IsSmartPointerType<T>::value>>
+  requires IsSmartPointerType<T>::value
+struct MappingTrait<T>
 {
   using type = CxxWrappedTrait<SmartPointerTrait>;
 };
