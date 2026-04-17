@@ -44,49 +44,6 @@ struct SkipIfSameAs<T,T>
 template<typename T1, typename T2> using skip_if_same = typename SkipIfSameAs<T1,T2>::type;
 
   
-// === is_default_insertable ===
-// https://stackoverflow.com/a/78556159
-template <typename, typename, typename = void>
-struct is_default_insertable
- : std::false_type {};
-
-template <typename T, typename A>
-struct is_default_insertable<
-  T, A,
-  std::void_t<decltype(std::allocator_traits<A>::construct(std::declval<A&>(), std::declval<T*>()))>
-  > : std::true_type {};
-  
-template <typename T, typename A>
-inline constexpr bool is_default_insertable_v = is_default_insertable<T, A>::value;
-
-// === is_copy_insertable ===
-template <typename, typename, typename = void>
-struct is_copy_insertable : std::false_type {};
-
-template <typename T, typename A>
-struct is_copy_insertable<
-  T, A,
-  std::void_t<
-    decltype(std::allocator_traits<A>::construct(std::declval<A&>(), std::declval<T*>(), std::declval<const T&>()))>
-  > : std::true_type {};
-
-template <typename T, typename A>
-inline constexpr bool is_copy_insertable_v = is_copy_insertable<T, A>::value;
-
-// === is_move_insertable ===
-template <typename, typename, typename = void>
-struct is_move_insertable
- : std::false_type {};
-
-template <typename T, typename A>
-struct is_move_insertable<
-  T, A,
-  std::void_t<decltype(std::allocator_traits<A>::construct(std::declval<A&>(), std::declval<T*>(), std::declval<T&&>()))>
-  > : std::true_type {};
-
-template <typename T, typename A>
-inline constexpr bool is_move_insertable_v = is_move_insertable<T, A>::value;
-
 // === is_std_allocator ===
 template <typename>
 struct is_std_allocator : std::false_type {};
@@ -97,16 +54,29 @@ struct is_std_allocator<std::allocator<T>> : std::true_type {};
 template <typename T>
 inline constexpr bool is_std_allocator_v = is_std_allocator<T>::value;
 
-// === uses_std_allocator ===
-template <typename C, typename = void>
-struct uses_std_allocator : std::false_type {};
+// === default_insertable ===
+// https://stackoverflow.com/a/78556159
+// Also requires default constructibility when using std::allocator, since it
+// internally calls the default constructor (which the allocator_traits check alone
+// does not verify). Custom allocators may not call the default constructor.
+template <typename T, typename C>
+concept default_insertable = requires (typename C::allocator_type a, T* p) {
+  std::allocator_traits<decltype(a)>::construct(a, p);
+  requires !is_std_allocator_v<decltype(a)> || std::is_default_constructible_v<T>;
+};
 
-template <typename C>
-struct uses_std_allocator<C, std::void_t<typename C::allocator_type>>
-    : is_std_allocator<typename C::allocator_type> {};
+// === copy_insertable ===
+template <typename T, typename C>
+concept copy_insertable = requires (typename C::allocator_type a, T* p, const T& v) {
+  std::allocator_traits<decltype(a)>::construct(a, p, v);
+  requires !is_std_allocator_v<decltype(a)> || std::is_copy_constructible_v<T>;
+};
 
-template <typename C>
-inline constexpr bool uses_std_allocator_v = uses_std_allocator<C>::value;
+// === move_insertable ===
+template <typename T, typename C>
+concept move_insertable = requires (typename C::allocator_type a, T* p, T&& v) {
+  std::allocator_traits<decltype(a)>::construct(a, p, std::move(v));
+};
 }
 
 namespace stl
@@ -380,20 +350,12 @@ struct WrapSTLContainer<std::vector> : STLTypeWrapperBase<WrapSTLContainer<std::
     // - Note: This is tested to be the case for std::deque in GCC 15.2.1
     // This cannot be checked in an if constexpr context prior to C++20, so we
     // simply remove the size_t constructor if the type is not default insertable.
-    // We also check std::is_default_constructible since std's allocator will
-    // internally call the default constructor (which is_default_insertable
-    // will not check). Custom allocators may not literally call the default
-    // constructor, so only check if the standard allocator is used.
-    if constexpr(jlcxx::detail::is_default_insertable_v<T, typename WrappedT::allocator_type>
-                 && (!jlcxx::detail::uses_std_allocator_v<WrappedT>
-                     || std::is_default_constructible_v<T>))
+    if constexpr(jlcxx::detail::default_insertable<T, WrappedT>)
     {
       wrapped.template constructor<std::size_t>();
     }
     // Similarly, we expose the count-copy constructor gated on CopyInsertible
-    if constexpr(jlcxx::detail::is_copy_insertable_v<T, typename WrappedT::allocator_type>
-                 && (!jlcxx::detail::uses_std_allocator_v<WrappedT>
-                     || std::is_copy_constructible_v<T>))
+    if constexpr(jlcxx::detail::copy_insertable<T, WrappedT>)
     {
       // Since references to Julia owned objects may be of incompatible types
       // and a copy will be performed anyway over the bindings, pass by
@@ -420,7 +382,7 @@ struct WrapSTLContainer<std::vector> : STLTypeWrapperBase<WrapSTLContainer<std::
     wrapped.method("append", [] (WrappedT& v, jlcxx::ArrayRef<T> arr)
     {
       const std::size_t addedlen = arr.size();
-      if constexpr(jlcxx::detail::is_move_insertable_v<T, typename WrappedT::allocator_type>)
+      if constexpr(jlcxx::detail::move_insertable<T, WrappedT>)
       {
         v.reserve(v.size() + addedlen);
       }
@@ -473,15 +435,11 @@ struct WrapSTLContainer<std::deque> : STLTypeWrapperBase<WrapSTLContainer<std::d
 
     wrap_range_based_bsearch(wrapped);
     // Similar to the std::vector check, we gate the additional constructors:
-    if constexpr(jlcxx::detail::is_default_insertable_v<T, typename WrappedT::allocator_type>
-                 && (!jlcxx::detail::uses_std_allocator_v<WrappedT>
-                     || std::is_default_constructible_v<T>))
+    if constexpr(jlcxx::detail::default_insertable<T, WrappedT>)
     {
       wrapped.template constructor<std::size_t>();
     }
-    if constexpr(jlcxx::detail::is_copy_insertable_v<T, typename WrappedT::allocator_type>
-                 && (!jlcxx::detail::uses_std_allocator_v<WrappedT>
-                     || std::is_copy_constructible_v<T>))
+    if constexpr(jlcxx::detail::copy_insertable<T, WrappedT>)
     {
       using BaseType = std::remove_const_t<std::remove_reference_t<T>>;
       wrapped.template constructor<std::size_t, BaseType>();
