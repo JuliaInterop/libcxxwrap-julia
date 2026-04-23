@@ -223,9 +223,9 @@ namespace jlcxx
 JLCXX_MODULE define_types_module(jlcxx::Module& types)
 {
   types.add_type<A>("A").method("message", &A::message);
-  types.add_type<B>("B", jlcxx::julia_base_type<A>());
-  types.add_type<C>("C", jlcxx::julia_base_type<B>());
-  types.add_type<D>("D", jlcxx::julia_base_type<A>());
+  types.add_type<B>("B", jlcxx::cxx_supertype<A>());
+  types.add_type<C>("C", jlcxx::cxx_supertype<B>());
+  types.add_type<D>("D", jlcxx::cxx_supertype<A>());
   types.method("create_abstract", create_abstract);
 
   types.method("shared_b", []() { return std::make_shared<B>(); });
@@ -241,14 +241,14 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
   types.method("take_ref", take_ref);
 
   types.add_type<StaticBase>("StaticBase");
-  types.add_type<StaticDerived>("StaticDerived", jlcxx::julia_base_type<StaticBase>());
+  types.add_type<StaticDerived>("StaticDerived", jlcxx::cxx_supertype<StaticBase>());
 
   types.add_type<VirtualCpp>("VirtualCpp")
     .method("virtualfunc", &VirtualCpp::virtualfunc);
-  types.add_type<VirtualCppJuliaExtended>("VirtualCppJuliaExtended", jlcxx::julia_base_type<VirtualCpp>())
+  types.add_type<VirtualCppJuliaExtended>("VirtualCppJuliaExtended", jlcxx::cxx_supertype<VirtualCpp>())
     .constructor<int, double>()
     .method("set_callback", &VirtualCppJuliaExtended::set_callback);
-  types.add_type<VirtualCfunctionExtended>("VirtualCfunctionExtended", jlcxx::julia_base_type<VirtualCpp>())
+  types.add_type<VirtualCfunctionExtended>("VirtualCfunctionExtended", jlcxx::cxx_supertype<VirtualCpp>())
     .constructor<int, double>()
     .method("getData", &VirtualCfunctionExtended::getData)
     .method("set_callback", &VirtualCfunctionExtended::set_callback);
@@ -256,10 +256,10 @@ JLCXX_MODULE define_types_module(jlcxx::Module& types)
   types.add_type<Parent>("Parent")
         .method("name", &Parent::name);
 
-  types.add_type<DerivedA>("DerivedA", jlcxx::julia_base_type<Parent>())
+  types.add_type<DerivedA>("DerivedA", jlcxx::cxx_supertype<Parent>())
       .method("name", &DerivedA::name);
 
-  types.add_type<DerivedB>("DerivedB", jlcxx::julia_base_type<Parent>())
+  types.add_type<DerivedB>("DerivedB", jlcxx::cxx_supertype<Parent>())
       .method("name", &DerivedB::name);
 
   types.method("make_a", &make_a);
@@ -273,7 +273,7 @@ JLCXX_MODULE define_vsolver_module(jlcxx::Module& vsolver_mod)
   vsolver_mod.add_type<virtualsolver::Base>("BaseV")
     .method("solve", &virtualsolver::Base::solve);
 
-  vsolver_mod.add_type<virtualsolver::E>("E", jlcxx::julia_base_type<virtualsolver::Base>());
-  vsolver_mod.add_type<virtualsolver::F>("F", jlcxx::julia_base_type<virtualsolver::Base>())
+  vsolver_mod.add_type<virtualsolver::E>("E", jlcxx::cxx_supertype<virtualsolver::Base>());
+  vsolver_mod.add_type<virtualsolver::F>("F", jlcxx::cxx_supertype<virtualsolver::Base>())
     .constructor<virtualsolver::history_f>();
 }
