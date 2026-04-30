@@ -1376,7 +1376,7 @@ class ParametricTypeWrappers
 public:
   ParametricTypeWrappers(TypeWrapper<T>& base_wrapper):
     m_generic_type(base_wrapper),
-    m_specialized_types(std::make_tuple(create_type<AppliedTypesT>()...))
+    m_specialized_types{create_type<AppliedTypesT>()...}
   {
   }
 
