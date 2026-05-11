@@ -68,14 +68,9 @@ ConstArray<T, sizeof...(SizesT)> make_const_array(const T* p, const SizesT... si
 
 struct ConstArrayTrait {};
 
-template<typename T, index_t N>
-struct TraitSelector<ConstArray<T,N>>
-{
-  using type = ConstArrayTrait;
-};
 
 template<typename T, index_t N>
-struct MappingTrait<ConstArray<T,N>, ConstArrayTrait>
+struct MappingTrait<ConstArray<T,N>>
 {
   using type = ConstArrayTrait;
 };

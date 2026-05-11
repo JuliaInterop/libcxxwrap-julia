@@ -187,13 +187,7 @@ struct DirectPtrTrait {}; // Some pointers are returned directly, e.g. jl_value_
 
 struct NoCxxWrappedSubtrait {};
 
-// Helper to avoid ambiguous specializations
-template<typename T> struct TraitSelector
-{
-  using type = void;
-};
-
-template<typename T, typename Enable=typename TraitSelector<T>::type>
+template<typename T>
 struct MappingTrait
 {
   using type = NoMappingTrait;
@@ -236,7 +230,8 @@ struct MappingTrait<FILE*>
 };
 
 template<typename T>
-struct MappingTrait<T, std::enable_if_t<!IsMirroredType<T>::value && !IsSmartPointerType<T>::value>>
+  requires (!IsMirroredType<T>::value && !IsSmartPointerType<T>::value)
+struct MappingTrait<T>
 {
   using type = CxxWrappedTrait<NoCxxWrappedSubtrait>;
 };

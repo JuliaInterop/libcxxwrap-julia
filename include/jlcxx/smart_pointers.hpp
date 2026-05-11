@@ -151,35 +151,21 @@ struct SmartPtrMethods<PtrT<PointeeT, ExtraArgs...>, OtherPtrT>
   using ConstOtherPtrT = typename split_other_ptr<OtherPtrT>::const_other_t;
   using NonConstOtherPtrT = typename split_other_ptr<OtherPtrT>::other_t;
 
-  template<bool B, typename DummyT=void>
-  struct ConditionalConstructFromOther
-  {
-    static void apply(Module& mod)
-    {
-      mod.method("__cxxwrap_smartptr_construct_from_other", [] (SingletonType<WrappedT>, NonConstOtherPtrT& ptr) { return ConstructFromOther<WrappedT, NonConstOtherPtrT>::apply(ptr); });
-      mod.method("__cxxwrap_smartptr_construct_from_other", [] (SingletonType<ConstWrappedT>, ConstOtherPtrT& ptr) { return ConstructFromOther<ConstWrappedT, ConstOtherPtrT>::apply(ptr); });
-    }
-  };
-  template<typename DummyT> struct ConditionalConstructFromOther<false, DummyT> { static void apply(Module&) {} };
-
-  template<bool B, typename DummyT=void>
-  struct ConditionalCastToBase
-  {
-    static void apply(Module& mod)
-    {
-      mod.method("__cxxwrap_smartptr_cast_to_base", [] (const WrappedT& ptr) { return ConvertToBase<WrappedT>::apply(ptr); });
-      mod.method("__cxxwrap_smartptr_cast_to_base", [] (const ConstWrappedT& ptr) { return ConvertToBase<ConstWrappedT>::apply(ptr); });
-    }
-  };
-  template<typename DummyT> struct ConditionalCastToBase<false, DummyT> { static void apply(Module&) {} };
-
   static void apply(Module& mod)
   {
     assert(has_julia_type<WrappedT>());
     mod.set_override_module(get_cxxwrap_module());
     ConvertToConst<WrappedT>::wrap(mod);
-    ConditionalConstructFromOther<!std::is_same_v<OtherPtrT, NoSmartOther>>::apply(mod);
-    ConditionalCastToBase<!std::is_same_v<NonConstPointeeT,supertype<NonConstPointeeT>> && !std::is_same_v<std::unique_ptr<NonConstPointeeT>, WrappedT>>::apply(mod);
+    if constexpr (!std::is_same_v<OtherPtrT, NoSmartOther>)
+    {
+      mod.method("__cxxwrap_smartptr_construct_from_other", [] (SingletonType<WrappedT>, NonConstOtherPtrT& ptr) { return ConstructFromOther<WrappedT, NonConstOtherPtrT>::apply(ptr); });
+      mod.method("__cxxwrap_smartptr_construct_from_other", [] (SingletonType<ConstWrappedT>, ConstOtherPtrT& ptr) { return ConstructFromOther<ConstWrappedT, ConstOtherPtrT>::apply(ptr); });
+    }
+    if constexpr (!std::is_same_v<NonConstPointeeT, supertype<NonConstPointeeT>> && !std::is_same_v<std::unique_ptr<NonConstPointeeT>, WrappedT>)
+    {
+      mod.method("__cxxwrap_smartptr_cast_to_base", [] (const WrappedT& ptr) { return ConvertToBase<WrappedT>::apply(ptr); });
+      mod.method("__cxxwrap_smartptr_cast_to_base", [] (const ConstWrappedT& ptr) { return ConvertToBase<ConstWrappedT>::apply(ptr); });
+    }
     mod.unset_override_module();
   }
 };
@@ -248,7 +234,8 @@ TypeWrapper1& add_smart_pointer(Module& mod, const std::string& name)
 struct SmartPointerTrait {};
 
 template<typename T>
-struct MappingTrait<T, std::enable_if_t<IsSmartPointerType<T>::value>>
+  requires IsSmartPointerType<T>::value
+struct MappingTrait<T>
 {
   using type = CxxWrappedTrait<SmartPointerTrait>;
 };

@@ -1,7 +1,6 @@
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(test_module test_module.cpp)
-set_property(TARGET test_module PROPERTY COMPILE_FLAGS "-std=c++17")
 if(${CMAKE_SYSTEM_NAME} STREQUAL "FreeBSD")
   set_property(TARGET test_module PROPERTY LINK_OPTIONS "-pthread")
 endif()

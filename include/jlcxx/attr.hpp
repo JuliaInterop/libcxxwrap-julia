@@ -178,15 +178,12 @@ namespace detail
     return n_extra_kwarg == 0 || n_arg == n_extra_arg + n_extra_kwarg;
   }
 
-  /// simple helper for checking if a template argument has a call operator (e.g. is a lambda)
-  template<class T, typename SFINEA = void>
-  struct has_call_operator : std::false_type {};
-
+  /// Concept for checking if a template argument has a call operator (e.g. is a lambda)
   template<class T>
-  struct has_call_operator<T, std::void_t<decltype(&T::operator())>> : std::true_type {};
+  concept HasCallOperator = requires { &T::operator(); };
 
-  static_assert(!has_call_operator<const char*>::value);
-  static_assert(has_call_operator<std::function<void()>>::value);
+  static_assert(!HasCallOperator<const char*>);
+  static_assert(HasCallOperator<std::function<void()>>);
 }
 
 }
