@@ -301,6 +301,25 @@ struct Parametric
 
 template<typename... T> struct IsMirroredType<Parametric<T...>> : std::false_type {};
 
+/// Indicate that the parametric type has a type hierarchy and the existence of
+/// a SuperType specialisation must be enforced at compile time
+template<typename BaseT, typename ParametricT>
+struct InheritedParametric
+{
+  using base_type = BaseT;
+  using parametric_type = ParametricT;
+};
+
+template<typename BaseT, typename ParametricT> struct IsMirroredType<InheritedParametric<BaseT, ParametricT>> : std::false_type {};
+
+namespace detail
+{
+
+template<typename T> struct IsInheritedParametric : std::false_type {};
+template<typename BaseT, typename ParametricT> struct IsInheritedParametric<InheritedParametric<BaseT, ParametricT>> : std::true_type {};
+
+}
+
 template<typename T>
 class TypeWrapper;
 
@@ -360,6 +379,12 @@ struct IsParametric
 
 template<template<typename...> class T, int I, typename... ParametersT>
 struct IsParametric<T<TypeVar<I>, ParametersT...>>
+{
+  static constexpr bool value = true;
+};
+
+template<typename BaseT, typename ParametersT>
+struct IsParametric<InheritedParametric<BaseT, ParametersT>>
 {
   static constexpr bool value = true;
 };
@@ -651,6 +676,10 @@ public:
   template<typename T, typename SuperParametersT=ParameterList<>, typename JLSuperT=jl_datatype_t>
   TypeWrapper<T> add_type(const std::string& name, JLSuperT* super = jl_any_type);
 
+  /// Add a composite type with C++ inheritance — enforces SuperType<T> at compile time
+  template<typename T, typename SuperParametersT=ParameterList<>, typename BaseT>
+  auto add_type(const std::string& name, CxxBaseTag<BaseT> super);
+
   /// Add types that are directly mapped to a Julia struct
   template<typename T>
   void map_type(const std::string& name)
@@ -829,6 +858,13 @@ struct BuildParameterList
 };
 
 template<typename T> using parameter_list = typename BuildParameterList<T>::type;
+
+// Take into account inheritance with compile-time check of SuperType definition
+template<typename BaseT, typename ParametersT>
+struct BuildParameterList<InheritedParametric<BaseT, ParametersT>>
+{
+  using type = typename BuildParameterList<ParametersT>::type;
+};
 
 // Match any combination of types only
 template<template<typename...> class T, typename... ParametersT>
@@ -1241,7 +1277,7 @@ public:
     return m_module;
   }
 
-  jl_datatype_t* dt()
+  jl_datatype_t* dt() const
   {
     return m_dt;
   }
@@ -1256,6 +1292,10 @@ private:
 };
 
 using TypeWrapper1 = TypeWrapper<Parametric<TypeVar<1>>>;
+
+/// Use as the super argument to add_type to declare C++ inheritance from a parametric base
+template<typename BaseT>
+CxxBaseTag<BaseT> julia_base_type(const TypeWrapper<BaseT>& t) { return {t.dt()}; }
 
 #ifdef JLCXX_USE_TYPE_MAP
 JLCXX_API std::shared_ptr<TypeWrapper1>& jlcxx_smartpointer_type(std::type_index idx);
@@ -1362,6 +1402,23 @@ TypeWrapper<T> Module::add_type(const std::string& name, JLSuperT* super)
   return add_type_internal<T, SuperParametersT>(name, super);
 }
 
+/// Add a composite type with C++ inheritance — enforces SuperType<T> at compile time
+template<typename T, typename SuperParametersT, typename BaseT>
+auto Module::add_type(const std::string& name, CxxBaseTag<BaseT> super)
+{
+  if constexpr (!detail::IsParametric<T>::value)
+  {
+    static_assert(!std::is_same_v<supertype<T>, T>,
+      "SuperType<T> must be specialized when using julia_base_type(). "
+      "Add: template<> struct jlcxx::SuperType<T> { typedef Base type; };");
+      return add_type_internal<T, SuperParametersT>(name, super.dt);
+  }
+  else
+  {
+    return add_type_internal<InheritedParametric<BaseT, T>, SuperParametersT>(name, super.dt);
+  }
+}
+
 /// Collection of the wrappers of each class template instantiation, that is on
 /// Julia side, each fully-parametrized type.
 ///
@@ -1417,6 +1474,12 @@ private:
   TypeWrapper<AppliedT>
   create_type()
   {
+    if constexpr(detail::IsInheritedParametric<T>::value)
+    {
+      static_assert(!std::is_same_v<supertype<AppliedT>, AppliedT>,
+        "SuperType<T> must be specialized when using julia_base_type(). "
+        "Add: template<> struct jlcxx::SuperType<T> { typedef Base type; };");
+    }
     static_assert(!IsMirroredType<AppliedT>::value, "Mirrored type templates can't be added using add_type and apply, you should explicitly disable mirroring for this type, e.g. define template<typename... T> struct IsMirroredType<Foo<T...>> : std::false_type { }; in the jlcxx namespace.");
 
     static constexpr int nb_julia_parameters = parameter_list<T>::nb_parameters;

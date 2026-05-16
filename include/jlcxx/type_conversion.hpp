@@ -454,12 +454,21 @@ namespace detail
   };
 }
 
+/// Tag type for signalling C++ inheritance to add_type, enabling compile-time SuperType enforcement
+template<typename T>
+struct CxxBaseTag
+{
+  inline operator jl_datatype_t*() const { return dt; }
+  inline operator jl_value_t*() const { return (jl_value_t*)dt; }
+  jl_datatype_t* dt;
+};
+
 // Returns T itself for normal types, or the supertype for wrapped types, e.g. Foo instead of FooAllocated
 template<typename T>
-inline jl_datatype_t* julia_base_type()
+inline CxxBaseTag<T> julia_base_type()
 {
   create_if_not_exists<T>();
-  return detail::GetBaseT<T>::type();
+  return {detail::GetBaseT<T>::type()};
 }
 
 // Mapping for const references
