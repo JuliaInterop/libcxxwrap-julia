@@ -301,7 +301,26 @@ struct Parametric
 
 template<typename... T> struct IsMirroredType<Parametric<T...>> : std::false_type {};
 
-template<typename T, bool CxxInheritor = false>
+/// Indicate that the parametric type has a type hierarchy and the existence of
+/// a SuperType specialisation must be enforced at compile time
+template<typename BaseT, typename ParametricT>
+struct InheritedParametric
+{
+  using base_type = BaseT;
+  using parametric_type = ParametricT;
+};
+
+template<typename BaseT, typename ParametricT> struct IsMirroredType<InheritedParametric<BaseT, ParametricT>> : std::false_type {};
+
+namespace detail
+{
+
+template<typename T> struct IsInheritedParametric : std::false_type {};
+template<typename BaseT, typename ParametricT> struct IsInheritedParametric<InheritedParametric<BaseT, ParametricT>> : std::true_type {};
+
+}
+
+template<typename T>
 class TypeWrapper;
 
 namespace detail
@@ -360,6 +379,12 @@ struct IsParametric
 
 template<template<typename...> class T, int I, typename... ParametersT>
 struct IsParametric<T<TypeVar<I>, ParametersT...>>
+{
+  static constexpr bool value = true;
+};
+
+template<typename BaseT, typename ParametersT>
+struct IsParametric<InheritedParametric<BaseT, ParametersT>>
 {
   static constexpr bool value = true;
 };
@@ -528,14 +553,6 @@ template <typename T>
 struct CopyConstructible : std::bool_constant<std::is_copy_constructible_v<T> && !std::is_abstract_v<T>>
 {
 };
-
-/// Tag type for signalling C++ inheritance to add_type, enabling compile-time SuperType enforcement
-template<typename BaseT>
-struct CxxBaseTag { jl_datatype_t* dt; };
-
-/// Use as the super argument to add_type to declare C++ inheritance from a non-parametric base
-template<typename BaseT>
-CxxBaseTag<BaseT> cxx_supertype() { return {julia_base_type<BaseT>()}; }
 
 /// Store all exposed C++ functions associated with a module
 class JLCXX_API Module
@@ -782,8 +799,8 @@ private:
     }
   }
 
-  template<typename T, typename SuperParametersT, bool CxxInheritor = false, typename JLSuperT>
-  TypeWrapper<T, CxxInheritor> add_type_internal(const std::string& name, JLSuperT* super);
+  template<typename T, typename SuperParametersT, typename JLSuperT>
+  TypeWrapper<T> add_type_internal(const std::string& name, JLSuperT* super);
 
   template<typename LambdaT>
   FunctionWrapperBase& add_lambda(const std::string& name, LambdaT&& lambda, detail::ExtraFunctionData&& extraData)
@@ -819,8 +836,8 @@ private:
   Array<jl_value_t*> m_constant_values;
   std::vector<jl_datatype_t*> m_box_types;
 
-  template<class T, bool CxxInheritor> friend class TypeWrapper;
-  template<typename T, bool CxxInheritor, typename... AppliedTypesT> friend class ParametricTypeWrappers;
+  template<class T> friend class TypeWrapper;
+  template<typename T, typename... AppliedTypesT> friend class ParametricTypeWrappers;
 };
 
 template<typename T>
@@ -841,6 +858,13 @@ struct BuildParameterList
 };
 
 template<typename T> using parameter_list = typename BuildParameterList<T>::type;
+
+// Take into account inheritance with compile-time check of SuperType definition
+template<typename BaseT, typename ParametersT>
+struct BuildParameterList<InheritedParametric<BaseT, ParametersT>>
+{
+  using type = typename BuildParameterList<ParametersT>::type;
+};
 
 // Match any combination of types only
 template<template<typename...> class T, typename... ParametersT>
@@ -1125,11 +1149,11 @@ inline void add_default_methods(Module& mod)
   mod.unset_override_module();
 }
 
-template<typename T, bool CxxInheritor, typename... AppliedTypesT>
+template<typename T, typename... AppliedTypesT>
 class ParametricTypeWrappers;
 
 /// Helper class to wrap type methods
-template<typename T, bool CxxInheritor>
+template<typename T>
 class TypeWrapper
 {
 public:
@@ -1226,14 +1250,14 @@ public:
   }
 
   template<typename... AppliedTypesT>
-  ParametricTypeWrappers<T, CxxInheritor, AppliedTypesT...> apply()
+  ParametricTypeWrappers<T, AppliedTypesT...> apply()
   {
     static_assert(detail::IsParametric<T>::value, "Apply can only be called on parametric types");
-    return ParametricTypeWrappers<T, CxxInheritor, AppliedTypesT...>(*this);
+    return ParametricTypeWrappers<T, AppliedTypesT...>(*this);
   }
 
   template<typename... AppliedTypesT, typename FunctorT>
-  TypeWrapper<T, CxxInheritor>& apply(FunctorT&& apply_ftor)
+  TypeWrapper<T>& apply(FunctorT&& apply_ftor)
   {
     static_assert(detail::IsParametric<T>::value, "Apply can only be called on parametric types");
     apply<AppliedTypesT...>().apply(std::forward<FunctorT>(apply_ftor));
@@ -1264,14 +1288,14 @@ private:
   jl_datatype_t* m_dt;
   jl_datatype_t* m_box_dt;
 
-  template<typename U, bool, typename... AppliedTypesT> friend class ParametricTypeWrappers;
+  template<typename U, typename... AppliedTypesT> friend class ParametricTypeWrappers;
 };
 
 using TypeWrapper1 = TypeWrapper<Parametric<TypeVar<1>>>;
 
 /// Use as the super argument to add_type to declare C++ inheritance from a parametric base
-template<typename BaseT, bool CxxInheritor>
-CxxBaseTag<BaseT> cxx_supertype(const TypeWrapper<BaseT, CxxInheritor>& t) { return {t.dt()}; }
+template<typename BaseT>
+CxxBaseTag<BaseT> julia_base_type(const TypeWrapper<BaseT>& t) { return {t.dt()}; }
 
 #ifdef JLCXX_USE_TYPE_MAP
 JLCXX_API std::shared_ptr<TypeWrapper1>& jlcxx_smartpointer_type(std::type_index idx);
@@ -1279,22 +1303,22 @@ JLCXX_API std::shared_ptr<TypeWrapper1>& jlcxx_smartpointer_type(std::type_index
 
 template<typename ApplyT, typename... TypeLists> using combine_types = typename CombineTypes<ApplyT, TypeLists...>::type;
 
-template<typename T, bool CxxInheritor>
+template<typename T>
 template<template<typename...> class TemplateT, typename... TypeLists, typename FunctorT>
-void TypeWrapper<T, CxxInheritor>::apply_combination(FunctorT&& ftor)
+void TypeWrapper<T>::apply_combination(FunctorT&& ftor)
 {
   this->template apply_combination<ApplyType<TemplateT>, TypeLists...>(std::forward<FunctorT>(ftor));
 }
 
-template<typename T, bool CxxInheritor>
+template<typename T>
 template<typename ApplyT, typename... TypeLists, typename FunctorT>
-void TypeWrapper<T, CxxInheritor>::apply_combination(FunctorT&& ftor)
+void TypeWrapper<T>::apply_combination(FunctorT&& ftor)
 {
   detail::DoApply<combine_types<ApplyT, TypeLists...>>()(*this, std::forward<FunctorT>(ftor));
 }
 
-template<typename T, typename SuperParametersT, bool CxxInheritor, typename JLSuperT>
-TypeWrapper<T, CxxInheritor> Module::add_type_internal(const std::string& name, JLSuperT* super_generic)
+template<typename T, typename SuperParametersT, typename JLSuperT>
+TypeWrapper<T> Module::add_type_internal(const std::string& name, JLSuperT* super_generic)
 {
   static constexpr bool is_parametric = detail::IsParametric<T>::value;
   static_assert(!IsMirroredType<T>::value, "Mirrored types (marked with IsMirroredType) can't be added using add_type, map them directly to a struct instead and use map_type or explicitly disable mirroring for this type, e.g. define template<> struct IsMirroredType<Foo> : std::false_type { };");
@@ -1368,7 +1392,7 @@ TypeWrapper<T, CxxInheritor> Module::add_type_internal(const std::string& name, 
   }
 
   JL_GC_POP();
-  return TypeWrapper<T, CxxInheritor>(*this, base_dt, box_dt);
+  return TypeWrapper<T>(*this, base_dt, box_dt);
 }
 
 /// Add a composite type
@@ -1385,13 +1409,13 @@ auto Module::add_type(const std::string& name, CxxBaseTag<BaseT> super)
   if constexpr (!detail::IsParametric<T>::value)
   {
     static_assert(!std::is_same_v<supertype<T>, T>,
-      "SuperType<T> must be specialized when using cxx_supertype(). "
+      "SuperType<T> must be specialized when using julia_base_type(). "
       "Add: template<> struct jlcxx::SuperType<T> { typedef Base type; };");
-    return add_type_internal<T, SuperParametersT>(name, super.dt);
+      return add_type_internal<T, SuperParametersT>(name, super.dt);
   }
   else
   {
-    return add_type_internal<T, SuperParametersT, true>(name, super.dt);
+    return add_type_internal<InheritedParametric<BaseT, T>, SuperParametersT>(name, super.dt);
   }
 }
 
@@ -1403,11 +1427,11 @@ auto Module::add_type(const std::string& name, CxxBaseTag<BaseT> super)
 /// The method ParametricTypeWrappers::apply(FunctorT&&) can then be used to add
 /// the wrappers for the class template methods.
 ///
-template<typename T, bool CxxInheritor, typename... AppliedTypesT>
+template<typename T, typename... AppliedTypesT>
 class ParametricTypeWrappers
 {
 public:
-  ParametricTypeWrappers(TypeWrapper<T, CxxInheritor>& base_wrapper):
+  ParametricTypeWrappers(TypeWrapper<T>& base_wrapper):
     m_generic_type(base_wrapper),
     m_specialized_types(std::make_tuple(create_type<AppliedTypesT>()...))
   {
@@ -1450,9 +1474,12 @@ private:
   TypeWrapper<AppliedT>
   create_type()
   {
-    static_assert(!CxxInheritor || !std::is_same_v<supertype<AppliedT>, AppliedT>,
-      "SuperType<T> must be specialized when using cxx_supertype(). "
-      "Add: template<> struct jlcxx::SuperType<T> { typedef Base type; };");
+    if constexpr(detail::IsInheritedParametric<T>::value)
+    {
+      static_assert(!std::is_same_v<supertype<AppliedT>, AppliedT>,
+        "SuperType<T> must be specialized when using julia_base_type(). "
+        "Add: template<> struct jlcxx::SuperType<T> { typedef Base type; };");
+    }
     static_assert(!IsMirroredType<AppliedT>::value, "Mirrored type templates can't be added using add_type and apply, you should explicitly disable mirroring for this type, e.g. define template<typename... T> struct IsMirroredType<Foo<T...>> : std::false_type { }; in the jlcxx namespace.");
 
     static constexpr int nb_julia_parameters = parameter_list<T>::nb_parameters;
@@ -1485,7 +1512,7 @@ private:
   }
 
 private:
-  TypeWrapper<T, CxxInheritor>& m_generic_type;
+  TypeWrapper<T>& m_generic_type;
   std::tuple<TypeWrapper<AppliedTypesT>...> m_specialized_types;
 };
 

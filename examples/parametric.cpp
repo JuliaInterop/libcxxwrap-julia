@@ -294,7 +294,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   auto template_type = types.add_type<Parametric<TypeVar<1>, TypeVar<2>>>("TemplateType");
   template_type.apply<TemplateType<P1,P2>, TemplateType<P2,P1>>(WrapTemplateType());
 
-  types.add_type<Parametric<TypeVar<2>>, ParameterList<P2, TypeVar<2>>>("PartialTemplate", jlcxx::cxx_supertype(template_type))
+  types.add_type<Parametric<TypeVar<2>>, ParameterList<P2, TypeVar<2>>>("PartialTemplate", jlcxx::julia_base_type(template_type))
     .apply<PartialTemplate<P1>>(WrapPartialTemplateType());
 
   types.add_type<Parametric<TypeVar<1>>>("TemplateDefaultType")
@@ -306,7 +306,7 @@ JLCXX_MODULE define_julia_module(jlcxx::Module& types)
   auto abstract_template = types.add_type<Parametric<jlcxx::TypeVar<1>>>("AbstractTemplate");
   abstract_template.apply<AbstractTemplate<double>>(WrapAbstractTemplate());
 
-  types.add_type<Parametric<jlcxx::TypeVar<1>>>("ConcreteTemplate", jlcxx::cxx_supertype(abstract_template)).apply<ConcreteTemplate<double>>(WrapConcreteTemplate());
+  types.add_type<Parametric<jlcxx::TypeVar<1>>>("ConcreteTemplate", jlcxx::julia_base_type(abstract_template)).apply<ConcreteTemplate<double>>(WrapConcreteTemplate());
 
   typedef jlcxx::combine_types<jlcxx::ApplyType<Foo3>, ParameterList<int32_t, double>, ParameterList<P1,P2,bool>, ParameterList<float>> foo3_types;
   static_assert(std::is_same_v<foo3_types,
