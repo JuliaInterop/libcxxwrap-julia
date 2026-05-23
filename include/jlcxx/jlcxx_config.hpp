@@ -18,7 +18,7 @@
 #define JLCXX_VERSION_MINOR 14
 #define JLCXX_VERSION_PATCH 9
 
-#if (defined(_MSVC_LANG) && _MSVC_LANG < 202002L) || (!defined(_MSVC_LANG) && __cplusplus < 202002L)
+#if (defined(_MSVC_LANG) && _MSVC_LANG < 202002L) || (!defined(_MSVC_LANG) && __cplusplus < 201709L)
 #error "This library requires at least C++20"
 #endif
 
