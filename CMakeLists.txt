@@ -1,14 +1,8 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.13)
 project(JlCxx)
 
 # Cmake policies
 # ==============
-
-if(POLICY CMP0074)
-    # find_package() uses <PackageName>_ROOT variables.
-    # This policy was introduced in CMake version 3.12.
-    cmake_policy(SET CMP0074 NEW)
-endif()
 
 # Dependencies
 # ============
