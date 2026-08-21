@@ -173,7 +173,7 @@ struct SmartPtrMethods<PtrT<PointeeT, ExtraArgs...>, OtherPtrT>
 }
 
 template<typename T>
-inline std::shared_ptr<TypeWrapper1>& stored_smartpointer_type()
+JLCXX_TEMPLATE_API std::shared_ptr<TypeWrapper1>& stored_smartpointer_type()
 {
 #ifdef JLCXX_USE_TYPE_MAP
   return jlcxx_smartpointer_type(typeid(T));

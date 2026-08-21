@@ -9,9 +9,15 @@
       #define JLCXX_API __declspec(dllimport)
   #endif
   #define JLCXX_ONLY_EXPORTS __declspec(dllexport)
+  // Function templates whose local statics must be process-unique cannot use
+  // dllimport/dllexport (instantiation in consumers conflicts with importing,
+  // and Windows uses the hashed type map because PE has no weak-symbol
+  // interposition anyways)
+  #define JLCXX_TEMPLATE_API
 #else
    #define JLCXX_API __attribute__ ((visibility("default")))
    #define JLCXX_ONLY_EXPORTS JLCXX_API
+   #define JLCXX_TEMPLATE_API __attribute__ ((visibility("default")))
 #endif
 
 #define JLCXX_VERSION_MAJOR 0

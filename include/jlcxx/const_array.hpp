@@ -28,7 +28,7 @@ namespace detail
 /// Wrap a pointer, providing the Julia array interface for it
 /// The parameter N represents the number of dimensions
 template<typename T, index_t N>
-class ConstArray
+class JLCXX_TEMPLATE_API ConstArray
 {
 public:
   typedef typename detail::LongNTuple<N>::type size_t;
