@@ -33,7 +33,7 @@ target_link_libraries(pointer_modification ${JLCXX_TARGET} ${JLCXX_STL_TARGET} $
 add_library(basic_types SHARED basic_types.cpp)
 target_link_libraries(basic_types ${JLCXX_TARGET} ${JLCXX_STL_TARGET} ${Julia_LIBRARY})
 
-install(TARGETS
+set(JLCXX_EXAMPLE_TARGETS
   jlcxx_containers
   except
   extended
@@ -44,6 +44,13 @@ install(TARGETS
   parametric
   pointer_modification
   types
+)
+
+set_target_properties(${JLCXX_EXAMPLE_TARGETS} PROPERTIES
+                      CXX_VISIBILITY_PRESET hidden
+                      VISIBILITY_INLINES_HIDDEN ON)
+
+install(TARGETS ${JLCXX_EXAMPLE_TARGETS}
 ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
 LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

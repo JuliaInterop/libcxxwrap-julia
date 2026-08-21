@@ -10,7 +10,7 @@
 int main()
 {
   typedef void (*init_types_t)();
-  typedef void (*show_types_t)();
+  typedef int (*show_types_t)();
   init_types_t lib_init_types;
   show_types_t lib_show_types;
 
@@ -82,7 +82,5 @@ int main()
     }
   #endif
 
-  lib_show_types();
-
-  return 0;
+  return lib_show_types();
 }

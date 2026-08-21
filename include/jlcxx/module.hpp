@@ -138,7 +138,7 @@ struct UpCast
 
 // The CxxWrap Julia module
 extern JLCXX_API jl_module_t* g_cxxwrap_module;
-extern jl_datatype_t* g_cppfunctioninfo_type;
+extern JLCXX_API jl_datatype_t* g_cppfunctioninfo_type;
 
 class JLCXX_API Module;
 

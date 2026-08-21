@@ -8,6 +8,11 @@
 namespace jlcxx
 {
 
+#ifndef JLCXX_USE_TYPE_MAP
+// Provide explicit instantiatiation(s) for extern'ed templates of types with no visibility annotation
+template CachedDatatype& stored_type<FILE*>();
+#endif
+
 using cxx_gc_roots_t = std::map<jl_value_t*, int>;
 cxx_gc_roots_t& cxx_gc_roots()
 {

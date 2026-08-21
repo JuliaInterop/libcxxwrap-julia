@@ -183,7 +183,7 @@ struct ArrayElementType<T,WrappedPtrTrait>
 
 /// Reference a Julia array in an STL-compatible wrapper
 template<typename ValueT, int Dim = 1>
-class ArrayRef
+class JLCXX_TEMPLATE_API ArrayRef
 {
 public:
   using julia_t = typename detail::ArrayElementType<ValueT>::type;

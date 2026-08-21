@@ -61,6 +61,21 @@ set(CMAKE_INSTALL_LIBDIR "lib")
 set(JLCXX_BUILD_EXAMPLES ON CACHE BOOL "Build the JlCxx examples")
 set(JLCXX_BUILD_TESTS ON CACHE BOOL "Build the JlCxx tests")
 
+set(_jlcxx_visibility_preset "hidden")
+if(CMAKE_CXX_VISIBILITY_PRESET)
+  set(_jlcxx_visibility_preset "${CMAKE_CXX_VISIBILITY_PRESET}")
+endif()
+set(JLCXX_VISIBILITY_PRESET "${_jlcxx_visibility_preset}" CACHE STRING
+    "Symbol visibility preset for the JlCxx libraries")
+set_property(CACHE JLCXX_VISIBILITY_PRESET PROPERTY STRINGS default hidden internal protected)
+if(NOT CMAKE_CXX_VISIBILITY_PRESET AND JLCXX_VISIBILITY_PRESET STREQUAL "hidden")
+  set(CMAKE_CXX_VISIBILITY_PRESET "hidden")
+endif()
+
+if(NOT CMAKE_VISIBILITY_INLINES_HIDDEN AND JLCXX_VISIBILITY_PRESET STREQUAL "hidden")
+  set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
+endif()
+
 # Source files
 # ============
 
@@ -167,6 +182,21 @@ set_property(TARGET ${JLCXX_TARGET} APPEND PROPERTY
   COMPATIBLE_INTERFACE_STRING ${JLCXX_TARGET}_MAJOR_VERSION
 )
 target_compile_definitions(${JLCXX_TARGET} PUBLIC "JULIA_ENABLE_THREADING")
+
+# jlcxx/julia_headers.hpp refuses to compile when <julia.h> was included before the jlcxx
+# headers, because the visibility pragma it wraps the Julia headers in is what keeps
+# jl_value_t and jl_datatype_t at default type visibility. That include order is only a
+# problem for code compiled with hidden visibility, but the preprocessor cannot see
+# -fvisibility=, so the header has to be conservative and error unconditionally.
+#
+# CMake knows the visibility, so avoid (clear) the error for consumers that compile at
+# default visibility.
+#
+# N.B.: Setting visibility through raw compiler flags instead of the built-in 
+# CXX_VISIBILITY_PRESET property isn't seen by a generator expression and won't be 
+# detected. Use the property.
+target_compile_definitions(${JLCXX_TARGET} INTERFACE
+  "$<$<OR:$<NOT:$<BOOL:$<TARGET_PROPERTY:CXX_VISIBILITY_PRESET>>>,$<STREQUAL:$<TARGET_PROPERTY:CXX_VISIBILITY_PRESET>,default>>:FORCE_ALLOW_PRIOR_JULIA_INCLUDE>")
 target_compile_features(${JLCXX_TARGET} PUBLIC cxx_std_20)
 target_compile_features(${JLCXX_STL_TARGET} PUBLIC cxx_std_20)
 

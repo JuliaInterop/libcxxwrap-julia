@@ -150,7 +150,7 @@ struct WrappedCppPtr {
 
 /// Store a boxed Julia value together with the C++ type
 template<typename T>
-struct BoxedValue
+struct JLCXX_TEMPLATE_API BoxedValue
 {
   operator jl_value_t*() const { return value; }
   jl_value_t* value;
@@ -344,7 +344,7 @@ struct HashedCache<const T&>
 #endif
 
 template<typename CppT>
-CachedDatatype& stored_type()
+JLCXX_TEMPLATE_API CachedDatatype& stored_type()
 {
 #ifdef JLCXX_USE_TYPE_MAP
   return HashedCache<CppT>::value();
@@ -353,6 +353,13 @@ CachedDatatype& stored_type()
   return m_dt;
 #endif
 }
+
+#ifndef JLCXX_USE_TYPE_MAP
+// Declare and export instantiations to avoid hidden symbol
+// visibility from being applied to implicit instantiations.
+// (N.B. This is only required for type(s) without visibility attributes)
+extern template JLCXX_API CachedDatatype& stored_type<FILE*>();
+#endif
 
 template<typename T>
 void set_julia_type(jl_datatype_t* dt, bool protect = true)
@@ -938,7 +945,7 @@ struct ConvertToCpp<CppT, CxxWrappedTrait<SubTraitT>>
 
 /// Represent a Julia TypeVar in the template parameter list
 template<int I>
-struct TypeVar
+struct JLCXX_TEMPLATE_API TypeVar
 {
   static constexpr int value = I;
 
@@ -977,7 +984,7 @@ struct julia_type_factory<BoxedValue<T>>
 
 /// Helper for Singleton types (Type{T} in Julia)
 template<typename T>
-struct SingletonType
+struct JLCXX_TEMPLATE_API SingletonType
 {
 };
 

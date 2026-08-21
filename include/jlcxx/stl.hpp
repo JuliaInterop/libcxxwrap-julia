@@ -220,7 +220,7 @@ struct WrapIterator
 };
 
 template<template<typename...> class ContainerT>
-struct WrapSTLContainer;
+struct JLCXX_TEMPLATE_API WrapSTLContainer;
 
 namespace detail
 {
@@ -238,13 +238,13 @@ namespace detail
   };
 
   template<typename T>
-  struct ApplyIteratorCombination;
+  struct JLCXX_TEMPLATE_API ApplyIteratorCombination;
 
   template<template<typename...> class ContainerT>
   struct ApplyIteratorCombination<WrapSTLContainer<ContainerT>>
   {
     template<typename ValueT>
-    struct IteratorWrapperType : IteratorWrapper<ValueT, ContainerT> {};
+    struct JLCXX_TEMPLATE_API IteratorWrapperType : IteratorWrapper<ValueT, ContainerT> {};
 
     template<typename... TypeLists, typename WrapperT>
     static void apply(WrapperT& wrapper)

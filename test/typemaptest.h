@@ -4,22 +4,25 @@
 
 #ifdef _WIN32
   #define EXPORTAPI __declspec(dllexport)
+  #define EXPORTVISAPI
 #else
   #define EXPORTAPI __attribute__ ((visibility("default")))
+  #define EXPORTVISAPI EXPORTAPI
 #endif
 
-struct TestType
+struct EXPORTVISAPI TestType
 {
   TestType();
 };
 
-struct StoredType
+struct EXPORTVISAPI StoredType
 {
   std::string m_name = "";
 };
 
+// Visibility attribute is necessary to ensure function local static is shared between libraries
 template<typename CppT>
-StoredType& get_stored_type()
+EXPORTVISAPI StoredType& get_stored_type()
 {
   static StoredType stored;
   return stored;
