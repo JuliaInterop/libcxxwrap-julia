@@ -162,7 +162,7 @@ target_include_directories(${JLCXX_STL_TARGET} PUBLIC
   $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   $<BUILD_INTERFACE:${JLCXX_INCLUDE_DIR}>
 )
-target_include_directories(${JLCXX_TARGET} SYSTEM PUBLIC
+target_include_directories(${JLCXX_STL_TARGET} SYSTEM PUBLIC
   "$<BUILD_INTERFACE:${Julia_INCLUDE_DIRS}>"
 )
 target_link_libraries(${JLCXX_STL_TARGET} ${JLCXX_TARGET} $<BUILD_INTERFACE:${Julia_LIBRARY}>)
