@@ -1042,7 +1042,10 @@ struct static_type_mapping<Val<T, v>>
   using type = jl_datatype_t*;
 };
 
+// Needs constraint because Clang 20+ deduces and ranks both Val specializations
+// equally, making it ambiguous with the one below.
 template<typename T, T v>
+  requires (!std::is_reference_v<T>)
 struct julia_type_factory<Val<T, v>>
 {
   static inline jl_datatype_t* julia_type()
@@ -1069,7 +1072,9 @@ struct ConvertToCpp<Val<T, v>, NoMappingTrait>
   }
 };
 
+// Constrained for the same reason as julia_type_factory<Val<T, v>> above.
 template<typename T, T v>
+  requires (!std::is_reference_v<T>)
 struct ConvertToJulia<Val<T, v>, NoMappingTrait>
 {
   jl_datatype_t* operator()(Val<T, v>) const
