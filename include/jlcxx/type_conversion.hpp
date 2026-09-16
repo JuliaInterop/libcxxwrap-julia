@@ -1052,16 +1052,14 @@ struct julia_type_factory<Val<T, v>>
 {
   static inline jl_datatype_t* julia_type()
   {
-    return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) ::jlcxx::box<T>(v));
-  }
-};
-
-template<const std::string_view& str>
-struct julia_type_factory<Val<const std::string_view&, str>>
-{
-  static inline jl_datatype_t* julia_type()
-  {
-    return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(str.data()));
+    if constexpr(std::is_same_v<T, const std::string_view&>)
+    {
+      return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(v.data()));
+    }
+    else
+    {
+      return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) ::jlcxx::box<T>(v));
+    }
   }
 };
 
@@ -1079,18 +1077,16 @@ struct ConvertToJulia<Val<T, v>, NoMappingTrait>
 {
   jl_datatype_t* operator()(Val<T, v>) const
   {
-    static jl_datatype_t* type = apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) ::jlcxx::box<T>(v));
-    return type;
-  }
-};
-
-template<const std::string_view& str>
-struct ConvertToJulia<Val<const std::string_view&, str>, NoMappingTrait>
-{
-  jl_datatype_t* operator()(Val<const std::string_view&, str>) const
-  {
-    static jl_datatype_t* type = apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(str.data()));
-    return type;
+    if constexpr(std::is_same_v<T, const std::string_view&>)
+    {
+      static jl_datatype_t* type = apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(v.data()));
+      return type;
+    }
+    else
+    {
+      static jl_datatype_t* type = apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) ::jlcxx::box<T>(v));
+      return type;
+    }
   }
 };
 
