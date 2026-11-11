@@ -367,6 +367,13 @@ JLCXX_MODULE init_test_module(jlcxx::Module& mod)
     uint64_t* buffer = f(3);
     return buffer[0] + buffer[1] + buffer[2];
   });
+
+  mod.method("fill_buffer", [] (int* buf, int n)
+  {
+      for (int i = 0; i < n; i++)
+          buf[i] = i;
+  });
+
  }
 
 }

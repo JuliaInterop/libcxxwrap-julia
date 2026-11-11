@@ -1063,6 +1063,18 @@ struct julia_type_factory<Val<T, v>>
   }
 };
 
+// On older versions of clang, the above specialization is not matched
+#if defined(__clang__) && __clang_major__ < 20
+template<const std::string_view& str>
+struct julia_type_factory<Val<const std::string_view&, str>>
+{
+  static inline jl_datatype_t* julia_type()
+  {
+    return apply_type(::jlcxx::julia_type("Val", jl_base_module), (jl_datatype_t*) jl_symbol(str.data()));
+  }
+};
+#endif
+
 template<typename T, T v>
 struct ConvertToCpp<Val<T, v>, NoMappingTrait>
 {
