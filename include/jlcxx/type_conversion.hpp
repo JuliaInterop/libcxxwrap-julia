@@ -1063,8 +1063,8 @@ struct julia_type_factory<Val<T, v>>
   }
 };
 
-// On older versions of clang, the above specialization is not matched
-#if defined(__clang__) && __clang_major__ < 20
+// On older versions of clang or MSVC, the above specialization is not matched
+#if defined(_MSC_VER) || (defined(__clang__) && __clang_major__ < 20)
 template<const std::string_view& str>
 struct julia_type_factory<Val<const std::string_view&, str>>
 {
